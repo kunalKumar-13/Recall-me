@@ -1,0 +1,21 @@
+# Phase 1B — full product (engine + launcher + watcher).
+
+# Engine
+sentence-transformers>=2.5.0
+chromadb>=0.4.22
+pypdf>=4.0.0
+
+# Launcher
+PyQt6>=6.6.0
+pynput>=1.7.6
+
+# Background indexing — keeps the memory layer alive between launches
+watchdog>=3.0.0
+
+# Optional parsers — uncomment to enable
+# python-docx>=1.1.0   # .docx
+# pytesseract>=0.3.10  # OCR (also needs Tesseract installed system-wide)
+# Pillow>=10.0.0       # image loading for OCR
+
+# Build-time only (uncomment for `pyinstaller recall.spec`)
+# pyinstaller>=6.0.0
