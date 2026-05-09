@@ -30,10 +30,19 @@ from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from .core import autostart
 from .core.config import CHROMA_DIR, CONFIG_DIR, Config
+from .core.demo_data import DemoSearchEngine
 from .core.embeddings import EmbeddingModel
 from .core.indexer import Indexer
 from .core.search import SearchEngine
 from .core.watcher import IndexWatcher
+
+# Demo mode — when enabled, the launcher uses an in-memory dataset of
+# curated sample memories so the product can be demonstrated immediately
+# without indexing real files. Activated via env var or --demo flag.
+DEMO_MODE = (
+    os.environ.get("RECALL_DEMO", "").strip().lower() in {"1", "true", "yes", "on"}
+    or "--demo" in sys.argv
+)
 from .db.store import VectorStore
 from .ui.hotkey import HotkeyBridge, HotkeyListener
 from .ui.launcher import Launcher
@@ -340,7 +349,11 @@ def main() -> int:
 
         with _step("construct Indexer + SearchEngine"):
             indexer = Indexer(config, store, model)
-            search_engine = SearchEngine(store, model)
+            if DEMO_MODE:
+                _log("   DEMO_MODE active — using curated in-memory dataset")
+                search_engine = DemoSearchEngine()
+            else:
+                search_engine = SearchEngine(store, model)
 
         with _step("construct Launcher widget"):
             launcher = Launcher(search_engine)

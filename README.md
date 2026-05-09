@@ -33,7 +33,11 @@ startup idea from last winter*, not `pitch_deck_v3_final2.pdf`.
 
 Natural-language queries against your local files. Query and chunk both pass
 through `all-MiniLM-L6-v2`; results are ranked by cosine similarity with a
-0.30 floor that cuts sub-noise matches before they reach you.
+0.30 floor that cuts sub-noise matches before they reach you. A small,
+capped layer of boosts (filename hits, recency within 30 / 90 days, exact
+phrase in the chunk) sits on top of the cosine score — never enough to
+override semantic ranking, just enough to break ties between near-equal
+results in the way a human would.
 
 ### Memory clustering
 
@@ -77,10 +81,13 @@ stay technical; user copy stays human.
 
 ### Smart actions
 
-- **Enter** — open the matched file at its containing folder.
+- **Enter** — open the file in its native handler.
 - **Ctrl + Enter** — reveal in Explorer / Finder.
 - **Ctrl + C** — copy the file path.
 - **Ctrl + M** — copy a clean memory blob (title + why-matched + sources).
+
+Every action acknowledges itself with a short footer beat (`Opening …`,
+`Path copied · …`) so Enter never silently dismisses the launcher.
 
 ---
 
@@ -166,20 +173,6 @@ trust.
 
 ---
 
-## Screenshots
-
-| Surface | File |
-|---|---|
-| Launcher with results, preview pane, sources, and related memories | `docs/screenshots/launcher.png` |
-| Daily memory review (empty input, two-section digest) | `docs/screenshots/digest.png` |
-| Settings — folder picker, OCR toggle, launch-on-login | `docs/screenshots/settings.png` |
-| Onboarding welcome (first-run flow) | `docs/screenshots/onboarding.png` |
-
-> Drop your own captures into `docs/screenshots/`. The UI runs on a single
-> machine; what you see is what ships.
-
----
-
 ## Installation
 
 ### Prebuilt (recommended)
@@ -204,6 +197,37 @@ python recall.py
 
 Requires Python 3.10+. The first index pass downloads the embedding model
 (~80 MB) once into the Hugging Face cache. Subsequent runs are fully offline.
+
+### Try it without indexing — demo mode
+
+Demo mode loads a curated in-memory dataset of ten sample memories spanning
+healthcare-startup notes, RL research, websocket production work, and a few
+older pitches. No folders are scanned, no embedding model is loaded, no
+ChromaDB writes happen — useful for screen recordings, evaluation, or just
+seeing what the launcher feels like before pointing it at real files.
+
+```bash
+RECALL_DEMO=1 python recall.py        # macOS / Linux
+$env:RECALL_DEMO=1; python recall.py  # Windows / PowerShell
+# or
+python recall.py --demo
+```
+
+Try queries like *healthcare startup*, *websocket retry*, *rl reward
+shaping*, or *pediatric triage*.
+
+### Boot diagnostics
+
+```bash
+RECALL_DEBUG=1 python recall.py       # macOS / Linux
+$env:RECALL_DEBUG=1; python recall.py # Windows / PowerShell
+# or
+python recall.py --debug
+```
+
+Emits per-stage `>> name` and `[OK]/[SLOW] name (Nms)` lines so a hang
+during boot points at exactly which stage is responsible. In normal mode
+only failures and stages slower than one second are printed.
 
 ### Build a standalone executable
 

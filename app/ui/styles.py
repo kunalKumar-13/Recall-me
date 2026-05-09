@@ -34,92 +34,92 @@ QWidget#launcher {{
     border: none;
 }}
 QWidget#launcher_card {{
-    background: rgba(15, 17, 21, 240);
-    border: 1px solid rgba(75, 80, 95, 90);
-    border-radius: 16px;
+    background: rgba(15, 17, 21, 232);
+    border: 1px solid rgba(75, 80, 95, 55);
+    border-radius: 13px;
 }}
 QLineEdit#search {{
     background: transparent;
     border: none;
     color: {TEXT};
-    font-size: 17px;
-    padding: 0 24px;
+    font-size: 15px;
+    padding: 0 18px;
     selection-background-color: {ACCENT_DIM};
 }}
 QLineEdit#search:focus {{ outline: none; }}
 QListWidget#results {{
     background: transparent;
     border: none;
-    border-top: 1px solid rgba(50, 55, 70, 70);
+    border-top: 1px solid rgba(50, 55, 70, 45);
     color: {TEXT};
     outline: 0;
-    padding: 8px 8px;
+    padding: 5px 5px;
 }}
 QListWidget#results::item {{
     background: transparent;
-    border-radius: 10px;
+    border-radius: 8px;
     padding: 0;
-    margin: 2px 4px;
+    margin: 1px 4px;
 }}
 QListWidget#results::item:selected {{
-    background: rgba(50, 56, 78, 150);
+    background: rgba(73, 85, 130, 155);
     color: {TEXT};
 }}
 QListWidget#results::item:hover {{
-    background: rgba(36, 42, 56, 100);
+    background: rgba(36, 42, 56, 75);
 }}
 QLabel#hint {{
     color: {TEXT_DIM};
-    font-size: 13px;
-    padding: 0 24px;
+    font-size: 12px;
+    padding: 0 18px;
 }}
 QLabel#empty_title {{
     color: {TEXT};
-    font-size: 16px;
+    font-size: 13.5px;
     font-weight: 600;
-    padding: 0 24px 6px 24px;
+    padding: 0 18px 4px 18px;
 }}
 QLabel#empty_body {{
     color: {TEXT_DIM};
-    font-size: 12px;
-    padding: 0 24px;
+    font-size: 11.5px;
+    padding: 0 22px;
 }}
 QLabel#footer {{
     color: {TEXT_DIMMER};
-    font-size: 11px;
-    padding: 0 24px;
-    border-top: 1px solid rgba(50, 55, 70, 70);
-    background: rgba(22, 25, 34, 110);
+    font-size: 10.5px;
+    padding: 0 16px;
+    border-top: 1px solid rgba(50, 55, 70, 45);
+    background: rgba(20, 23, 30, 70);
 }}
 QWidget#preview_pane {{
-    background: rgba(22, 25, 34, 90);
-    border-left: 1px solid rgba(50, 55, 70, 70);
+    background: rgba(20, 23, 30, 70);
+    border-left: 1px solid rgba(50, 55, 70, 60);
 }}
 QLabel#preview_filename {{
     color: {TEXT};
-    font-size: 16px;
+    font-size: 13.5px;
     font-weight: 600;
     letter-spacing: -0.1px;
 }}
 QLabel#preview_path {{
     color: {TEXT_DIMMER};
-    font-size: 11px;
+    font-size: 10.5px;
 }}
 QFrame#preview_divider {{
-    background: rgba(50, 55, 70, 70);
+    background: rgba(50, 55, 70, 45);
     border: none;
     max-height: 1px;
     min-height: 1px;
 }}
 QLabel#preview_why {{
     color: {TEXT};
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 500;
 }}
 QLabel#preview_excerpt {{
     color: {TEXT_DIM};
-    font-size: 12px;
-    line-height: 1.65;
+    font-size: 11.5px;
+    line-height: 1.55;
     font-style: italic;
 }}
 QScrollArea#preview_scroll {{
@@ -131,18 +131,19 @@ QScrollArea#preview_scroll > QWidget > QWidget {{
 }}
 QLabel#preview_section_label {{
     color: {TEXT_DIMMER};
-    font-size: 11px;
+    font-size: 9.5px;
     font-weight: 600;
-    letter-spacing: 0.7px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
 }}
 QLabel#preview_last_seen {{
     color: {TEXT_DIMMER};
-    font-size: 11px;
+    font-size: 10.5px;
     font-style: italic;
 }}
 QLabel#preview_cross_source {{
     color: {ACCENT};
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 500;
     letter-spacing: 0.2px;
 }}
@@ -151,52 +152,53 @@ QListWidget#digest {{
     border: none;
     color: {TEXT};
     outline: 0;
-    padding: 6px 6px;
+    padding: 4px 4px;
 }}
 QListWidget#digest::item {{
     background: transparent;
-    border-radius: 8px;
+    border-radius: 6px;
     padding: 0;
-    margin: 1px 6px;
+    margin: 1px 4px;
 }}
 QListWidget#digest::item:selected {{
-    background: rgba(50, 56, 78, 160);
+    background: rgba(50, 56, 78, 120);
 }}
 QListWidget#digest::item:hover {{
-    background: rgba(36, 42, 56, 130);
+    background: rgba(36, 42, 56, 90);
 }}
 QLabel#digest_section {{
-    color: {TEXT_DIM};
-    font-size: 11px;
+    color: {TEXT_DIMMER};
+    font-size: 9.5px;
     font-weight: 600;
-    letter-spacing: 0.2px;
-    padding: 10px 22px 6px 22px;
-}}
-QLabel#preview_related_header {{
-    color: {TEXT};
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.6px;
     text-transform: uppercase;
+    padding: 8px 18px 4px 18px;
 }}
 QLabel#preview_related_row {{
     color: {TEXT_DIM};
-    font-size: 12px;
+    font-size: 11px;
     padding: 1px 0;
 }}
 QLabel#preview_related_empty {{
     color: {TEXT_DIMMER};
-    font-size: 11px;
+    font-size: 10.5px;
     font-style: italic;
 }}
+QLabel#preview_empty {{
+    color: {TEXT_DIMMER};
+    font-size: 12px;
+    font-style: italic;
+    padding: 56px 20px;
+    qproperty-alignment: AlignCenter;
+}}
 QScrollBar:vertical {{
-    background: transparent; width: 8px; margin: 4px;
+    background: transparent; width: 6px; margin: 4px;
 }}
 QScrollBar::handle:vertical {{
-    background: rgba(80, 85, 100, 90); border-radius: 4px; min-height: 24px;
+    background: rgba(80, 85, 100, 70); border-radius: 3px; min-height: 24px;
 }}
 QScrollBar::handle:vertical:hover {{
-    background: rgba(110, 115, 130, 130);
+    background: rgba(110, 115, 130, 110);
 }}
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
 """

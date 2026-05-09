@@ -169,9 +169,12 @@ def file_icon(ext: str, size: int = 40) -> QPixmap:
 
 # ----------------------------------------------------------------- relevance
 
-RELEVANCE_HIGH = ("Highly relevant", "#10b981")
-RELEVANCE_MID = ("Relevant", "#8b9bff")
-RELEVANCE_LOW = ("Possible match", "#9ca3af")
+# Compact one-word labels so the relevance pill recedes into metadata
+# rather than competing with the title. The hover tooltip on the chip
+# still names the underlying score band for users who need it.
+RELEVANCE_HIGH = ("High", "#10b981")
+RELEVANCE_MID = ("Match", "#8b9bff")
+RELEVANCE_LOW = ("Maybe", "#9ca3af")
 
 
 def relevance_label(score: float) -> Tuple[str, str]:
@@ -354,7 +357,7 @@ def safe_mtime(path: str) -> float:
 RESURRECTION_DAYS = 90
 
 
-def shorten_path(path: str, max_len: int = 84) -> str:
+def shorten_path(path: str, max_len: int = 60) -> str:
     p = Path(path)
     full = str(p)
     if len(full) <= max_len:
@@ -506,9 +509,13 @@ def cluster_results(
 
 
 class _Pill(QLabel):
+    """Tiny relevance chip — restrained to a single short word so it
+    reads as metadata, not a button. Border is barely-there at 1px with
+    low alpha so the pill recedes; the colored fill is enough signal."""
+
     def __init__(self) -> None:
         super().__init__()
-        self.setFixedHeight(20)
+        self.setFixedHeight(15)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._color = ""
         self.update_pill("Possible match", "#9ca3af")
@@ -517,18 +524,18 @@ class _Pill(QLabel):
         self.setText(text)
         if color != self._color:
             self.setStyleSheet(
-                f"background:{color}22;"
+                f"background:{color}1e;"
                 f"color:{color};"
-                f"border:1px solid {color}40;"
-                "border-radius:10px;"
-                "padding:0 10px;"
-                "font-size:10px;"
+                f"border:1px solid {color}33;"
+                "border-radius:7px;"
+                "padding:0 6px;"
+                "font-size:9px;"
                 "font-weight:600;"
-                "letter-spacing:0.3px;"
+                "letter-spacing:0.2px;"
             )
             self._color = color
         fm = self.fontMetrics()
-        self.setFixedWidth(fm.horizontalAdvance(text) + 26)
+        self.setFixedWidth(fm.horizontalAdvance(text) + 18)
 
 
 class _ClusterBadge(QLabel):
@@ -536,15 +543,15 @@ class _ClusterBadge(QLabel):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setFixedHeight(20)
+        self.setFixedHeight(15)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setStyleSheet(
-            "background:rgba(139,155,255,28);"
+            "background:rgba(139,155,255,24);"
             "color:#a4b3ff;"
-            "border:1px solid rgba(139,155,255,80);"
-            "border-radius:10px;"
-            "padding:0 8px;"
-            "font-size:10px;"
+            "border:1px solid rgba(139,155,255,60);"
+            "border-radius:7px;"
+            "padding:0 5px;"
+            "font-size:9px;"
             "font-weight:600;"
         )
         self.hide()
@@ -555,7 +562,7 @@ class _ClusterBadge(QLabel):
             return
         self.setText(f"+{n_others}")
         fm = self.fontMetrics()
-        self.setFixedWidth(fm.horizontalAdvance(self.text()) + 22)
+        self.setFixedWidth(fm.horizontalAdvance(self.text()) + 14)
         self.show()
 
 
@@ -563,10 +570,20 @@ class _ClusterBadge(QLabel):
 
 
 class ResultItemWidget(QWidget):
-    """Memory card. Holds title + why + pill + optional cluster badge."""
+    """Memory card. Holds title + why + pill + optional cluster badge.
 
-    ROW_HEIGHT = 84
-    _TITLE_MAX_W = 200
+    Sizing is tuned for command-bar restraint: 56 px tall (down from 84),
+    smaller icon, tighter padding. The title and "why" lines drive the
+    perceived information density — keeping them at 12.5 / 10.5 px is
+    the calmest pairing that still reads at glance distance.
+    """
+
+    ROW_HEIGHT = 56
+    # Title elision is generous because the title is the primary
+    # identifier; the bottom row gets a tighter cap because it has to
+    # share width with the cluster badge and relevance pill.
+    _TITLE_MAX_W = 220
+    _WHY_MAX_W = 150
 
     def __init__(self) -> None:
         super().__init__()
@@ -575,20 +592,20 @@ class ResultItemWidget(QWidget):
 
     def _build(self) -> None:
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(12, 10, 12, 10)
-        layout.setSpacing(13)
+        layout.setContentsMargins(10, 7, 10, 7)
+        layout.setSpacing(10)
 
         self.icon = QLabel()
-        self.icon.setFixedSize(40, 40)
+        self.icon.setFixedSize(28, 28)
         self.icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         text_col = QVBoxLayout()
         text_col.setContentsMargins(0, 0, 0, 0)
-        text_col.setSpacing(4)
+        text_col.setSpacing(2)
 
         self.title = QLabel("")
         self.title.setStyleSheet(
-            f"color:{TEXT};font-size:13px;font-weight:600;"
+            f"color:{TEXT};font-size:12.5px;font-weight:600;"
         )
         self.title.setTextFormat(Qt.TextFormat.PlainText)
 
@@ -598,7 +615,7 @@ class ResultItemWidget(QWidget):
 
         self.why = QLabel("")
         self.why.setStyleSheet(
-            f"color:{TEXT_DIM};font-size:11px;"
+            f"color:{TEXT_DIM};font-size:10.5px;"
         )
         self.why.setTextFormat(Qt.TextFormat.PlainText)
 
@@ -619,8 +636,10 @@ class ResultItemWidget(QWidget):
         self.group = group
         primary = group.primary
 
-        # Icon
-        self.icon.setPixmap(file_icon((primary.ext or "").lower(), 40))
+        # Icon — the painted file icon is rasterised at 28 px to match
+        # the slot. The cache is keyed on (ext, size) so rendering at
+        # this smaller size doesn't fight with any other call site.
+        self.icon.setPixmap(file_icon((primary.ext or "").lower(), 28))
 
         # Title — humanized memory title (heading or def-aware)
         title = derive_memory_title(primary)
@@ -636,7 +655,15 @@ class ResultItemWidget(QWidget):
             age_days = (time.time() - mtime) / 86400
             if age_days >= RESURRECTION_DAYS:
                 why = f"{why}  ·  resurfaced from {format_relative_time(mtime)}"
-        self.why.setText(why)
+        # Explicit fontMetrics elision keeps the bottom row stable when
+        # results swap in mid-typing — QLabel's default clipping can
+        # briefly cause layout jitter at the pill boundary.
+        why_fm: QFontMetrics = self.why.fontMetrics()
+        elided_why = why_fm.elidedText(
+            why, Qt.TextElideMode.ElideRight, self._WHY_MAX_W
+        )
+        self.why.setText(elided_why)
+        self.why.setToolTip(why)
 
         # Pill — relevance from best score in the group
         text, color = relevance_label(group.best_score)
@@ -664,9 +691,41 @@ class PreviewPane(QWidget):
         self._build()
 
     def _build(self) -> None:
-        root = QVBoxLayout(self)
-        root.setContentsMargins(20, 18, 20, 18)
-        root.setSpacing(10)
+        # Outer layout — holds the single scroll area that wraps the whole
+        # preview. Earlier versions tried to scroll only the excerpt and
+        # let everything else size naturally; that broke down when sources
+        # or related grew tall. One outer scroll keeps the launcher's
+        # bounds stable regardless of how much memory content is showing.
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
+        self._scroll = QScrollArea()
+        self._scroll.setObjectName("preview_scroll")
+        self._scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._scroll.setWidgetResizable(True)
+        self._scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        # Transparent so the parent #preview_pane background shows through.
+        self._scroll.setStyleSheet(
+            "QScrollArea { background: transparent; border: none; }"
+        )
+        self._scroll.viewport().setAutoFillBackground(False)
+        outer.addWidget(self._scroll)
+
+        content = QWidget()
+        content.setObjectName("preview_content")
+        content.setStyleSheet("background: transparent;")
+        content.setAutoFillBackground(False)
+        self._scroll.setWidget(content)
+
+        root = QVBoxLayout(content)
+        # Tighter than before (was 20,18,20,18 with 10-spacing). The
+        # preview should feel like contextual support beside the list,
+        # not a second-class workspace with its own breathing room.
+        root.setContentsMargins(14, 12, 14, 12)
+        root.setSpacing(6)
 
         memory_label = QLabel("Memory")
         memory_label.setObjectName("preview_section_label")
@@ -699,6 +758,8 @@ class PreviewPane(QWidget):
         excerpt_label = QLabel("Excerpt")
         excerpt_label.setObjectName("preview_section_label")
 
+        # Excerpt is now a plain word-wrapping QLabel — no inner scroll.
+        # Long passages grow the content; the outer scroll handles overflow.
         self.excerpt = QLabel("")
         self.excerpt.setObjectName("preview_excerpt")
         self.excerpt.setWordWrap(True)
@@ -710,18 +771,6 @@ class PreviewPane(QWidget):
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
         )
 
-        excerpt_scroll = QScrollArea()
-        excerpt_scroll.setObjectName("preview_scroll")
-        excerpt_scroll.setWidget(self.excerpt)
-        excerpt_scroll.setWidgetResizable(True)
-        excerpt_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        excerpt_scroll.setHorizontalScrollBarPolicy(
-            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
-        )
-        excerpt_scroll.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
-        )
-
         # Sources (cluster only)
         self.sources_header = QLabel("Sources")
         self.sources_header.setObjectName("preview_section_label")
@@ -729,6 +778,7 @@ class PreviewPane(QWidget):
         self.sources_subtitle.setObjectName("preview_cross_source")
         self.sources_subtitle.hide()
         self.sources_container = QWidget()
+        self.sources_container.setStyleSheet("background: transparent;")
         self._sources_layout = QVBoxLayout(self.sources_container)
         self._sources_layout.setContentsMargins(0, 0, 0, 0)
         self._sources_layout.setSpacing(3)
@@ -739,6 +789,7 @@ class PreviewPane(QWidget):
         related_header.setObjectName("preview_section_label")
 
         self.related_container = QWidget()
+        self.related_container.setStyleSheet("background: transparent;")
         self._related_layout = QVBoxLayout(self.related_container)
         self._related_layout.setContentsMargins(0, 0, 0, 0)
         self._related_layout.setSpacing(3)
@@ -752,13 +803,51 @@ class PreviewPane(QWidget):
         root.addWidget(self.about)
         root.addWidget(d2)
         root.addWidget(excerpt_label)
-        root.addWidget(excerpt_scroll, 1)
+        root.addWidget(self.excerpt)
         root.addWidget(self.sources_header)
         root.addWidget(self.sources_subtitle)
         root.addWidget(self.sources_container)
         root.addWidget(d3)
         root.addWidget(related_header)
         root.addWidget(self.related_container)
+
+        # Empty-state placeholder — single calm line shown when no memory
+        # is selected. Without this, show_empty() would leave every
+        # section label and divider on screen with empty bodies between
+        # them, which read as a broken layout rather than a blank slate.
+        self.empty_placeholder = QLabel("Select a memory to preview")
+        self.empty_placeholder.setObjectName("preview_empty")
+        self.empty_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.empty_placeholder.setWordWrap(True)
+        self.empty_placeholder.hide()
+        root.addWidget(self.empty_placeholder)
+
+        # Stretch keeps the content top-anchored when it's shorter than the
+        # viewport — otherwise it would centre vertically.
+        root.addStretch(1)
+
+        # Track every "real content" widget in one list so show_empty()
+        # can hide them as a single group (and update_group can restore
+        # them) without iterating over the layout itself. Order doesn't
+        # matter — only membership does.
+        self._content_widgets = [
+            memory_label,
+            self.title,
+            self.path_lbl,
+            self.last_seen_lbl,
+            d1,
+            about_label,
+            self.about,
+            d2,
+            excerpt_label,
+            self.excerpt,
+            self.sources_header,
+            self.sources_subtitle,
+            self.sources_container,
+            d3,
+            related_header,
+            self.related_container,
+        ]
 
         # Sources are only shown for clusters — start hidden
         self.sources_header.hide()
@@ -772,15 +861,16 @@ class PreviewPane(QWidget):
         d.setFixedHeight(1)
         return d
 
-    def show_empty(self, msg: str = "Select a memory to see its context.") -> None:
-        self.title.setText("")
-        self.path_lbl.setText(msg)
-        self.last_seen_lbl.setText("")
-        self.about.setText("")
-        self.excerpt.setText("")
-        self._set_sources([])
-        self.sources_subtitle.hide()
-        self._set_related([])
+    def show_empty(self, msg: str = "Select a memory to preview") -> None:
+        # Replace the entire "section labels + dividers + empty bodies"
+        # arrangement with a single centred placeholder line. This is
+        # what the user sees if a query returns nothing or before any
+        # selection is made — it should read as intentional blankness,
+        # not as a half-rendered card.
+        self.empty_placeholder.setText(msg)
+        self.empty_placeholder.show()
+        for w in self._content_widgets:
+            w.hide()
 
     def update_group(
         self,
@@ -788,11 +878,22 @@ class PreviewPane(QWidget):
         query: str,
         related_paths: Iterable[str],
     ) -> None:
+        # Restore the full preview layout. Sources/cross-source visibility
+        # is then re-resolved below based on whether this group is a
+        # cluster — which is why we don't track those flags via the
+        # placeholder's show/hide.
+        self.empty_placeholder.hide()
+        for w in self._content_widgets:
+            w.show()
+
         primary = group.primary
         chunk = primary.chunk or primary.snippet
 
         self.title.setText(derive_memory_title(primary))
-        self.path_lbl.setText(shorten_path(primary.path, max_len=92))
+        # Tightened to fit the now-narrower preview width (~300 px) at
+        # the path label's 10.5 px font. Full path on tooltip so nothing
+        # is hidden, just compacted to one tidy line.
+        self.path_lbl.setText(shorten_path(primary.path, max_len=44))
         self.path_lbl.setToolTip(primary.path)
 
         mtime = safe_mtime(primary.path)
@@ -859,6 +960,8 @@ class DigestRow(QWidget):
 
     Click → emits `clicked(path)`. Keyboard navigation is delegated to
     the surrounding QListWidget when these are wrapped in items.
+    Sized for restraint (36 px tall, 22 px icon) — the digest is
+    background context, not the primary surface.
     """
 
     clicked = pyqtSignal(str)
@@ -869,30 +972,30 @@ class DigestRow(QWidget):
         ext = Path(path).suffix.lower()
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(12, 6, 12, 6)
-        layout.setSpacing(12)
+        layout.setContentsMargins(12, 4, 12, 4)
+        layout.setSpacing(10)
 
         icon = QLabel()
-        icon.setFixedSize(28, 28)
-        icon.setPixmap(file_icon(ext, 28))
+        icon.setFixedSize(22, 22)
+        icon.setPixmap(file_icon(ext, 22))
 
         title = QLabel(humanize_filename(Path(path).name))
         title.setStyleSheet(
-            f"color:{TEXT};font-size:12px;font-weight:500;"
+            f"color:{TEXT};font-size:11.5px;font-weight:500;"
         )
         title.setTextFormat(Qt.TextFormat.PlainText)
         title.setToolTip(path)
 
         time_lbl = QLabel(format_relative_time(mtime))
         time_lbl.setStyleSheet(
-            f"color:{TEXT_DIMMER};font-size:11px;"
+            f"color:{TEXT_DIMMER};font-size:10.5px;"
         )
 
         layout.addWidget(icon)
         layout.addWidget(title, 1)
         layout.addWidget(time_lbl)
 
-    DIGEST_ROW_HEIGHT = 44
+    DIGEST_ROW_HEIGHT = 36
 
     def mousePressEvent(self, event) -> None:  # type: ignore[override]
         if event.button() == Qt.MouseButton.LeftButton:
