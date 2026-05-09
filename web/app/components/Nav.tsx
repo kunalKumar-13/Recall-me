@@ -13,12 +13,12 @@ export function Nav() {
   const bg = useTransform(
     scrollY,
     [0, 80],
-    ["rgba(10, 11, 15, 0)", "rgba(10, 11, 15, 0.72)"]
+    ["rgba(8, 17, 31, 0)", "rgba(8, 17, 31, 0.72)"]
   );
   const borderColor = useTransform(
     scrollY,
     [0, 80],
-    ["rgba(255, 255, 255, 0)", "rgba(255, 255, 255, 0.06)"]
+    ["rgba(124, 155, 255, 0)", "rgba(124, 155, 255, 0.10)"]
   );
 
   return (
@@ -27,34 +27,40 @@ export function Nav() {
       className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md"
     >
       <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-        <a href="#top" className="flex items-center gap-2">
+        <a href="#top" className="flex items-center gap-2.5">
           <Logo className="w-7 h-7" />
-          <span className="text-white font-semibold tracking-tight">
+          <span className="text-ink-bright font-semibold tracking-tight">
             Recall
           </span>
         </a>
         <div className="flex items-center gap-1">
           <a
+            href="#how"
+            className="hidden md:inline-flex text-sm text-ink-dim hover:text-ink-bright transition-colors px-3 py-1.5 rounded-md"
+          >
+            How it works
+          </a>
+          <a
             href="#features"
-            className="hidden md:inline-flex text-sm text-white/60 hover:text-white transition-colors px-3 py-1.5 rounded-md"
+            className="hidden md:inline-flex text-sm text-ink-dim hover:text-ink-bright transition-colors px-3 py-1.5 rounded-md"
           >
             Features
           </a>
           <a
             href="#privacy"
-            className="hidden md:inline-flex text-sm text-white/60 hover:text-white transition-colors px-3 py-1.5 rounded-md"
+            className="hidden md:inline-flex text-sm text-ink-dim hover:text-ink-bright transition-colors px-3 py-1.5 rounded-md"
           >
             Privacy
           </a>
           <a
             href="https://github.com"
-            className="hidden md:inline-flex text-sm text-white/60 hover:text-white transition-colors px-3 py-1.5 rounded-md"
+            className="hidden md:inline-flex text-sm text-ink-dim hover:text-ink-bright transition-colors px-3 py-1.5 rounded-md"
           >
             GitHub
           </a>
           <a
             href="#download"
-            className="ml-2 text-sm bg-white text-black px-3.5 py-1.5 rounded-md font-medium hover:bg-white/90 transition-colors"
+            className="ml-2 text-sm bg-ink-bright text-bg-deepest px-3.5 py-1.5 rounded-md font-medium hover:bg-white transition-colors"
           >
             Download
           </a>

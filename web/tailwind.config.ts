@@ -5,33 +5,56 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Mirrored from the desktop app's palette so the website and
-        // launcher feel like the same product.
-        bg: "#0a0b0f",
-        surface: "rgba(15, 17, 21, 0.92)",
-        accent: "#8b9bff",
-        accentSoft: "#3b4566",
-        highlight: "#cdd2e0",
+        // Layered backgrounds — the page is a vertical descent through
+        // these three deeps so motion has somewhere to go.
+        bg: {
+          deepest: "#08111F",
+          base: "#0B1020",
+          raised: "#111827",
+        },
+        // Accent blues — luminous, never neon. Used sparingly, on the
+        // beats that should actually be remembered.
+        accent: {
+          base: "#7C9BFF",
+          DEFAULT: "#8BA5FF",
+          light: "#AFC2FF",
+        },
+        // Text — cool, slightly blue-tinted, three weights of presence.
+        ink: {
+          bright: "#F5F7FB",
+          DEFAULT: "#B6C2D9",
+          dim: "#7C8799",
+        },
+        // Glass surfaces — the launcher card and inner panels.
+        glass: {
+          base: "rgba(18, 24, 38, 0.72)",
+          soft: "rgba(24, 30, 48, 0.55)",
+        },
       },
       fontFamily: {
         sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
-        display: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: [
+          "var(--font-inter)",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif",
+        ],
       },
       letterSpacing: {
         tightest: "-0.04em",
+        tighter: "-0.02em",
       },
       boxShadow: {
+        // Used on the floating launcher mockup
         cinematic: "0 40px 120px -30px rgba(0, 0, 0, 0.8)",
-        glow: "0 0 80px -10px rgba(139, 155, 255, 0.4)",
+        // Used on primary CTA buttons
+        cta: "0 10px 40px -10px rgba(124, 155, 255, 0.35)",
+        // Used on the play button in the demo card
+        glow: "0 0 80px -10px rgba(124, 155, 255, 0.55)",
       },
-      animation: {
-        float: "float 8s ease-in-out infinite",
-      },
-      keyframes: {
-        float: {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-6px)" },
-        },
+      backgroundImage: {
+        "page-gradient":
+          "linear-gradient(180deg, #08111F 0%, #0B1020 55%, #111827 100%)",
       },
     },
   },

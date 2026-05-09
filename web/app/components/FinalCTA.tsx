@@ -6,60 +6,59 @@ export function FinalCTA() {
   return (
     <section
       id="download"
-      className="relative py-32 md:py-44 px-6 overflow-hidden"
+      className="relative pt-32 md:pt-44 pb-28 md:pb-36 px-6 overflow-hidden"
     >
-      {/* A soft accent halo behind the headline */}
+      {/* Soft accent halo behind the headline */}
       <div
         aria-hidden
-        className="absolute left-1/2 -translate-x-1/2 -top-20 w-[640px] h-[640px] blur-[140px]"
+        className="absolute left-1/2 -translate-x-1/2 -top-20 w-[720px] h-[720px] opacity-90"
         style={{
           background:
-            "radial-gradient(circle, rgba(139,155,255,0.16), transparent 60%)",
+            "radial-gradient(circle, rgba(124,155,255,0.22) 0%, transparent 60%)",
         }}
       />
 
       <div className="relative max-w-3xl mx-auto text-center">
         <motion.h2
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          className="text-4xl md:text-6xl font-semibold tracking-tightest leading-[1.05] text-gradient"
+          transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
+          className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tightest leading-[1.05] text-gradient"
         >
-          Your laptop finally
-          <br />
-          remembers your thoughts.
+          Your digital life already contains your best ideas.
         </motion.h2>
 
         <motion.p
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.08 }}
-          className="mt-6 md:mt-7 text-white/55 text-base md:text-lg leading-relaxed"
+          transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1], delay: 0.06 }}
+          className="mt-6 md:mt-8 text-ink text-lg md:text-xl max-w-xl mx-auto leading-relaxed"
         >
-          Download Recall. Press Ctrl + Space. Ask the question you've been
-          carrying around all week.
+          Recall helps you find them again.
         </motion.p>
 
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.16 }}
-          className="mt-10 flex items-center justify-center gap-3 flex-wrap"
+          transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1], delay: 0.12 }}
+          className="mt-10 flex items-center justify-center gap-4 flex-wrap"
         >
           <a
-            href="#"
-            className="px-6 py-3.5 rounded-lg bg-white text-black text-[15px] font-medium hover:bg-white/90 transition-colors shadow-[0_8px_30px_-8px_rgba(255,255,255,0.18)]"
+            href="#download"
+            className="px-6 py-3.5 rounded-lg bg-ink-bright text-bg-deepest text-[15px] font-medium hover:bg-white transition-colors shadow-cta"
           >
             Download for Windows
           </a>
           <a
-            href="#demo"
-            className="px-6 py-3.5 rounded-lg border border-white/15 text-white/85 text-[15px] hover:bg-white/[0.04] hover:border-white/25 transition-colors"
+            href="https://github.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-6 py-3.5 rounded-lg border border-white/[0.10] text-ink-bright/95 text-[15px] hover:bg-white/[0.04] hover:border-white/20 transition-colors"
           >
-            Watch demo
+            GitHub
           </a>
         </motion.div>
 
@@ -68,7 +67,7 @@ export function FinalCTA() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 1, delay: 0.24 }}
-          className="mt-6 text-xs text-white/35"
+          className="mt-6 text-xs text-ink-dim"
         >
           Free · macOS &amp; Linux coming soon · No account required
         </motion.p>

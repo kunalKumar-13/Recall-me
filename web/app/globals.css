@@ -8,30 +8,23 @@ html {
 }
 
 body {
-  background: #0a0b0f;
-  color: #e8eaf0;
+  /* Page bg is a vertical gradient through the three deeps so the
+     ambient orbs and section transitions all have somewhere to breathe. */
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 50% 0%,
+      rgba(124, 155, 255, 0.07),
+      transparent 65%
+    ),
+    linear-gradient(180deg, #08111F 0%, #0B1020 55%, #111827 100%);
+  background-attachment: fixed;
+  color: #F5F7FB;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
-/* Atmospheric base — a single very dark gradient under the floating orbs */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -20;
-  background:
-    radial-gradient(
-      ellipse 80% 60% at 50% 0%,
-      rgba(124, 140, 255, 0.05),
-      transparent 60%
-    ),
-    #0a0b0f;
-  pointer-events: none;
-}
-
-/* Calmer scrollbars to match the rest of the dark surface */
+/* Calmer scrollbars in the marketing site's own palette */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -40,30 +33,108 @@ body::before {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(124, 155, 255, 0.12);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(124, 155, 255, 0.22);
 }
 
-/* Selection — accent-tinted, subtle */
+/* Selection — accent-tinted */
 ::selection {
-  background: rgba(139, 155, 255, 0.25);
-  color: #ffffff;
+  background: rgba(124, 155, 255, 0.28);
+  color: #F5F7FB;
 }
 
-/* Reusable: text gradient used on hero and section headings */
+/* Headline gradient — used on hero & final CTA. White → light ink. */
 .text-gradient {
-  background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.7) 100%);
+  background: linear-gradient(180deg, #F5F7FB 0%, #B6C2D9 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
+/* Accent gradient — used on a single line per section, on purpose. */
 .text-gradient-accent {
-  background: linear-gradient(90deg, #8b9bff 0%, #cdd2e0 100%);
+  background: linear-gradient(90deg, #7C9BFF 0%, #AFC2FF 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* Glass surfaces — kept as utility classes so children inherit the
+   right backdrop-blur context without fighting Tailwind. */
+.surface-glass {
+  background: rgba(18, 24, 38, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.surface-glass-soft {
+  background: rgba(24, 30, 48, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Subtle hairline used as section separators — accent fades in at ends. */
+.hairline {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(124, 155, 255, 0.4),
+    transparent
+  );
+}
+
+/* Dot-grid texture for the ambient background. Single static layer,
+   no animation, ~2KB of compressed CSS. Adds tactile depth without
+   touching scroll performance. */
+.grid-texture {
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.025) 1px,
+    transparent 1px
+  );
+  background-size: 36px 36px;
+  background-position: 0 0;
+  /* Soft mask so the grid fades toward the edges instead of cutting hard */
+  -webkit-mask-image: radial-gradient(
+    ellipse 80% 60% at 50% 35%,
+    rgba(0, 0, 0, 1) 30%,
+    rgba(0, 0, 0, 0) 75%
+  );
+  mask-image: radial-gradient(
+    ellipse 80% 60% at 50% 35%,
+    rgba(0, 0, 0, 1) 30%,
+    rgba(0, 0, 0, 0) 75%
+  );
+}
+
+/* Aurora layer — used by AmbientBackground. The soft diagonal gradient
+   itself does the work; we animate transform only, never the gradient. */
+.aurora-beam {
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(124, 155, 255, 0.10) 48%,
+    rgba(175, 194, 255, 0.07) 56%,
+    transparent 72%
+  );
+  mix-blend-mode: screen;
+}
+
+.aurora-beam-alt {
+  background: linear-gradient(
+    240deg,
+    transparent 35%,
+    rgba(139, 165, 255, 0.08) 50%,
+    transparent 70%
+  );
+  mix-blend-mode: screen;
+}
+
+/* Promote a layer to the GPU. Used sparingly — only on the few elements
+   that actually animate, never on scroll containers. */
+.gpu {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }

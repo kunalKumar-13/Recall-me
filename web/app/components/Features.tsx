@@ -84,50 +84,58 @@ const features: Feature[] = [
 
 export function Features() {
   return (
-    <section id="features" className="relative py-24 md:py-32 px-6">
+    <section id="features" className="relative py-24 md:py-28 px-6">
       <div className="max-w-6xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center max-w-2xl mx-auto"
+          transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
+          className="text-center max-w-xl mx-auto"
         >
-          <div className="text-[11px] font-semibold tracking-[0.18em] text-accent/80 uppercase">
-            How Recall thinks
+          <div className="text-[11px] font-semibold tracking-[0.18em] text-accent-light uppercase">
+            What Recall does
           </div>
-          <h2 className="mt-3 text-3xl md:text-5xl font-semibold tracking-tight text-white">
+          <h2 className="mt-3 text-3xl md:text-5xl font-semibold tracking-tight text-ink-bright">
             Memory, not search.
           </h2>
-          <p className="mt-5 text-white/55 leading-relaxed">
-            Recall doesn't index file names. It indexes meaning, continuity, and
-            the ideas that quietly connect your work over time.
+          <p className="mt-5 text-ink leading-relaxed">
+            Recall doesn't index file names. It indexes meaning, continuity,
+            and the ideas that quietly connect your work over time.
           </p>
         </motion.div>
 
-        <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-px rounded-2xl overflow-hidden border border-white/5 bg-white/5">
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-px rounded-2xl overflow-hidden border border-white/[0.06] bg-white/[0.04]">
           {features.map((f, i) => (
             <motion.div
               key={f.title}
-              initial={{ opacity: 0, y: 14 }}
+              initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{
-                duration: 0.7,
-                ease: [0.16, 1, 0.3, 1],
-                delay: i * 0.04,
+                duration: 0.45,
+                ease: [0.32, 0.72, 0, 1],
+                delay: i * 0.025,
               }}
-              className="bg-bg p-7 md:p-8"
+              className="
+                group relative p-7 md:p-8
+                hover:bg-[rgba(18,24,38,0.85)]
+                transition-colors duration-500
+              "
+              style={{ background: "rgba(11, 16, 32, 0.85)" }}
             >
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-accent border border-accent/20 bg-accent/5">
+              {/* Top hairline — lights up on hover */}
+              <div
+                aria-hidden
+                className="absolute inset-x-8 top-0 h-px hairline opacity-0 group-hover:opacity-60 transition-opacity duration-500"
+              />
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-accent-light border border-accent/25 bg-accent/5 group-hover:border-accent/45 group-hover:bg-accent/10 transition-colors duration-500">
                 <div className="w-[18px] h-[18px]">{f.glyph}</div>
               </div>
-              <h3 className="mt-5 text-white font-semibold tracking-tight">
+              <h3 className="mt-5 text-ink-bright font-semibold tracking-tight">
                 {f.title}
               </h3>
-              <p className="mt-2 text-sm text-white/55 leading-relaxed">
-                {f.body}
-              </p>
+              <p className="mt-2 text-sm text-ink leading-relaxed">{f.body}</p>
             </motion.div>
           ))}
         </div>
