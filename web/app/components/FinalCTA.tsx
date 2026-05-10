@@ -1,64 +1,79 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { LINKS } from "../lib/links";
+import { WindowsGlyph } from "./WindowsGlyph";
 
+const ease = [0.32, 0.72, 0, 1] as const;
+
+/**
+ * FinalCTA — calmer, more compact than the prior pass. Editorial
+ * serif headline (italic on "never"), single lavender Download CTA,
+ * three-line trust caption beneath. The lavender halo behind the
+ * headline is static (a single radial-gradient, no animation, paint-
+ * once on mount).
+ */
 export function FinalCTA() {
   return (
     <section
       id="download"
-      className="relative pt-32 md:pt-44 pb-28 md:pb-36 px-6 overflow-hidden"
+      className="relative pt-24 md:pt-32 pb-24 md:pb-32 px-5 md:px-8 overflow-hidden"
     >
-      {/* Soft accent halo behind the headline */}
+      {/* Static lavender halo. No animation, no blur — just a
+          single radial gradient layered behind the headline. */}
       <div
         aria-hidden
-        className="absolute left-1/2 -translate-x-1/2 -top-20 w-[720px] h-[720px] opacity-90"
+        className="
+          absolute left-1/2 -translate-x-1/2 -top-20
+          w-[680px] h-[600px] opacity-90 pointer-events-none
+        "
         style={{
           background:
-            "radial-gradient(circle, rgba(124,155,255,0.22) 0%, transparent 60%)",
+            "radial-gradient(circle, rgba(169,156,247,0.18) 0%, transparent 60%)",
         }}
       />
 
-      <div className="relative max-w-3xl mx-auto text-center">
+      <div className="relative max-w-2xl mx-auto text-center">
         <motion.h2
-          initial={{ opacity: 0, y: 18 }}
+          initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
-          className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tightest leading-[1.05] text-gradient"
+          transition={{ duration: 0.6, ease }}
+          className="
+            font-editorial
+            text-[34px] md:text-[44px] lg:text-[52px]
+            font-medium tracking-editorial leading-[1.05]
+            text-ink-bright
+          "
         >
-          Your digital life already contains your best ideas.
+          Ready to <span className="italic">never</span> forget
+          <br />
+          what matters?
         </motion.h2>
 
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1], delay: 0.06 }}
-          className="mt-6 md:mt-8 text-ink text-lg md:text-xl max-w-xl mx-auto leading-relaxed"
-        >
-          Recall helps you find them again.
-        </motion.p>
-
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 6 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1], delay: 0.12 }}
-          className="mt-10 flex items-center justify-center gap-4 flex-wrap"
+          transition={{ duration: 0.55, ease, delay: 0.08 }}
+          className="mt-9 flex items-center justify-center"
         >
           <a
-            href="#download"
-            className="px-6 py-3.5 rounded-lg bg-ink-bright text-bg-deepest text-[15px] font-medium hover:bg-white transition-colors shadow-cta"
-          >
-            Download for Windows
-          </a>
-          <a
-            href="https://github.com"
+            href={LINKS.release}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-6 py-3.5 rounded-lg border border-white/[0.10] text-ink-bright/95 text-[15px] hover:bg-white/[0.04] hover:border-white/20 transition-colors"
+            className="
+              inline-flex items-center gap-2
+              h-12 px-6 rounded-lg
+              bg-lavender-gradient text-white text-[14.5px] font-medium
+              shadow-lift
+              hover:bg-lavender-gradient-hover
+              transition-[background,transform] duration-300
+              hover:-translate-y-px
+            "
           >
-            GitHub
+            <WindowsGlyph className="w-4 h-4" />
+            Download for Windows
           </a>
         </motion.div>
 
@@ -66,10 +81,10 @@ export function FinalCTA() {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 1, delay: 0.24 }}
-          className="mt-6 text-xs text-ink-dim"
+          transition={{ duration: 0.7, ease, delay: 0.18 }}
+          className="mt-6 text-[12.5px] text-ink-dim"
         >
-          Free · macOS &amp; Linux coming soon · No account required
+          It&apos;s free. It&apos;s private. It&apos;s yours.
         </motion.p>
       </div>
     </section>

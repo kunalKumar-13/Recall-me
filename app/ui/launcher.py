@@ -63,20 +63,32 @@ from PyQt6.QtWidgets import (
 )
 
 from ..core.demo_data import DemoSearchEngine
+from ..core.episodic import EpisodicResult, EpisodicRetriever
+from ..core.events import EventLogger, EventStore, humanize_age
 from ..core.search import SearchEngine, SearchResult
 from .styles import LAUNCHER_QSS
 from .widgets import (
+    BrowserActivityRow,
     DigestRow,
+    EpisodicCard,
     MemoryGroup,
     PreviewPane,
+    QueryRow,
     ResultItemWidget,
+    _activity_display,
     cluster_results,
     derive_memory_title,
     explain_match,
+    make_episodic_item,
     make_result_item,
 )
 
 MAX_RESULTS = 8
+# Episodic results live at the *top* of the same QListWidget as file
+# rows. Three is a deliberately small number — the list still reads as
+# a file launcher with two or three "memory" cards on top, never as a
+# timeline.
+EPISODIC_MAX = 3
 DEBOUNCE_MS = 90
 
 # Visible card dimensions — tuned for command-bar restraint (Spotlight /
@@ -90,7 +102,13 @@ FOOTER_H = 28
 # stable shapes). The results state is adaptive — see _show_results.
 H_COMPACT = 110
 H_EMPTY = 180
-H_DIGEST = 400
+# Digest now hosts up to four sections (queries / browser activity /
+# recently-active files / resurfaced files). Phase 1B bumps the cap
+# again to make room for the new section without forcing internal
+# scroll. _capped_card_height still clamps on small screens.
+H_DIGEST = 540
+DIGEST_RECENT_QUERIES_MAX = 4
+DIGEST_RECENT_ACTIVITY_MAX = 3
 
 # Adaptive results bounds. Floor lets a single result still feel like a
 # proper command bar (not a blink); ceiling caps the launcher so a full
@@ -113,9 +131,11 @@ LAUNCHER_WIDTH = CARD_WIDTH + 2 * SHADOW_MARGIN
 # it feel like contextual support rather than the dominant surface.
 LIST_WIDTH = 320
 
-# Footer keeps only the two universally-useful actions. Power keys
-# (Ctrl+↵, Ctrl+C, Ctrl+M) still work — they're documented in Settings.
-_FOOTER_DEFAULT = "↑↓ navigate     ↵ open     esc close"
+# Footer copy. The action-hints line is shown only when results are
+# on screen (it's only meaningful then); idle states show the
+# diagnostic line instead. Bullet separators tie both visually
+# together with the floating annotations elsewhere in the launcher.
+_FOOTER_DEFAULT = "↑↓ navigate  ·  ↵ open  ·  esc close"
 _FOOTER_FLASH_MS = 1500
 _PLACEHOLDER = "What are you trying to remember?"
 
@@ -159,17 +179,35 @@ def _reveal(path: str) -> bool:
 
 
 class _SearchWorker(QObject):
-    finished = pyqtSignal(str, list)
+    """Runs both file search and episodic retrieval on a worker thread.
+
+    Both lookups are emitted in a single `finished` signal so the
+    launcher can update its rows atomically — no flash-of-empty between
+    file results landing and episodic ones catching up.
+    """
+
+    finished = pyqtSignal(str, list, list)
     failed = pyqtSignal(str, str)
 
-    def __init__(self, engine: SearchEngine) -> None:
+    def __init__(
+        self,
+        engine: SearchEngine,
+        episodic: EpisodicRetriever,
+    ) -> None:
         super().__init__()
         self.engine = engine
+        self.episodic = episodic
 
     def handle(self, query: str) -> None:
         try:
-            results = self.engine.search(query, top_k=MAX_RESULTS)
-            self.finished.emit(query, results)
+            file_results = self.engine.search(query, top_k=MAX_RESULTS)
+            try:
+                episodic_results = self.episodic.search(query, n=EPISODIC_MAX)
+            except Exception:
+                # Episodic retrieval is best-effort — never let it
+                # break the primary file search path.
+                episodic_results = []
+            self.finished.emit(query, file_results, episodic_results)
         except Exception as e:
             self.failed.emit(query, str(e))
 
@@ -228,16 +266,35 @@ class Launcher(QWidget):
     request_settings = pyqtSignal()
     _request_search = pyqtSignal(str)
 
-    def __init__(self, search_engine: SearchEngine) -> None:
+    def __init__(
+        self,
+        search_engine: SearchEngine,
+        event_logger: EventLogger | None = None,
+    ) -> None:
         super().__init__()
         self.search_engine = search_engine
+        # Episodic memory wiring. A None logger (test paths, headless
+        # smoke runs) becomes a disabled no-op so call sites never have
+        # to null-check. The store reads from the same on-disk folder
+        # the logger writes into; both are stateless w.r.t. each other.
+        self.event_logger = event_logger or EventLogger(enabled=False)
+        self.event_store = EventStore(self.event_logger.base_dir)
         # Demo mode is detected from the engine type, not an env var, so
         # the launcher never has to look at process-wide globals. The flag
         # only changes how missing-file open attempts are presented.
         self._demo_mode = isinstance(search_engine, DemoSearchEngine)
+        # Phase 1C: episodic retrieval over the same event log used by
+        # Phase 1A (launcher events) and Phase 1B (browser events). The
+        # retriever is stateless; reads are cheap.
+        self.episodic_retriever = EpisodicRetriever(self.event_store)
         self._latest_query = ""
         self._index_was_empty: bool | None = None
         self._state: str = "compact"
+        # Two row sets in the same QListWidget. Episodic rows are
+        # rendered first so they sit at the top of the list; file rows
+        # follow. Arrow-key navigation walks both via row index, which
+        # is why we keep them ordered consistently.
+        self._episodic_rows: list[tuple[QListWidgetItem, EpisodicCard]] = []
         self._rows: list[tuple[QListWidgetItem, ResultItemWidget]] = []
         self._indexed_files_cache: dict[str, float] | None = None
         # Suppress the auto-hide-on-deactivate during the opening
@@ -251,7 +308,7 @@ class Launcher(QWidget):
         self._search_timer.timeout.connect(self._dispatch)
 
         self._thread = QThread(self)
-        self._worker = _SearchWorker(search_engine)
+        self._worker = _SearchWorker(search_engine, self.episodic_retriever)
         self._worker.moveToThread(self._thread)
         self._request_search.connect(self._worker.handle)
         self._worker.finished.connect(self._on_results)
@@ -354,6 +411,50 @@ class Launcher(QWidget):
         dp.setContentsMargins(0, 4, 0, 6)
         dp.setSpacing(0)
 
+        # ── "Lately you searched" — episodic surface (Phase 1A) ──
+        # Sourced from the local event log. Click a row to repopulate
+        # the input and re-run that query. Hidden when the log has
+        # nothing yet (first-run users see no empty section).
+        self.recent_queries_header = QLabel("Lately you searched")
+        self.recent_queries_header.setObjectName("digest_section")
+
+        self.recent_queries_list = QListWidget()
+        self.recent_queries_list.setObjectName("digest")
+        self.recent_queries_list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.recent_queries_list.setVerticalScrollMode(
+            QListWidget.ScrollMode.ScrollPerPixel
+        )
+        self.recent_queries_list.setUniformItemSizes(True)
+        self.recent_queries_list.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.recent_queries_list.itemClicked.connect(
+            self._on_recent_query_item_clicked
+        )
+
+        # ── "Recent digital activity" — Phase 1B browser surface ──
+        # Sourced from the same event log. Mixes browser_visit /
+        # browser_search / chat_session into one chronological strip.
+        # Click a row to open the captured URL in the system default
+        # browser. Hidden entirely when the log has no browser events
+        # (first-run users, or users with browser ingestion off).
+        self.recent_activity_header = QLabel("Recent digital activity")
+        self.recent_activity_header.setObjectName("digest_section")
+
+        self.recent_activity_list = QListWidget()
+        self.recent_activity_list.setObjectName("digest")
+        self.recent_activity_list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.recent_activity_list.setVerticalScrollMode(
+            QListWidget.ScrollMode.ScrollPerPixel
+        )
+        self.recent_activity_list.setUniformItemSizes(True)
+        self.recent_activity_list.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.recent_activity_list.itemClicked.connect(
+            self._on_recent_activity_item_clicked
+        )
+
         recent_header = QLabel("Recently active")
         recent_header.setObjectName("digest_section")
 
@@ -384,6 +485,10 @@ class Launcher(QWidget):
         )
         self.resurfaced_list.itemClicked.connect(self._on_digest_clicked)
 
+        dp.addWidget(self.recent_queries_header)
+        dp.addWidget(self.recent_queries_list)
+        dp.addWidget(self.recent_activity_header)
+        dp.addWidget(self.recent_activity_list)
         dp.addWidget(recent_header)
         dp.addWidget(self.digest_list)
         dp.addWidget(self.resurfaced_header)
@@ -450,6 +555,17 @@ class Launcher(QWidget):
         root.addWidget(self.results_body, 1)
         root.addWidget(self.footer)
 
+        # Episodic rows live at the top of the same QListWidget. Pre-
+        # allocated like file rows so populate is just a flat update —
+        # no addItem / removeItem churn between queries.
+        for _ in range(EPISODIC_MAX):
+            item = make_episodic_item()
+            widget = EpisodicCard()
+            self.results.addItem(item)
+            self.results.setItemWidget(item, widget)
+            item.setHidden(True)
+            self._episodic_rows.append((item, widget))
+
         for _ in range(MAX_RESULTS):
             item = make_result_item()
             widget = ResultItemWidget()
@@ -514,35 +630,42 @@ class Launcher(QWidget):
             self._hide_all_bodies()
             self.hint_label.show()
         self._enter_state("compact", H_COMPACT)
+        self._refresh_default_footer()
 
     def _show_empty(self) -> None:
         if self._state != "empty":
             self._hide_all_bodies()
             self.empty_widget.show()
         self._enter_state("empty", H_EMPTY)
+        self._refresh_default_footer()
 
     def _show_digest(self) -> None:
         if self._state != "digest":
             self._hide_all_bodies()
             self.digest_panel.show()
         self._enter_state("digest", H_DIGEST)
+        self._refresh_default_footer()
 
     def _show_results(self) -> None:
         if self._state != "results":
             self._hide_all_bodies()
             self.results_body.show()
-        # Adaptive height: the launcher only grows as tall as the visible
-        # rows actually need. A single result reads as a tight command-bar
-        # answer, not a half-empty workspace; a full 8-row set is bounded
-        # so the launcher never feels like a dashboard.
-        visible = sum(
+        # Adaptive height: count visible episodic + file rows separately
+        # because they have different heights (episodic cards are
+        # slightly taller per the badge + two-line layout).
+        visible_files = sum(
             1 for it, _ in self._rows if not it.isHidden()
         )
-        per_row = ResultItemWidget.ROW_HEIGHT + 4  # row + QSS margin
-        list_h = max(1, visible) * per_row + 12
+        visible_episodic = sum(
+            1 for it, _ in self._episodic_rows if not it.isHidden()
+        )
+        file_h = visible_files * (ResultItemWidget.ROW_HEIGHT + 4)
+        episodic_h = visible_episodic * (EpisodicCard.EPISODIC_ROW_HEIGHT + 4)
+        list_h = max(1, file_h + episodic_h) + 12
         target = INPUT_H + list_h + FOOTER_H
         target = max(H_RESULTS_MIN, min(H_RESULTS_MAX, target))
         self._enter_state("results", target)
+        self._refresh_default_footer()
 
     # ----------------------------------------------------------------- show
 
@@ -685,6 +808,35 @@ class Launcher(QWidget):
         self.resurfaced_header.setVisible(has_resurfaced)
         self.resurfaced_list.setVisible(has_resurfaced)
 
+        # Episodic surface: pull the last few distinct queries from the
+        # local event log. Hidden entirely when the log is empty (first
+        # run, or after the user "forgets" everything in Settings).
+        try:
+            recent_queries = self.event_store.recent_queries(
+                n=DIGEST_RECENT_QUERIES_MAX, days=14
+            )
+        except Exception:
+            recent_queries = []
+        self._fill_recent_queries(recent_queries)
+        has_queries = bool(recent_queries)
+        self.recent_queries_header.setVisible(has_queries)
+        self.recent_queries_list.setVisible(has_queries)
+
+        # Phase 1B browser surface: mix of visits / searches / chats
+        # captured by the bundled extension via the localhost ingest
+        # server. Hidden entirely until the user has actually browsed
+        # with the extension on, so it never reads as a teaser.
+        try:
+            recent_activity = self.event_store.recent_browser_activity(
+                n=DIGEST_RECENT_ACTIVITY_MAX, days=7
+            )
+        except Exception:
+            recent_activity = []
+        self._fill_recent_activity(recent_activity)
+        has_activity = bool(recent_activity)
+        self.recent_activity_header.setVisible(has_activity)
+        self.recent_activity_list.setVisible(has_activity)
+
     def _fill_digest_list(
         self, list_widget: QListWidget, items: List[Tuple[str, float]]
     ) -> None:
@@ -714,6 +866,100 @@ class Launcher(QWidget):
         if isinstance(path, str):
             self._open_path_and_hide(path)
 
+    def _fill_recent_queries(self, events: list) -> None:
+        """Render the "Lately you searched" section from a list of
+        Event records. Each row is a `QueryRow` whose click signal
+        repopulates the input."""
+        self.recent_queries_list.clear()
+        for ev in events:
+            text = (ev.payload.get("text") or "").strip()
+            if not text:
+                continue
+            row_w = QueryRow(text, ev.ts_epoch())
+            row_w.clicked.connect(self._on_recent_query_clicked)
+            li = QListWidgetItem()
+            li.setSizeHint(QSize(0, QueryRow.QUERY_ROW_HEIGHT))
+            li.setData(Qt.ItemDataRole.UserRole, text)
+            self.recent_queries_list.addItem(li)
+            self.recent_queries_list.setItemWidget(li, row_w)
+        # Same Maximum-sizing pattern as the digest lists so the section
+        # collapses gracefully on small screens.
+        n = max(1, len(events))
+        h = n * QueryRow.QUERY_ROW_HEIGHT + 6
+        self.recent_queries_list.setMaximumHeight(h)
+        self.recent_queries_list.setMinimumHeight(
+            min(h, QueryRow.QUERY_ROW_HEIGHT + 6)
+        )
+        self.recent_queries_list.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Maximum,
+        )
+
+    def _on_recent_query_item_clicked(self, item: QListWidgetItem) -> None:
+        text = item.data(Qt.ItemDataRole.UserRole)
+        if isinstance(text, str):
+            self._on_recent_query_clicked(text)
+
+    def _on_recent_query_clicked(self, text: str) -> None:
+        """Replay a past query: drop it back into the input. Qt's
+        textChanged signal fires the normal debounce + search path,
+        so the result list shows up exactly as if the user had typed
+        it themselves."""
+        self.search_input.setText(text)
+        self.search_input.selectAll()
+        self.search_input.setFocus(Qt.FocusReason.OtherFocusReason)
+
+    def _fill_recent_activity(self, events: list) -> None:
+        """Render the "Recent digital activity" section from a list of
+        Event records (browser_visit / browser_search / chat_session)."""
+        self.recent_activity_list.clear()
+        for ev in events:
+            payload = ev.payload or {}
+            url = (payload.get("url") or "").strip()
+            title, subtitle = _activity_display(ev.kind, payload)
+            row_w = BrowserActivityRow(
+                kind=ev.kind,
+                title=title,
+                subtitle=subtitle,
+                ts_epoch=ev.ts_epoch(),
+                url=url,
+            )
+            row_w.clicked.connect(self._on_recent_activity_clicked)
+            li = QListWidgetItem()
+            li.setSizeHint(QSize(0, BrowserActivityRow.ACTIVITY_ROW_HEIGHT))
+            li.setData(Qt.ItemDataRole.UserRole, url)
+            self.recent_activity_list.addItem(li)
+            self.recent_activity_list.setItemWidget(li, row_w)
+        n = max(1, len(events))
+        h = n * BrowserActivityRow.ACTIVITY_ROW_HEIGHT + 6
+        self.recent_activity_list.setMaximumHeight(h)
+        self.recent_activity_list.setMinimumHeight(
+            min(h, BrowserActivityRow.ACTIVITY_ROW_HEIGHT + 6)
+        )
+        self.recent_activity_list.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Maximum,
+        )
+
+    def _on_recent_activity_item_clicked(self, item: QListWidgetItem) -> None:
+        url = item.data(Qt.ItemDataRole.UserRole)
+        if isinstance(url, str) and url:
+            self._on_recent_activity_clicked(url)
+
+    def _on_recent_activity_clicked(self, url: str) -> None:
+        """Hand the URL to the OS default browser. Reuses the same
+        os.startfile / open / xdg-open path as file opens — URLs are
+        recognized by every major OS handler."""
+        if not url:
+            return
+        # Acknowledge the action with a flash, then close.
+        self._flash_footer(f"Opened in browser  ·  {url[:60]}")
+        opened = _open_file(url)
+        if opened:
+            QTimer.singleShot(160, self.hide)
+        else:
+            self._flash_footer(f"Couldn't open  ·  {url[:60]}")
+
     def _open_path_and_hide(self, path: str) -> None:
         modifiers = QApplication.keyboardModifiers()
         is_reveal = bool(
@@ -724,24 +970,30 @@ class Launcher(QWidget):
             )
         )
         name = Path(path).name
-        # Acknowledge the action before attempting it — even when the OS
-        # open is fast, this beat makes the action feel deliberate, and
-        # gives us a place to land the demo-mode message when the curated
-        # paths don't exist on disk.
-        self._flash_footer(
-            f"{'Revealing' if is_reveal else 'Opening'} {name}…"
-        )
+        # Episodic capture before the OS call.
+        if is_reveal:
+            self.event_logger.log_reveal(path, name)
+        else:
+            self.event_logger.log_open(path, name)
+
         opened = _reveal(path) if is_reveal else _open_file(path)
         if opened:
-            QTimer.singleShot(140, self.hide)
+            # Past-tense confirmation — the OS open is essentially
+            # synchronous on Windows, so by the time the user perceives
+            # the flash, the action has actually completed.
+            self._flash_footer(
+                f"Opened in Explorer  ·  {name}" if is_reveal
+                else f"Opened  ·  {name}"
+            )
+            QTimer.singleShot(160, self.hide)
         elif self._demo_mode:
-            self._flash_footer(f"Demo memory opened · {name}")
+            self._flash_footer(f"Demo memory  ·  {name}")
             QTimer.singleShot(700, self.hide)
         else:
             # Real file is gone (moved/deleted since indexing). Stay open
             # so the user can pick something else instead of dropping
             # them back to whatever was behind the launcher.
-            self._flash_footer(f"Couldn't open · {name}")
+            self._flash_footer(f"Couldn't open  ·  {name}")
 
     # ------------------------------------------------------- focus / lifecycle
 
@@ -765,6 +1017,8 @@ class Launcher(QWidget):
             self._latest_query = ""
             for item, _ in self._rows:
                 item.setHidden(True)
+            for item, _ in self._episodic_rows:
+                item.setHidden(True)
             self.preview.show_empty()
             # Return to the ambient idle view (digest or welcome).
             self._refresh_idle_state()
@@ -783,37 +1037,70 @@ class Launcher(QWidget):
         self._loading_timer.start(300)
         self._request_search.emit(query)
 
-    def _on_results(self, query: str, results: List[SearchResult]) -> None:
+    def _on_results(
+        self,
+        query: str,
+        results: List[SearchResult],
+        episodic_results: List[EpisodicResult],
+    ) -> None:
         self._loading_timer.stop()
         if query != self._latest_query:
             return
-        # Only restore the footer if a flash isn't in flight.
+        # Footer is updated by the _show_results() call in _populate;
+        # we only need to clear the loading flash here.
         if not self._footer_pinned:
-            self.footer.setText(_FOOTER_DEFAULT)
-        self._populate(query, results)
+            self._refresh_default_footer()
+        # Episodic capture: log only the latest committed query (not
+        # every keystroke and not stale results). The logger is a no-op
+        # when episodic memory is disabled in Settings.
+        self.event_logger.log_query(query, len(results))
+        self._populate(query, results, episodic_results)
 
     def _on_failed(self, query: str, msg: str) -> None:
         self._loading_timer.stop()
         if not self._footer_pinned:
-            self.footer.setText(_FOOTER_DEFAULT)
+            self._refresh_default_footer()
         if query != self._latest_query:
             return
+        # Capture the failed query too — useful for "what did I try?"
+        # episodic recall, even when the search itself returned nothing.
+        self.event_logger.log_query(query, 0)
         for item, _ in self._rows:
+            item.setHidden(True)
+        for item, _ in self._episodic_rows:
             item.setHidden(True)
         self.preview.show_empty()
         self._show_compact("Couldn't recall just now. Try different words.")
 
-    def _populate(self, query: str, results: List[SearchResult]) -> None:
-        if not results:
+    def _populate(
+        self,
+        query: str,
+        results: List[SearchResult],
+        episodic_results: List[EpisodicResult] | None = None,
+    ) -> None:
+        episodic_results = episodic_results or []
+
+        # Empty in both directions → compact "nothing matched" state.
+        if not results and not episodic_results:
             for item, _ in self._rows:
+                item.setHidden(True)
+            for item, _ in self._episodic_rows:
                 item.setHidden(True)
             self.preview.show_empty("Nothing comes to mind yet.")
             self._show_compact("Nothing comes to mind. Try different words.")
             return
 
-        # Cluster: group results that share folder + content keywords.
-        groups = cluster_results(results)
+        # Fill episodic rows (top of the list).
+        for i, (item, widget) in enumerate(self._episodic_rows):
+            if i < len(episodic_results):
+                widget.update_result(episodic_results[i])
+                item.setData(Qt.ItemDataRole.UserRole, episodic_results[i])
+                item.setHidden(False)
+            else:
+                item.setHidden(True)
 
+        # Fill file rows (below).
+        groups = cluster_results(results) if results else []
         for i, (item, widget) in enumerate(self._rows):
             if i < len(groups):
                 widget.update_group(groups[i], query)
@@ -823,7 +1110,11 @@ class Launcher(QWidget):
                 item.setHidden(True)
 
         self._show_results()
-        self.results.setCurrentRow(0)  # triggers _on_row_changed → preview update
+        # Land selection on the first visible row regardless of type.
+        for i in range(self.results.count()):
+            if not self.results.item(i).isHidden():
+                self.results.setCurrentRow(i)
+                break
 
     # ---------------------------------------------------------- preview
 
@@ -833,17 +1124,36 @@ class Launcher(QWidget):
         item = self.results.item(row)
         if item is None or item.isHidden():
             return
-        group = item.data(Qt.ItemDataRole.UserRole)
-        if not isinstance(group, MemoryGroup):
+        data = item.data(Qt.ItemDataRole.UserRole)
+
+        # Dispatch on row type — episodic and file rows live in the
+        # same QListWidget but their previews speak different shapes.
+        if isinstance(data, EpisodicResult):
+            # Pass up to two session neighbors so the preview can
+            # show "around the same time" — gives episodic results
+            # contextual depth without needing a timeline view.
+            neighbors: list = []
+            try:
+                if data.session_id:
+                    neighbors = [
+                        ev
+                        for ev in self.event_store.iter_events(days=2)
+                        if ev.session_id == data.session_id
+                        and (ev.payload.get("url") or "") != data.url
+                    ][:2]
+            except Exception:
+                neighbors = []
+            self.preview.show_episodic(data, neighbors=neighbors)
             return
-        # Related = same-folder peers from the index, excluding paths already
-        # inside the cluster itself (those are listed under "Sources").
-        already = set(group.all_paths)
-        related = [
-            p for p in self._related_files(group.primary.path, max_n=6)
-            if p not in already
-        ][:3]
-        self.preview.update_group(group, self._latest_query, related)
+
+        if isinstance(data, MemoryGroup):
+            already = set(data.all_paths)
+            related = [
+                p for p in self._related_files(data.primary.path, max_n=6)
+                if p not in already
+            ][:3]
+            self.preview.update_group(data, self._latest_query, related)
+            return
 
     def _indexed_files(self) -> dict[str, float]:
         """Cached for the launcher's lifetime — `get_indexed_files` reads
@@ -883,10 +1193,11 @@ class Launcher(QWidget):
             self.footer.setText("Recalling…")
 
     def _reset_footer(self) -> None:
-        """Timer callback for the flash timer — restore the default footer
-        text and release the pin."""
+        """Timer callback for the flash timer — restore whichever footer
+        text fits the current state (action hints in results, diagnostic
+        line everywhere else)."""
         self._footer_pinned = False
-        self.footer.setText(_FOOTER_DEFAULT)
+        self._refresh_default_footer()
 
     def _flash_footer(self, msg: str) -> None:
         # A flash takes precedence over any in-flight loading indicator.
@@ -894,6 +1205,73 @@ class Launcher(QWidget):
         self._footer_pinned = True
         self.footer.setText(msg)
         self._footer_flash_timer.start(_FOOTER_FLASH_MS)
+
+    def _refresh_default_footer(self) -> None:
+        """Set the footer text to the contextually-correct default.
+
+        Two modes:
+          * Results state    → action hints (↑↓ ↵ esc) — these are the
+                               keys the user actually needs at that moment.
+          * Anywhere else    → quiet diagnostic line (memories / sessions /
+                               last-active) — gives demos a "this thing is
+                               alive" pulse without stealing attention.
+
+        Skips entirely when a flash message is currently pinned, so
+        confirmations like "Copied path …" never get clobbered.
+        """
+        if self._footer_pinned:
+            return
+        if self._state == "results":
+            self.footer.setText(_FOOTER_DEFAULT)
+        else:
+            self.footer.setText(self._build_diagnostic())
+
+    def _build_diagnostic(self) -> str:
+        """Compose the tiny status line shown in idle states:
+
+            "1,247 memories  ·  8 sessions  ·  Active 2m ago"
+
+        All three segments are independent and any can be omitted —
+        a fresh install with no folders and no events shows just
+        "Ready." rather than a row of zeros.
+        """
+        parts: list[str] = []
+
+        # Memories — uses the cached indexed_files dict so the second
+        # paint is instant. The first call after launcher init may pay
+        # one ChromaDB metadata read, but _populate_digest typically
+        # warms the cache before we get here.
+        try:
+            n_files = len(self._indexed_files())
+        except Exception:
+            n_files = 0
+        if n_files > 0:
+            parts.append(f"{n_files:,} memories")
+
+        # Sessions + last-active — derived from the local event log.
+        # Skipped silently if no log exists or the user has disabled
+        # episodic capture; nothing leaks across a privacy boundary.
+        try:
+            n_sessions = 0
+            most_recent_ts: float | None = None
+            seen_sessions: set[str] = set()
+            for ev in self.event_store.iter_events(days=14):
+                if ev.session_id:
+                    seen_sessions.add(ev.session_id)
+                if most_recent_ts is None:
+                    most_recent_ts = ev.ts_epoch()
+            n_sessions = len(seen_sessions)
+        except Exception:
+            n_sessions = 0
+            most_recent_ts = None
+
+        if n_sessions > 0:
+            label = "session" if n_sessions == 1 else "sessions"
+            parts.append(f"{n_sessions} {label}")
+        if most_recent_ts:
+            parts.append(f"Active {humanize_age(most_recent_ts)}")
+
+        return "  ·  ".join(parts) if parts else "Ready."
 
     def _current_group(self) -> MemoryGroup | None:
         item = self.results.currentItem()
@@ -903,15 +1281,33 @@ class Launcher(QWidget):
         return g if isinstance(g, MemoryGroup) else None
 
     def _copy_selected_path(self) -> bool:
-        group = self._current_group()
-        if group is None:
+        item = self.results.currentItem()
+        if item is None or item.isHidden():
             return False
-        QApplication.clipboard().setText(group.primary.path)
-        self._flash_footer(f"Path copied  ·  {group.primary.name}")
-        return True
+        data = item.data(Qt.ItemDataRole.UserRole)
+
+        # Episodic rows copy the captured URL — the closest analogue
+        # to a file path.
+        if isinstance(data, EpisodicResult):
+            if not data.url:
+                return False
+            QApplication.clipboard().setText(data.url)
+            self._flash_footer(f"Copied URL  ·  {data.title[:50]}")
+            return True
+
+        if isinstance(data, MemoryGroup):
+            QApplication.clipboard().setText(data.primary.path)
+            self._flash_footer(f"Copied path  ·  {data.primary.name}")
+            return True
+        return False
 
     def _copy_memory_summary(self) -> bool:
-        """Copy a human memory blob — title, why, sources — to clipboard."""
+        """Copy a human memory blob — title, why, sources — to clipboard.
+
+        Only meaningful for file (MemoryGroup) selections; episodic rows
+        already carry their own short-form payload, so Ctrl+M on them
+        is a no-op rather than a confusing partial export.
+        """
         group = self._current_group()
         if group is None:
             return False
@@ -925,14 +1321,19 @@ class Launcher(QWidget):
         else:
             lines.append(f"Source: {group.primary.path}")
         QApplication.clipboard().setText("\n".join(lines))
-        self._flash_footer(f"Memory copied  ·  {title}")
+        self._flash_footer(f"Copied memory  ·  {title}")
         return True
 
     def _on_enter(self) -> None:
         item = self.results.currentItem()
         if item is None or item.isHidden():
-            for cand_item, _ in self._rows:
-                if not cand_item.isHidden():
+            # Fall back to first visible row across both episodic + file
+            # sets — walk the live QListWidget rather than self._rows so
+            # episodic rows are reachable via Enter even when nothing is
+            # explicitly selected.
+            for i in range(self.results.count()):
+                cand_item = self.results.item(i)
+                if cand_item is not None and not cand_item.isHidden():
                     item = cand_item
                     break
         if item is not None and not item.isHidden():
@@ -953,7 +1354,26 @@ class Launcher(QWidget):
             self._flash_footer("Recalling…")
 
     def _open_item(self, item: QListWidgetItem) -> None:
-        group = item.data(Qt.ItemDataRole.UserRole)
+        data = item.data(Qt.ItemDataRole.UserRole)
+
+        # Episodic rows open their captured URL in the system default
+        # browser. Same micro-feedback grammar as file opens so the
+        # confirmation vocabulary stays consistent across row types.
+        if isinstance(data, EpisodicResult):
+            url = data.url
+            if not url:
+                self._flash_footer("Nothing to open  ·  no URL captured")
+                return
+            opened = _open_file(url)
+            display = data.title[:60]
+            if opened:
+                self._flash_footer(f"Opened in browser  ·  {display}")
+                QTimer.singleShot(160, self.hide)
+            else:
+                self._flash_footer(f"Couldn't open  ·  {display}")
+            return
+
+        group = data
         if not isinstance(group, MemoryGroup):
             return
         path = group.primary.path
@@ -966,40 +1386,52 @@ class Launcher(QWidget):
                 | Qt.KeyboardModifier.MetaModifier
             )
         )
-        # "Opening…" / "Revealing…" beat is shown unconditionally — it's
-        # the visible acknowledgment that Enter actually did something.
-        # Without this the launcher could appear to silently dismiss on
-        # platforms where the OS open call is instantaneous.
-        self._flash_footer(
-            f"{'Revealing' if is_reveal else 'Opening'} {title}…"
-        )
+        # Episodic capture: log intent before the OS call. Pairs naturally
+        # with the preceding query event so the event log reads as
+        # "user searched X → user opened Y" — the smallest useful shape
+        # of episodic memory.
+        if is_reveal:
+            self.event_logger.log_reveal(path, title)
+        else:
+            self.event_logger.log_open(path, title)
+
         opened = _reveal(path) if is_reveal else _open_file(path)
         if opened:
-            # 140ms keeps the acknowledgment visible just long enough to
-            # register without ever feeling laggy. The launcher is gone
-            # before the OS file handler steals focus.
-            QTimer.singleShot(140, self.hide)
+            # Past-tense confirmation. The OS open is synchronous on
+            # Windows, so by the moment the user perceives the flash,
+            # the action has actually completed. Reveals additionally
+            # name the destination ("Opened in Explorer") so the user
+            # knows where to look.
+            filename = Path(path).name
+            self._flash_footer(
+                f"Opened in Explorer  ·  {filename}" if is_reveal
+                else f"Opened  ·  {title}"
+            )
+            # Slightly longer than the previous 140 ms — the past-tense
+            # message has more text and deserves to be readable.
+            QTimer.singleShot(160, self.hide)
         elif self._demo_mode:
-            # Demo paths intentionally don't exist on disk. Replace the
-            # "Opening…" beat with a clean confirmation so the demo flow
-            # reads as deliberate, then hide on a slightly longer beat
-            # so the message is readable in screen recordings.
-            self._flash_footer(f"Demo memory opened · {title}")
+            # Demo paths intentionally don't exist on disk. Tell the
+            # truth — calling it "opened" would be misleading even in
+            # a demo, where the real value is the preview pane the
+            # user just saw.
+            self._flash_footer(f"Demo memory  ·  {title}")
             QTimer.singleShot(700, self.hide)
         else:
             # Real file is missing — likely moved or deleted since we
-            # indexed it. Stay open and tell the truth: silently closing
-            # is the trust killer the user explicitly called out.
-            self._flash_footer(f"Couldn't open · {title}")
+            # indexed it. Stay open so the user can pick something else.
+            self._flash_footer(f"Couldn't open  ·  {title}")
 
     def _move_selection(self, delta: int) -> None:
         """Move the highlighted result by `delta` rows. No wraparound —
-        at the edges the selection sticks. Shared between the input
-        filter (primary path) and `keyPressEvent` (defense-in-depth)."""
+        at the edges the selection sticks. Walks every visible item in
+        the QListWidget (episodic + file), so arrow keys flow through
+        both row types as one continuous list."""
         if self._state != "results":
             return
         visible = [
-            i for i, (item, _) in enumerate(self._rows) if not item.isHidden()
+            i for i in range(self.results.count())
+            if not self.results.item(i).isHidden()
         ]
         if not visible:
             return

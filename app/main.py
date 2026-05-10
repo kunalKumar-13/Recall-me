@@ -32,7 +32,9 @@ from .core import autostart
 from .core.config import CHROMA_DIR, CONFIG_DIR, Config
 from .core.demo_data import DemoSearchEngine
 from .core.embeddings import EmbeddingModel
+from .core.events import EventLogger
 from .core.indexer import Indexer
+from .core.ingest import IngestServer
 from .core.search import SearchEngine
 from .core.watcher import IndexWatcher
 
@@ -167,6 +169,7 @@ class RecallApp(QObject):
         search_engine: SearchEngine,
         launcher: Launcher,
         tray: QSystemTrayIcon,
+        event_logger: EventLogger,
     ) -> None:
         super().__init__()
         self.qapp = qapp
@@ -183,6 +186,11 @@ class RecallApp(QObject):
         self.tray.activated.connect(self._on_tray_activated)
         self.hotkey: Optional[HotkeyListener] = None
         self.watcher: Optional[IndexWatcher] = None
+        self.event_logger = event_logger
+        # Phase 1B — browser ingestion. The server is started later,
+        # in its own boot stage, so a port-bind failure surfaces with
+        # a recognizable [FAIL] / [SLOW] line in DEBUG mode.
+        self.ingest_server: Optional[IngestServer] = None
 
     def _build_tray_menu(self) -> None:
         menu = QMenu()
@@ -216,7 +224,13 @@ class RecallApp(QObject):
         _log("show_settings()")
         if self.launcher.isVisible():
             self.launcher.hide()
-        dlg = SettingsDialog(self.config, self.indexer, self.store.count())
+        dlg = SettingsDialog(
+            self.config,
+            self.indexer,
+            self.store.count(),
+            event_logger=self.event_logger,
+            ingest_server=self.ingest_server,
+        )
         dlg.exec()
         # Settings may have added folders or run a refresh — refresh the
         # digest cache so the next launcher show reflects new memories.
@@ -279,6 +293,11 @@ class RecallApp(QObject):
         if self.watcher is not None:
             try:
                 self.watcher.stop()
+            except Exception:
+                pass
+        if self.ingest_server is not None:
+            try:
+                self.ingest_server.stop()
             except Exception:
                 pass
         try:
@@ -355,15 +374,30 @@ def main() -> int:
             else:
                 search_engine = SearchEngine(store, model)
 
+        with _step("construct EventLogger (episodic memory)"):
+            # Honors the persisted on/off preference. The Settings
+            # toggle calls set_enabled() on this instance live, so a
+            # restart isn't required to disable capture.
+            event_logger = EventLogger(enabled=config.episodic_enabled)
+            _log(f"   episodic_enabled={config.episodic_enabled}")
+
         with _step("construct Launcher widget"):
-            launcher = Launcher(search_engine)
+            launcher = Launcher(search_engine, event_logger=event_logger)
 
         with _step("construct QSystemTrayIcon"):
             tray = QSystemTrayIcon(_make_tray_icon())
 
         with _step("RecallApp wiring"):
             app = RecallApp(
-                qapp, config, store, model, indexer, search_engine, launcher, tray
+                qapp,
+                config,
+                store,
+                model,
+                indexer,
+                search_engine,
+                launcher,
+                tray,
+                event_logger=event_logger,
             )
 
         with _step("show tray icon"):
@@ -390,6 +424,29 @@ def main() -> int:
 
         with _step("start background filesystem watcher"):
             app.start_watcher()
+
+        with _step("start browser ingestion server"):
+            # Localhost-only HTTP listener for the bundled browser
+            # extension. Failure to bind (port in use) is non-fatal —
+            # the rest of the launcher works exactly as before.
+            ingest_server = IngestServer(
+                event_logger=event_logger,
+                port=config.browser_ingest_port,
+                excluded_domains=config.browser_excluded_domains,
+                enabled=config.browser_ingest_enabled,
+            )
+            started = ingest_server.start()
+            app.ingest_server = ingest_server
+            _log(
+                f"   ingest server: {'running' if started else 'NOT started'} "
+                f"on 127.0.0.1:{config.browser_ingest_port}"
+            )
+            if not started:
+                _log_always(
+                    "WARNING: browser ingestion server could not bind to "
+                    f"127.0.0.1:{config.browser_ingest_port} "
+                    "(port in use?). Browser memory disabled this session."
+                )
 
         with _step("sync launch-on-login from config"):
             if autostart.is_supported() and config.launch_on_login:

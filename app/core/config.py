@@ -15,6 +15,10 @@ from typing import List
 CONFIG_DIR: Path = Path.home() / ".recall"
 CONFIG_FILE: Path = CONFIG_DIR / "config.json"
 CHROMA_DIR: Path = CONFIG_DIR / "chroma"
+# Episodic memory log — append-only JSONL files, one per day, written
+# by EventLogger and read by EventStore. Lives next to chroma so the
+# whole memory layer is one folder the user can inspect or delete.
+EVENTS_DIR: Path = CONFIG_DIR / "events"
 
 
 @dataclass
@@ -25,6 +29,23 @@ class Config:
     chunk_overlap: int = 100
     enable_ocr: bool = False
     launch_on_login: bool = False
+    # Episodic memory — when True, the launcher records what you
+    # searched, opened, and revealed into ~/.recall/events. When False,
+    # the EventLogger becomes a no-op; existing event files stay until
+    # the user explicitly chooses to forget them.
+    episodic_enabled: bool = True
+
+    # ── Phase 1B: browser ingestion ──────────────────────────────
+    # The local HTTP server that accepts events from the browser
+    # extension. Loopback-only; nothing external can ever reach it.
+    browser_ingest_enabled: bool = True
+    # Default port chosen from the unprivileged dynamic range. Hard-
+    # coded so the bundled extension can connect without configuration;
+    # change requires updating both ends.
+    browser_ingest_port: int = 49827
+    # Domains the user has chosen to never capture. Matched as suffixes
+    # so adding "google.com" silently filters mail.google.com, docs etc.
+    browser_excluded_domains: List[str] = field(default_factory=list)
 
     @classmethod
     def load(cls) -> "Config":

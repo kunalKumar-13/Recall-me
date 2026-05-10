@@ -1,246 +1,368 @@
 /**
- * The cinematic hero centerpiece — a static recreation of the Recall
- * launcher rendered with HTML/CSS so it scales crisply, animates, and
- * matches the actual app's visual language exactly.
+ * Dashboard mockup — the hero device.
  *
- * The data tells one coherent story: the user typed a vague memory, and
- * Recall surfaced a months-old healthcare-startup thread that spans a
- * pitch deck, code, notes, and a draft.
+ * Composition (left to right):
+ *   1. Sidebar         — five nav slots, a "Search" pill highlighted
+ *   2. Top bar         — the recovered query, kbd hint, view toggle
+ *   3. Top Results     — four file cards with relevance scores
+ *   4. Preview         — file header, excerpt with highlights,
+ *                        related memories, primary "Open in File" CTA
+ *
+ * The data tells one coherent story: a healthcare-startup memory
+ * recovered from a vague query. That single thread should make the
+ * mockup read as a real moment of remembering, not a UI screenshot.
+ *
+ * Accessibility notes:
+ *   - The whole mockup is `aria-hidden` because it's a static visual
+ *     prop, not an interactive surface. Screen readers announce the
+ *     hero copy + CTAs instead.
+ *   - Width is responsive (clamped between mobile-readable and
+ *     desktop-comfortable); the preview pane collapses on narrow
+ *     viewports rather than horizontally scrolling.
  */
 
-type Memory = {
-  ext: { label: string; color: string };
-  title: string;
-  why: string;
-  pill: { text: string; color: string };
-  cluster?: number;
-  resurfaced?: string;
-  selected?: boolean;
+import { Logo } from "./Logo";
+
+// ----------------------------------------------------------- file icons
+
+type FileTint = "lavender" | "cyan" | "mint" | "rose" | "amber";
+
+const TINTS: Record<FileTint, { fg: string; bg: string }> = {
+  lavender: { fg: "#8B7FE3", bg: "rgba(169, 156, 247, 0.12)" },
+  cyan: { fg: "#3FB1C9", bg: "rgba(125, 216, 232, 0.16)" },
+  mint: { fg: "#42B384", bg: "rgba(135, 222, 183, 0.16)" },
+  rose: { fg: "#D67896", bg: "rgba(244, 168, 201, 0.18)" },
+  amber: { fg: "#C7973C", bg: "rgba(245, 198, 109, 0.18)" },
 };
 
-const memories: Memory[] = [
+function FileBadge({
+  ext,
+  tint,
+  size = 36,
+}: {
+  ext: string;
+  tint: FileTint;
+  size?: number;
+}) {
+  const t = TINTS[tint];
+  return (
+    <div
+      className="rounded-md flex items-center justify-center font-semibold"
+      style={{
+        width: size,
+        height: size,
+        background: t.bg,
+        color: t.fg,
+        fontSize: size * 0.28,
+        letterSpacing: "0.05em",
+      }}
+    >
+      {ext}
+    </div>
+  );
+}
+
+// ----------------------------------------------------------- sidebar
+
+type NavItem = {
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+  active?: boolean;
+};
+
+const NAV_ICON = {
+  Search: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="M20 20l-4.5-4.5" />
+    </svg>
+  ),
+  Memories: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" />
+      <path d="M16 4v3h3" />
+      <path d="M8 12h8M8 16h6" />
+    </svg>
+  ),
+  Digest: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 19V9M10 19V5M16 19v-7M22 19H2" />
+    </svg>
+  ),
+  Graph: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="6" cy="7" r="2.2" />
+      <circle cx="18" cy="6" r="2.2" />
+      <circle cx="12" cy="17" r="2.2" />
+      <circle cx="19" cy="18" r="1.6" />
+      <path d="M7.7 8.5l3.2 6.7M16.5 7.6l-3.4 7.5M14 17l3-1" />
+    </svg>
+  ),
+  Settings: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.6 1.6 0 0 0 .3 1.7l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.7-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.7.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.7 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.7.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.7-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.7V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z" />
+    </svg>
+  ),
+};
+
+const navItems: NavItem[] = [
+  { key: "search", label: "Search", icon: NAV_ICON.Search, active: true },
+  { key: "memories", label: "Memories", icon: NAV_ICON.Memories },
+  { key: "digest", label: "Digest", icon: NAV_ICON.Digest },
+  { key: "graph", label: "Graph", icon: NAV_ICON.Graph },
+  { key: "settings", label: "Settings", icon: NAV_ICON.Settings },
+];
+
+function Sidebar() {
+  return (
+    <div className="w-[68px] md:w-[78px] shrink-0 bg-bg-sidebar border-r border-hairline flex flex-col items-center py-4 gap-1">
+      <div className="mb-3">
+        <Logo className="w-7 h-7" />
+      </div>
+
+      {navItems.map((item) => (
+        <div
+          key={item.key}
+          className={`
+            w-[52px] md:w-[60px] py-2 rounded-lg
+            flex flex-col items-center justify-center gap-1
+            transition-colors duration-200
+            ${
+              item.active
+                ? "bg-lavender-soft text-lavender-deep"
+                : "text-ink-dim"
+            }
+          `}
+        >
+          <div className="w-[18px] h-[18px]">{item.icon}</div>
+          <div className="text-[9.5px] font-medium tracking-tight">
+            {item.label}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ----------------------------------------------------------- top bar
+
+function TopBar() {
+  return (
+    <div className="flex items-center gap-3 px-5 h-14 border-b border-hairline">
+      <div className="w-4 h-4 text-ink-dim shrink-0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <path d="M20 20l-4.5-4.5" />
+        </svg>
+      </div>
+      <div className="flex-1 text-[14px] text-ink-bright tracking-[-0.005em] truncate">
+        that healthcare startup idea from last winter
+      </div>
+      <kbd className="hidden md:inline-flex text-[10px] text-ink-dim px-1.5 py-0.5 rounded border border-hairline bg-bg-page font-sans tracking-wider">
+        Ctrl + Space
+      </kbd>
+      <div className="w-7 h-7 rounded-md border border-hairline flex items-center justify-center text-ink-dim">
+        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.6">
+          <rect x="4" y="4" width="7" height="7" rx="1" />
+          <rect x="13" y="4" width="7" height="7" rx="1" />
+          <rect x="4" y="13" width="7" height="7" rx="1" />
+          <rect x="13" y="13" width="7" height="7" rx="1" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------- results
+
+type Result = {
+  ext: string;
+  tint: FileTint;
+  title: string;
+  filename: string;
+  date: string;
+  score: number;
+};
+
+const results: Result[] = [
   {
-    ext: { label: "PDF", color: "#EF4444" },
-    title: "Healthcare agents pitch deck",
-    why: "Covers healthcare, agents, and triage.",
-    pill: { text: "Highly relevant", color: "#10B981" },
-    cluster: 2,
-    resurfaced: "resurfaced from Jan 2024",
-    selected: true,
+    ext: "PDF",
+    tint: "rose",
+    title: "Healthcare Startup Pitch",
+    filename: "pitch_healthcare_v3.pdf",
+    date: "Last seen Jan 12, 2024",
+    score: 98,
   },
   {
-    ext: { label: "PY", color: "#7C9BFF" },
-    title: "def TriageAgent",
-    why: "Discusses agent and triage.",
-    pill: { text: "Relevant", color: "#8BA5FF" },
+    ext: "MD",
+    tint: "lavender",
+    title: "User Research Notes",
+    filename: "research_interviews.md",
+    date: "Last seen Jan 10, 2024",
+    score: 92,
   },
   {
-    ext: { label: "MD", color: "#A78BFA" },
-    title: "Onboarding flow notes",
-    why: "Mentions onboarding and intake.",
-    pill: { text: "Relevant", color: "#8BA5FF" },
+    ext: "TXT",
+    tint: "amber",
+    title: "MVP Technical Plan",
+    filename: "technical_plan_v2.md",
+    date: "Last seen Jan 8, 2024",
+    score: 91,
   },
   {
-    ext: { label: "TXT", color: "#94A3B8" },
-    title: "Market sizing draft",
-    why: "Mentions healthcare.",
-    pill: { text: "Possible match", color: "#94A3B8" },
+    ext: "DOC",
+    tint: "cyan",
+    title: "Competitor Analysis",
+    filename: "analysis_competitors.docx",
+    date: "Last seen Dec 28, 2023",
+    score: 87,
   },
 ];
 
-function ExtTag({ label, color }: { label: string; color: string }) {
+function ResultRow({ r }: { r: Result }) {
   return (
-    <div
-      className="w-10 h-10 rounded-lg flex items-center justify-center text-[10px] font-bold tracking-widest shrink-0"
-      style={{
-        background: `${color}22`,
-        color,
-        border: `1px solid ${color}55`,
-      }}
-    >
-      {label}
-    </div>
-  );
-}
-
-function Pill({ text, color }: { text: string; color: string }) {
-  return (
-    <span
-      className="inline-flex items-center h-5 px-2.5 text-[10px] font-semibold tracking-wide rounded-[10px]"
-      style={{
-        background: `${color}22`,
-        color,
-        border: `1px solid ${color}40`,
-      }}
-    >
-      {text}
-    </span>
-  );
-}
-
-function ClusterBadge({ n }: { n: number }) {
-  return (
-    <span
-      className="inline-flex items-center h-5 px-2 text-[10px] font-semibold rounded-[10px]"
-      style={{
-        background: "rgba(124, 155, 255, 0.14)",
-        color: "#AFC2FF",
-        border: "1px solid rgba(124, 155, 255, 0.32)",
-      }}
-    >
-      +{n}
-    </span>
-  );
-}
-
-function MemoryRow({ memory }: { memory: Memory }) {
-  return (
-    <div
-      className="flex items-start gap-3 px-3 py-2.5 mx-1 my-0.5 rounded-xl transition-colors"
-      style={{
-        background: memory.selected
-          ? "rgba(50, 60, 92, 0.55)"
-          : "transparent",
-      }}
-    >
-      <ExtTag label={memory.ext.label} color={memory.ext.color} />
+    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-bg-page transition-colors">
+      <FileBadge ext={r.ext} tint={r.tint} size={36} />
       <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-semibold text-ink-bright truncate">
-          {memory.title}
+        <div className="text-[12.5px] font-semibold text-ink-bright truncate tracking-tight">
+          {r.title}
         </div>
-        <div className="flex items-center gap-2 mt-1">
-          <div className="text-[11px] text-ink-dim truncate flex-1">
-            {memory.why}
-            {memory.resurfaced && (
-              <span className="text-ink-dim/80">
-                {" · "}
-                {memory.resurfaced}
-              </span>
-            )}
+        <div className="text-[10.5px] text-ink-dim truncate">
+          {r.filename}
+        </div>
+        <div className="text-[10px] text-ink-dim/85 truncate mt-0.5">
+          {r.date}
+        </div>
+      </div>
+      <div className="text-[12px] font-semibold text-lavender-deep tabular-nums">
+        {r.score}%
+      </div>
+    </div>
+  );
+}
+
+function ResultsColumn() {
+  return (
+    <div className="w-full md:w-[44%] py-3 px-2 md:border-r md:border-hairline">
+      <div className="px-3 mb-2 text-[10.5px] font-semibold tracking-[0.14em] text-ink-dim uppercase">
+        Top Results
+      </div>
+      <div className="flex flex-col gap-0.5">
+        {results.map((r) => (
+          <ResultRow key={r.title} r={r} />
+        ))}
+      </div>
+      <div className="mt-2 px-3 text-[11px] text-lavender-deep font-medium hover:underline cursor-default">
+        See 24 more results →
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------- preview
+
+function PreviewPane() {
+  return (
+    <div className="flex-1 py-3 px-4 flex flex-col gap-3">
+      <div className="text-[10.5px] font-semibold tracking-[0.14em] text-ink-dim uppercase">
+        Preview
+      </div>
+
+      {/* File header */}
+      <div className="flex items-center gap-2.5">
+        <FileBadge ext="PDF" tint="rose" size={28} />
+        <div className="min-w-0">
+          <div className="text-[13px] font-semibold text-ink-bright truncate tracking-tight">
+            Healthcare Startup Pitch
           </div>
-          {memory.cluster ? <ClusterBadge n={memory.cluster} /> : null}
-          <Pill text={memory.pill.text} color={memory.pill.color} />
+          <div className="text-[10.5px] text-ink-dim truncate">
+            pitch_healthcare_v3.pdf
+          </div>
+        </div>
+      </div>
+
+      {/* Excerpt */}
+      <div>
+        <div className="text-[10.5px] font-semibold tracking-[0.14em] text-ink-dim uppercase mb-1.5">
+          Excerpt
+        </div>
+        <p className="text-[12px] leading-relaxed text-ink-bright/90">
+          Our vision is to{" "}
+          <span className="term-highlight">build AI agents</span> that
+          assist healthcare teams by triaging patient queries,
+          summarizing history, and routing to the{" "}
+          <span className="term-highlight">right specialist</span>…
+        </p>
+      </div>
+
+      {/* Related memories */}
+      <div>
+        <div className="text-[10.5px] font-semibold tracking-[0.14em] text-ink-dim uppercase mb-1.5">
+          Related Memories
+        </div>
+        <ul className="space-y-1 text-[11.5px] text-ink-bright/85">
+          <li className="flex items-start gap-2">
+            <span className="text-lavender-deep/60">•</span>
+            <span>AI agent evaluation metrics</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-lavender-deep/60">•</span>
+            <span>Patient triage flow discussion</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-lavender-deep/60">•</span>
+            <span>Insurance verification logic</span>
+          </li>
+        </ul>
+      </div>
+
+      {/* Open in File CTA */}
+      <div className="mt-auto pt-2">
+        <div
+          className="
+            inline-flex items-center gap-1.5
+            px-3 py-1.5 rounded-md
+            bg-lavender-gradient text-white text-[11.5px] font-medium
+            shadow-lift
+          "
+        >
+          Open in File
+          <svg viewBox="0 0 24 24" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14M13 5l7 7-7 7" />
+          </svg>
         </div>
       </div>
     </div>
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="text-[11px] font-semibold tracking-wide text-ink-dim">
-      {children}
-    </div>
-  );
-}
-
-function Divider() {
-  return <div className="h-px w-full bg-white/[0.06] my-3" />;
-}
-
-function PreviewContent() {
-  return (
-    <div>
-      <SectionLabel>Memory</SectionLabel>
-      <div className="text-[16px] font-semibold text-ink-bright mt-1.5 tracking-tight">
-        Healthcare agents pitch deck
-      </div>
-      <div className="text-[11px] text-ink-dim mt-1 truncate">
-        ~/Documents/healthcare-v3/pitch_deck.pdf
-      </div>
-      <div className="text-[11px] italic text-ink-dim/85 mt-1">
-        Last seen Jan 2024
-      </div>
-
-      <Divider />
-
-      <SectionLabel>About</SectionLabel>
-      <div className="text-[12px] text-ink mt-1.5 leading-relaxed">
-        You explored a healthcare agent triage system last winter — an
-        onboarding flow that routed pediatric patients via natural-language
-        intake.
-      </div>
-
-      <Divider />
-
-      <SectionLabel>Excerpt</SectionLabel>
-      <div className="text-[12px] italic text-ink/80 mt-1.5 leading-[1.65]">
-        …routing{" "}
-        <b className="text-ink-bright not-italic">pediatric</b> patients via
-        natural-language intake, with the{" "}
-        <b className="text-ink-bright not-italic">agent</b> classifying
-        urgency and matching to specialists. The team explored{" "}
-        <b className="text-ink-bright not-italic">healthcare</b>-specific
-        evaluation rubrics for triage accuracy…
-      </div>
-
-      <Divider />
-
-      <SectionLabel>Sources</SectionLabel>
-      <div className="text-[11px] mt-1.5 font-medium text-accent">
-        Spans PDF, MD, TXT — same idea across formats.
-      </div>
-      <div className="mt-2 space-y-1 text-[12px] text-ink/80">
-        <div>·&nbsp; pitch_deck.pdf</div>
-        <div>·&nbsp; founders.md</div>
-        <div>·&nbsp; market.txt</div>
-      </div>
-
-      <Divider />
-
-      <SectionLabel>Related</SectionLabel>
-      <div className="mt-2 space-y-1 text-[12px] text-ink/80">
-        <div>·&nbsp; agent-evaluation.md</div>
-        <div>·&nbsp; triage-rubric.py</div>
-      </div>
-    </div>
-  );
-}
+// ----------------------------------------------------------- shell
 
 export function LauncherMockup() {
   return (
-    <div className="
-      w-full max-w-[940px] mx-auto rounded-2xl overflow-hidden
-      surface-glass
-      border border-white/[0.08]
-      shadow-cinematic
-    ">
-      {/* Search input row */}
-      <div className="flex items-center gap-3 px-6 h-[60px] border-b border-white/[0.06]">
-        <input
-          defaultValue="that healthcare startup idea from last winter"
-          readOnly
-          className="bg-transparent text-ink-bright text-[17px] flex-1 outline-none placeholder:text-ink-dim/70 caret-accent"
-          aria-label="Search your memory"
-        />
-        <kbd className="text-[11px] text-ink-dim px-2 py-1 rounded border border-white/[0.08] bg-white/[0.03] font-sans tracking-wide">
-          Ctrl + Space
-        </kbd>
-      </div>
-
-      {/* Body — results list (left) + preview pane (right) */}
-      <div className="flex" style={{ minHeight: 480 }}>
-        {/* Results list */}
-        <div className="w-[320px] py-2">
-          {memories.map((m, i) => (
-            <MemoryRow key={i} memory={m} />
-          ))}
+    <div
+      aria-hidden
+      className="
+        w-full max-w-[680px] mx-auto
+        rounded-2xl overflow-hidden
+        bg-bg-base border border-hairline shadow-dashboard
+      "
+    >
+      <div className="flex" style={{ minHeight: 420 }}>
+        <Sidebar />
+        <div className="flex-1 min-w-0 flex flex-col">
+          <TopBar />
+          {/* Body — Results + Preview side-by-side. On very narrow
+              screens the preview hides to keep things readable. */}
+          <div className="flex-1 flex">
+            <ResultsColumn />
+            <div className="hidden md:flex flex-1">
+              <PreviewPane />
+            </div>
+          </div>
         </div>
-
-        {/* Preview pane */}
-        <div className="flex-1 px-5 py-4 border-l border-white/[0.06] hidden md:block surface-glass-soft">
-          <PreviewContent />
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="px-5 h-[34px] flex items-center justify-center border-t border-white/[0.06] bg-black/20">
-        <span className="text-[11px] text-ink-dim tracking-wide">
-          ↑↓ navigate&nbsp;&nbsp;·&nbsp;&nbsp;↵ open
-          &nbsp;&nbsp;·&nbsp;&nbsp;Ctrl + ↵ reveal
-          &nbsp;&nbsp;·&nbsp;&nbsp;Ctrl + M copy memory
-          &nbsp;&nbsp;·&nbsp;&nbsp;Esc close
-        </span>
       </div>
     </div>
   );

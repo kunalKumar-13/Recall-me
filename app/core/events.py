@@ -1,0 +1,390 @@
+"""Append-only local event log — Recall's episodic memory layer.
+
+Stores user-visible launcher activity (queries, file opens, reveals)
+as plain JSONL files at `~/.recall/events/YYYY-MM-DD.jsonl`. Five
+ground rules, written down so they don't drift:
+
+  1. Plain JSON, line-per-event. Anyone with a text editor can audit
+     exactly what was captured. The format is a contract with the user,
+     not just a serialization choice.
+
+  2. One file per day. Makes "forget yesterday" a single `os.remove()`
+     and keeps the working set small (a heavy day is well under 1 MB).
+
+  3. Logger-must-never-raise. The launcher must not crash, hang, or
+     stutter because we couldn't append to a log line. All write paths
+     swallow OSError and continue silently.
+
+  4. Off-switch is honored synchronously. When `Config.episodic_enabled`
+     flips to False (via the Settings toggle), `set_enabled(False)` makes
+     every subsequent `log()` a no-op before it touches the disk.
+
+  5. Nothing leaves the disk. There is no network in this module. The
+     events folder is read by `EventStore` and the Settings "open log"
+     button — no other code path.
+
+Schema:
+
+    {
+      "ts": "2026-05-10T14:32:11Z",       # UTC ISO 8601
+      "session_id": "s_20260510_143211",  # weakly sortable
+      "kind": "query" | "open" | "reveal",
+      "payload": { ... }                  # shape depends on kind
+    }
+
+Session inference:
+    A new `session_id` is allocated whenever the gap from the previous
+    event exceeds `SESSION_GAP_SECONDS`. Sessions are purely temporal in
+    Phase 1A — no topic clustering. Topical sessions come later, derived
+    from this same data.
+"""
+
+from __future__ import annotations
+
+import json
+import threading
+import time
+from dataclasses import asdict, dataclass
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+from typing import Iterable, Iterator, List, Optional
+
+from .config import EVENTS_DIR
+
+SESSION_GAP_SECONDS = 30 * 60   # 30 minutes
+_TS_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+
+
+# --------------------------------------------------------------- model
+
+
+@dataclass
+class Event:
+    """One user action, frozen in time."""
+
+    ts: str            # UTC ISO 8601, second resolution
+    session_id: str
+    kind: str          # "query" | "open" | "reveal"
+    payload: dict      # kind-specific; see EventLogger.log_* helpers
+
+    @classmethod
+    def now(cls, kind: str, payload: dict, session_id: str) -> "Event":
+        return cls(
+            ts=datetime.now(timezone.utc).strftime(_TS_FORMAT),
+            session_id=session_id,
+            kind=kind,
+            payload=payload,
+        )
+
+    def ts_epoch(self) -> float:
+        """Best-effort conversion of `ts` to a Unix timestamp. Returns
+        0.0 if the field is malformed — callers compare against `now`,
+        so a zeroed timestamp falls into "ancient" and is harmless."""
+        try:
+            return datetime.strptime(self.ts, _TS_FORMAT).replace(
+                tzinfo=timezone.utc
+            ).timestamp()
+        except (ValueError, TypeError):
+            return 0.0
+
+
+# --------------------------------------------------------------- writer
+
+
+class EventLogger:
+    """Thread-safe, append-only writer.
+
+    The lock serializes both session-id allocation and the file append
+    so concurrent log calls (e.g. UI thread + background worker) never
+    interleave bytes inside a JSONL line. Writes are synchronous — the
+    log is small enough that fsync-on-append is acceptable, and we'd
+    rather not lose the last action to a crash.
+    """
+
+    def __init__(
+        self,
+        base_dir: Path = EVENTS_DIR,
+        enabled: bool = True,
+    ) -> None:
+        self.base_dir = base_dir
+        self.enabled = enabled
+        self._lock = threading.Lock()
+        self._session_id: Optional[str] = None
+        self._last_event_ts: Optional[float] = None
+
+    # -- toggling --------------------------------------------------------
+
+    def set_enabled(self, enabled: bool) -> None:
+        """Honored synchronously. After this call, log() is a no-op
+        until set_enabled(True) is called again."""
+        self.enabled = enabled
+
+    # -- session inference -----------------------------------------------
+
+    def _ensure_session_locked(self) -> str:
+        """Allocate a new session_id if the inter-event gap exceeded
+        SESSION_GAP_SECONDS. Caller must hold `self._lock`.
+
+        Session IDs include microsecond resolution so two consecutive
+        sessions can't collide even when the gap is forced shorter than
+        one second (e.g. test paths or programmatic resets). In normal
+        use this is overkill; in edge cases it's the right default.
+        """
+        now = time.time()
+        if (
+            self._session_id is None
+            or self._last_event_ts is None
+            or (now - self._last_event_ts) > SESSION_GAP_SECONDS
+        ):
+            stamp = datetime.now(timezone.utc).strftime(
+                "%Y%m%d_%H%M%S_%f"
+            )
+            self._session_id = f"s_{stamp}"
+        self._last_event_ts = now
+        return self._session_id
+
+    # -- write path ------------------------------------------------------
+
+    def _today_path(self) -> Path:
+        d = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        return self.base_dir / f"{d}.jsonl"
+
+    def log(self, kind: str, payload: Optional[dict] = None) -> None:
+        """Append one event to today's JSONL file. Best-effort."""
+        if not self.enabled:
+            return
+        with self._lock:
+            session_id = self._ensure_session_locked()
+            event = Event.now(kind, payload or {}, session_id)
+            try:
+                self.base_dir.mkdir(parents=True, exist_ok=True)
+                with self._today_path().open("a", encoding="utf-8") as f:
+                    f.write(json.dumps(asdict(event), ensure_ascii=False))
+                    f.write("\n")
+            except OSError:
+                # Logger must never raise — the launcher will keep
+                # running with one fewer line in the activity log,
+                # which is the right tradeoff.
+                pass
+
+    # -- typed convenience helpers --------------------------------------
+    # These exist so the launcher never has to remember payload shapes.
+    # Keep them tiny — anything non-trivial about a payload belongs at
+    # the call site, not here.
+
+    def log_query(self, text: str, result_count: int) -> None:
+        self.log("query", {"text": text, "result_count": int(result_count)})
+
+    def log_open(self, path: str, title: Optional[str] = None) -> None:
+        self.log("open", {"path": path, "title": title or ""})
+
+    def log_reveal(self, path: str, title: Optional[str] = None) -> None:
+        self.log("reveal", {"path": path, "title": title or ""})
+
+
+# --------------------------------------------------------------- reader
+
+
+class EventStore:
+    """Read-only view over the event log.
+
+    Stateless — every read re-opens the relevant per-day files. That is
+    fast enough for the launcher's idle-digest panel (typical page weighs
+    in the tens of KB) and avoids any cache-invalidation question when
+    the writer is appending concurrently.
+    """
+
+    def __init__(self, base_dir: Path = EVENTS_DIR) -> None:
+        self.base_dir = base_dir
+
+    def _files_for(self, days: int) -> List[Path]:
+        """Per-day files for today and the prior `days - 1` days, in
+        newest-first order so iter_events can yield newest-first
+        without globbing the whole directory."""
+        out: List[Path] = []
+        today = datetime.now(timezone.utc).date()
+        for delta in range(max(1, days)):
+            d = today - timedelta(days=delta)
+            p = self.base_dir / f"{d.strftime('%Y-%m-%d')}.jsonl"
+            if p.exists():
+                out.append(p)
+        return out
+
+    def iter_events(self, days: int = 7) -> Iterator[Event]:
+        """Yield events from the last `days` days, newest first.
+
+        Lines that fail to parse (truncated writes, manual edits) are
+        skipped silently — by design the log is auditable, which means
+        the user might have hand-edited it, and we should never crash
+        because of that.
+        """
+        for path in self._files_for(days):
+            try:
+                lines = path.read_text(encoding="utf-8").splitlines()
+            except OSError:
+                continue
+            # Each per-day file is in chronological order; reverse so
+            # the merged stream is newest-first.
+            for line in reversed(lines):
+                if not line.strip():
+                    continue
+                try:
+                    rec = json.loads(line)
+                    yield Event(
+                        ts=rec.get("ts", ""),
+                        session_id=rec.get("session_id", ""),
+                        kind=rec.get("kind", ""),
+                        payload=rec.get("payload") or {},
+                    )
+                except (json.JSONDecodeError, TypeError, AttributeError):
+                    continue
+
+    # -- common queries the launcher uses --------------------------------
+
+    def recent_queries(self, n: int = 5, days: int = 14) -> List[Event]:
+        """Last N *distinct* queries (newest first). De-duped on the
+        normalized text so a user who searched the same phrase twice
+        doesn't see it twice in the digest."""
+        seen: set[str] = set()
+        out: List[Event] = []
+        for ev in self.iter_events(days=days):
+            if ev.kind != "query":
+                continue
+            text = (ev.payload.get("text") or "").strip()
+            if not text:
+                continue
+            key = text.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(ev)
+            if len(out) >= n:
+                break
+        return out
+
+    def recent_browser_activity(
+        self, n: int = 4, days: int = 7
+    ) -> List[Event]:
+        """Last N distinct browser-side events (newest first).
+
+        Mixes browser_visit / browser_search / chat_session into a single
+        chronological stream and dedupes by url+kind so reloading the
+        same page doesn't crowd the digest. Used by the launcher's
+        "Recent digital activity" idle section.
+        """
+        BROWSER_KINDS = {"browser_visit", "browser_search", "chat_session"}
+        seen: set[tuple[str, str]] = set()
+        out: List[Event] = []
+        for ev in self.iter_events(days=days):
+            if ev.kind not in BROWSER_KINDS:
+                continue
+            url = (ev.payload.get("url") or "").strip().lower()
+            key = (ev.kind, url) if url else (ev.kind, str(id(ev)))
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(ev)
+            if len(out) >= n:
+                break
+        return out
+
+
+# --------------------------------------------------------------- forget
+
+
+def forget_window(base_dir: Path, hours: int) -> int:
+    """Delete events newer than `hours` ago across all per-day files.
+
+    Returns the number of events actually removed. Used by the Settings
+    "Forget last 24 hours" button. Files that become empty after
+    filtering are removed entirely.
+    """
+    if hours <= 0 or not base_dir.exists():
+        return 0
+    cutoff_epoch = time.time() - hours * 3600
+    cutoff_dt = datetime.fromtimestamp(cutoff_epoch, timezone.utc)
+    today = datetime.now(timezone.utc).date()
+
+    removed = 0
+    # Only files dated >= cutoff date can possibly contain newer events.
+    d = cutoff_dt.date()
+    while d <= today:
+        p = base_dir / f"{d.strftime('%Y-%m-%d')}.jsonl"
+        d += timedelta(days=1)
+        if not p.exists():
+            continue
+        try:
+            lines = p.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        kept: List[str] = []
+        for line in lines:
+            if not line.strip():
+                continue
+            try:
+                rec = json.loads(line)
+                ts_str = rec.get("ts", "")
+                ev_dt = datetime.strptime(ts_str, _TS_FORMAT).replace(
+                    tzinfo=timezone.utc
+                )
+                if ev_dt.timestamp() >= cutoff_epoch:
+                    removed += 1
+                    continue
+            except (json.JSONDecodeError, ValueError, TypeError):
+                # Keep malformed lines — refusing to delete what we can't
+                # parse is the safer default in a privacy tool.
+                pass
+            kept.append(line)
+        try:
+            if kept:
+                p.write_text("\n".join(kept) + "\n", encoding="utf-8")
+            else:
+                p.unlink()
+        except OSError:
+            pass
+    return removed
+
+
+def forget_all(base_dir: Path) -> int:
+    """Delete every per-day event file under `base_dir`. Returns the
+    number of files removed. The base directory itself is left in
+    place so the next log call doesn't need to recreate it."""
+    if not base_dir.exists():
+        return 0
+    removed = 0
+    for p in base_dir.glob("*.jsonl"):
+        try:
+            p.unlink()
+            removed += 1
+        except OSError:
+            pass
+    return removed
+
+
+# --------------------------------------------------------------- helpers
+
+
+def humanize_age(epoch_ts: float, now: Optional[float] = None) -> str:
+    """Format an event timestamp as a memory-shaped relative time.
+    Mirrors the launcher widget's format_relative_time so the digest
+    reads in the same vocabulary as the file rows."""
+    if not epoch_ts:
+        return ""
+    if now is None:
+        now = time.time()
+    delta = now - epoch_ts
+    if delta < 0:
+        return "just now"
+    if delta < 60:
+        return "moments ago"
+    if delta < 3600:
+        return f"{int(delta // 60)}m ago"
+    if delta < 86400:
+        return f"{int(delta // 3600)}h ago"
+    days = delta / 86400
+    if days < 2:
+        return "yesterday"
+    if days < 7:
+        return f"{int(days)}d ago"
+    weeks = max(1, int(days // 7))
+    return f"{weeks}w ago"

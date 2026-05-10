@@ -3,10 +3,13 @@ type LogoProps = {
 };
 
 /**
- * Recall identity mark — three concentric arcs converging on a solid
- * pivot. Reads as resonance / ripples of memory: a thought you cast,
- * the rings that come back. Geometric, mono-safe, distinctive at any
- * size. Pairs with the "Recall" wordmark in the nav.
+ * Recall.me identity mark — a brain glyph rendered as connected
+ * concentric arcs and a central pivot. Reads as both a brain (folds,
+ * hemispheres) and a memory ripple (concentric resonance), which is
+ * the product idea in two strokes.
+ *
+ * Uses the lavender gradient. Mono-safe: a single solid stroke color
+ * also works at small sizes if currentColor is forced upstream.
  */
 export function Logo({ className }: LogoProps) {
   return (
@@ -14,54 +17,67 @@ export function Logo({ className }: LogoProps) {
       viewBox="0 0 32 32"
       className={className}
       role="img"
-      aria-label="Recall"
+      aria-label="Recall.me"
       fill="none"
     >
       <defs>
         <linearGradient
-          id="recall-mark"
-          x1="4"
-          y1="4"
-          x2="28"
-          y2="28"
+          id="recall-mark-light"
+          x1="3"
+          y1="3"
+          x2="29"
+          y2="29"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="#7C9BFF" />
-          <stop offset="1" stopColor="#AFC2FF" />
+          <stop stopColor="#A99CF7" />
+          <stop offset="1" stopColor="#8B7FE3" />
         </linearGradient>
       </defs>
 
-      {/* Subtle frame — the container of memory */}
-      <rect
-        x="2.25"
-        y="2.25"
-        width="27.5"
-        height="27.5"
-        rx="8"
-        fill="rgba(124, 155, 255, 0.08)"
-        stroke="url(#recall-mark)"
-        strokeOpacity="0.45"
-        strokeWidth="1"
+      {/* Outer ring — soft lavender wash container */}
+      <circle
+        cx="16"
+        cy="16"
+        r="13.5"
+        fill="rgba(169, 156, 247, 0.10)"
+        stroke="url(#recall-mark-light)"
+        strokeOpacity="0.55"
+        strokeWidth="1.1"
       />
 
-      {/* Outer arc — the call going out */}
+      {/* Brain hemisphere — left curl */}
       <path
-        d="M22.5 8.5 A 10 10 0 1 1 8.5 22.5"
-        stroke="url(#recall-mark)"
-        strokeWidth="1.7"
+        d="M11.5 9.5
+           C 8.5 11, 8.5 14, 10 16
+           C 8.5 18, 9 21, 11.5 22.5"
+        stroke="url(#recall-mark-light)"
+        strokeWidth="1.5"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
 
-      {/* Inner arc — the recall coming back */}
+      {/* Brain hemisphere — right curl (mirror) */}
       <path
-        d="M19.5 12 A 5 5 0 1 1 12 19.5"
-        stroke="url(#recall-mark)"
-        strokeWidth="1.7"
+        d="M20.5 9.5
+           C 23.5 11, 23.5 14, 22 16
+           C 23.5 18, 23 21, 20.5 22.5"
+        stroke="url(#recall-mark-light)"
+        strokeWidth="1.5"
         strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+
+      {/* Central seam — the connecting fold */}
+      <path
+        d="M16 9 L16 23"
+        stroke="url(#recall-mark-light)"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeOpacity="0.7"
       />
 
       {/* Pivot — the moment of remembering */}
-      <circle cx="16" cy="16" r="1.9" fill="url(#recall-mark)" />
+      <circle cx="16" cy="16" r="1.7" fill="url(#recall-mark-light)" />
     </svg>
   );
 }

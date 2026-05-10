@@ -40,6 +40,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from ..core.events import humanize_age
 from ..core.parsers import CODE_EXTS
 from ..core.search import SearchResult
 from .styles import (
@@ -872,6 +873,91 @@ class PreviewPane(QWidget):
         for w in self._content_widgets:
             w.hide()
 
+    def show_episodic(self, result, neighbors=None) -> None:
+        """Render a tight episodic preview for a selected EpisodicResult.
+
+        Reuses the same content widgets as `update_group()` but with
+        episodic-shaped copy: a "Memory" section showing the title,
+        subtitle, and URL; an "About" section with a one-line summary;
+        an optional "Around the same time" section listing 1-2 events
+        that share the session (passed in by the launcher).
+
+        Excerpt + Sources + Related are hidden — episodic moments
+        don't have file excerpts or related-folder peers.
+        """
+        self.empty_placeholder.hide()
+        for w in self._content_widgets:
+            w.show()
+
+        self.title.setText(result.title)
+        # url field gets the shortened URL; full on tooltip.
+        url = (result.url or "").strip()
+        self.path_lbl.setText(shorten_path(url, max_len=44) if url else "—")
+        self.path_lbl.setToolTip(url or "")
+
+        # last_seen label: when this happened.
+        ts = result.ts_epoch
+        self.last_seen_lbl.setText(
+            f"Captured {format_relative_time(ts)}" if ts else ""
+        )
+
+        # About — one-line summary derived from kind + subtitle.
+        kind_label = {
+            "browser_visit": "A page you visited",
+            "browser_search": "A search you ran",
+            "chat_session": "A chat session you had",
+        }.get(result.kind, "A moment from your activity")
+        self.about.setText(f"{kind_label}.  {result.subtitle}")
+
+        # Excerpt is hidden for episodic — the title IS the moment.
+        self.excerpt.hide()
+        # Find the labels we just stripped of meaning by walking
+        # _content_widgets and hiding the excerpt label too.
+        for w in self._content_widgets:
+            # Hide every "preview_section_label" whose text is the
+            # excerpt header. Cheap text-match; survives label rewording.
+            try:
+                if w is self.excerpt:
+                    continue
+                if (
+                    hasattr(w, "objectName")
+                    and w.objectName() == "preview_section_label"
+                    and w.text() == "Excerpt"
+                ):
+                    w.hide()
+            except Exception:
+                pass
+
+        # Sources never apply to episodic.
+        self._set_sources([])
+        self.sources_header.hide()
+        self.sources_subtitle.hide()
+        self.sources_container.hide()
+
+        # "Around the same time" — repurpose the related row container.
+        nb = list(neighbors or [])
+        if nb:
+            self._set_episodic_neighbors(nb)
+        else:
+            self._set_related([])
+
+    def _set_episodic_neighbors(self, events) -> None:
+        """Populate the related-rows container with same-session
+        neighbors. Borrows the existing layout so we don't have to
+        spawn another QWidget hierarchy for an MVP."""
+        self._clear(self._related_layout)
+        for ev in events:
+            payload = ev.payload or {}
+            title = (
+                payload.get("title")
+                or payload.get("query")
+                or payload.get("domain")
+                or "Untitled moment"
+            )
+            row = QLabel(f"·  {title}")
+            row.setObjectName("preview_related_row")
+            self._related_layout.addWidget(row)
+
     def update_group(
         self,
         group: MemoryGroup,
@@ -1001,3 +1087,301 @@ class DigestRow(QWidget):
         if event.button() == Qt.MouseButton.LeftButton:
             self.clicked.emit(self.path)
         super().mousePressEvent(event)
+
+
+# ----------------------------------------------------------------- query row
+
+
+class QueryRow(QWidget):
+    """One row in the launcher's "Lately you searched" digest section.
+
+    Visually quieter than DigestRow (no file-icon glyph; just a small
+    lavender dot as a rhythm marker, the query text, and a relative
+    timestamp). Click → emits `clicked(query_text)` so the launcher can
+    repopulate the input and re-run the search.
+    """
+
+    QUERY_ROW_HEIGHT = 30
+
+    clicked = pyqtSignal(str)
+
+    def __init__(self, text: str, ts_epoch: float) -> None:
+        super().__init__()
+        self.text = text
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(14, 4, 14, 4)
+        layout.setSpacing(10)
+
+        # Lavender dot — same accent as the digest section labels and
+        # the launcher's selection chrome, so the row visually belongs
+        # to the same family without needing its own icon system.
+        dot = QLabel()
+        dot.setFixedSize(6, 6)
+        dot.setStyleSheet(
+            "background: rgba(181, 168, 255, 0.55);"
+            "border-radius: 3px;"
+        )
+
+        title = QLabel(text)
+        title.setStyleSheet(
+            f"color:{TEXT};font-size:11.5px;"
+        )
+        title.setTextFormat(Qt.TextFormat.PlainText)
+        title.setToolTip(text)
+
+        time_lbl = QLabel(humanize_age(ts_epoch))
+        time_lbl.setStyleSheet(
+            f"color:{TEXT_DIMMER};font-size:10.5px;"
+        )
+
+        layout.addWidget(dot, 0, Qt.AlignmentFlag.AlignVCenter)
+        layout.addWidget(title, 1)
+        layout.addWidget(time_lbl, 0, Qt.AlignmentFlag.AlignVCenter)
+
+    def mousePressEvent(self, event) -> None:  # type: ignore[override]
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit(self.text)
+        super().mousePressEvent(event)
+
+
+# ----------------------------------------------------------------- browser row
+
+
+class BrowserActivityRow(QWidget):
+    """One row in the launcher's "Recent digital activity" digest.
+
+    Mirrors QueryRow's visual rhythm — a single-line, small lavender
+    dot, title text, dim relative time on the right — but with the dot
+    color encoding the event type:
+
+      • lavender — page visit
+      • cyan     — search
+      • mint     — chat session
+
+    The row carries the original URL on its `url` attribute and emits
+    `clicked(url)` so the launcher can hand it to the OS default
+    browser. We do not store the event itself on the row to keep the
+    surface narrow.
+    """
+
+    ACTIVITY_ROW_HEIGHT = 32
+
+    clicked = pyqtSignal(str)
+
+    # Per-kind tints. Stored as (rgba_hex_alpha, hover_alpha).
+    _DOT_COLORS = {
+        "browser_visit": "rgba(181, 168, 255, 0.65)",
+        "browser_search": "rgba(125, 216, 232, 0.75)",
+        "chat_session": "rgba(135, 222, 183, 0.75)",
+    }
+
+    def __init__(
+        self,
+        kind: str,
+        title: str,
+        subtitle: str,
+        ts_epoch: float,
+        url: str,
+    ) -> None:
+        super().__init__()
+        self.url = url
+        self.kind = kind
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(14, 5, 14, 5)
+        layout.setSpacing(10)
+
+        dot = QLabel()
+        dot.setFixedSize(6, 6)
+        dot.setStyleSheet(
+            f"background: {self._DOT_COLORS.get(kind, self._DOT_COLORS['browser_visit'])};"
+            "border-radius: 3px;"
+        )
+
+        # Title column: primary title on top, faint subtitle below.
+        title_col = QVBoxLayout()
+        title_col.setContentsMargins(0, 0, 0, 0)
+        title_col.setSpacing(0)
+
+        title_lbl = QLabel(title)
+        title_lbl.setStyleSheet(
+            f"color:{TEXT};font-size:11.5px;"
+        )
+        title_lbl.setTextFormat(Qt.TextFormat.PlainText)
+        title_lbl.setToolTip(url or title)
+
+        subtitle_lbl = QLabel(subtitle)
+        subtitle_lbl.setStyleSheet(
+            f"color:{TEXT_DIMMER};font-size:10px;"
+        )
+        subtitle_lbl.setTextFormat(Qt.TextFormat.PlainText)
+
+        title_col.addWidget(title_lbl)
+        if subtitle:
+            title_col.addWidget(subtitle_lbl)
+
+        time_lbl = QLabel(humanize_age(ts_epoch))
+        time_lbl.setStyleSheet(
+            f"color:{TEXT_DIMMER};font-size:10.5px;"
+        )
+
+        layout.addWidget(dot, 0, Qt.AlignmentFlag.AlignTop)
+        layout.addLayout(title_col, 1)
+        layout.addWidget(time_lbl, 0, Qt.AlignmentFlag.AlignVCenter)
+
+    def mousePressEvent(self, event) -> None:  # type: ignore[override]
+        if event.button() == Qt.MouseButton.LeftButton and self.url:
+            self.clicked.emit(self.url)
+        super().mousePressEvent(event)
+
+
+# ----------------------------------------------------------------- episodic card
+
+
+class EpisodicCard(QWidget):
+    """A single episodic moment row in the launcher results list.
+
+    Visually distinct from `ResultItemWidget` (file rows) so users
+    read the list as two layers: "memory" (past moments) on top,
+    "files" (current memory layer) below. The badge uses a pill of
+    text rather than a colored dot so the row carries its own
+    typographic identity even when the colored dot would compete with
+    the lavender selection chrome.
+    """
+
+    EPISODIC_ROW_HEIGHT = 52
+
+    # Maps the kind to a (label, fg, bg, border) badge style.
+    _KIND_STYLES: dict[str, tuple[str, str, str, str]] = {
+        "browser_visit": (
+            "PAGE",
+            "#8B7FE3",
+            "rgba(181, 168, 255, 0.18)",
+            "rgba(181, 168, 255, 0.36)",
+        ),
+        "browser_search": (
+            "SEARCH",
+            "#3FB1C9",
+            "rgba(125, 216, 232, 0.20)",
+            "rgba(125, 216, 232, 0.40)",
+        ),
+        "chat_session": (
+            "CHAT",
+            "#42B384",
+            "rgba(135, 222, 183, 0.20)",
+            "rgba(135, 222, 183, 0.40)",
+        ),
+    }
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.kind: str = ""
+        self.title_text: str = ""
+        self.subtitle_text: str = ""
+        self.url: str = ""
+        self._build()
+
+    def _build(self) -> None:
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(10, 7, 10, 7)
+        layout.setSpacing(10)
+
+        self.badge = QLabel()
+        self.badge.setFixedHeight(20)
+        self.badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        text_col = QVBoxLayout()
+        text_col.setContentsMargins(0, 0, 0, 0)
+        text_col.setSpacing(2)
+
+        self.title = QLabel("")
+        self.title.setStyleSheet(
+            f"color:{TEXT};font-size:12.5px;font-weight:600;"
+        )
+        self.title.setTextFormat(Qt.TextFormat.PlainText)
+
+        self.subtitle = QLabel("")
+        self.subtitle.setStyleSheet(
+            f"color:{TEXT_DIM};font-size:10.5px;"
+        )
+        self.subtitle.setTextFormat(Qt.TextFormat.PlainText)
+
+        text_col.addWidget(self.title)
+        text_col.addWidget(self.subtitle)
+
+        layout.addWidget(self.badge, 0, Qt.AlignmentFlag.AlignTop)
+        layout.addLayout(text_col, 1)
+
+    def update_result(self, result) -> None:  # `EpisodicResult` (avoid circular import)
+        self.kind = result.kind
+        self.url = result.url
+        self.title_text = result.title
+        self.subtitle_text = result.subtitle
+
+        label, fg, bg, border = self._KIND_STYLES.get(
+            result.kind, self._KIND_STYLES["browser_visit"]
+        )
+        self.badge.setText(label)
+        # Per-instance stylesheet so the kind tint stays visible even
+        # when the row is selected (the QListWidget item background
+        # change would otherwise wash this out).
+        self.badge.setStyleSheet(
+            f"background:{bg};"
+            f"color:{fg};"
+            f"border:1px solid {border};"
+            "border-radius:6px;"
+            "padding:0 7px;"
+            "font-size:9px;"
+            "font-weight:700;"
+            "letter-spacing:0.15em;"
+        )
+        fm = self.badge.fontMetrics()
+        self.badge.setFixedWidth(fm.horizontalAdvance(label) + 18)
+
+        # Truncate title with elide so long page titles never push
+        # the row past the list width.
+        title_fm: QFontMetrics = self.title.fontMetrics()
+        elided = title_fm.elidedText(
+            result.title, Qt.TextElideMode.ElideRight, 240
+        )
+        self.title.setText(elided)
+        self.title.setToolTip(result.title)
+        self.subtitle.setText(result.subtitle)
+
+
+def make_episodic_item() -> QListWidgetItem:
+    item = QListWidgetItem()
+    item.setSizeHint(QSize(0, EpisodicCard.EPISODIC_ROW_HEIGHT))
+    return item
+
+
+# ------------------------------------------------- activity helpers
+
+
+def _activity_display(ev_kind: str, payload: dict) -> tuple[str, str]:
+    """Return (title, subtitle) suitable for a BrowserActivityRow.
+
+    Each kind has its own preferred display:
+      • browser_visit  → page title (or domain), subtitle = domain
+      • browser_search → "<query>", subtitle = engine name
+      • chat_session   → page title (or platform), subtitle = platform
+    """
+    if ev_kind == "browser_search":
+        query = (payload.get("query") or "").strip() or "(empty search)"
+        engine = (payload.get("engine") or "search").strip()
+        return f"“{query}”", engine
+
+    if ev_kind == "chat_session":
+        title = (payload.get("title") or "").strip()
+        platform = (payload.get("platform") or "chat").strip()
+        if not title:
+            title = platform
+        return title, platform
+
+    # default: browser_visit
+    title = (payload.get("title") or payload.get("tab_title") or "").strip()
+    domain = (payload.get("domain") or "").strip()
+    if not title:
+        title = domain or (payload.get("url") or "untitled page")
+    return title, domain
