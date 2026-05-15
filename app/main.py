@@ -31,12 +31,16 @@ from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 from .core import autostart
 from .core.config import CHROMA_DIR, CONFIG_DIR, Config
 from .core.demo_data import DemoSearchEngine
+from .core import demo_seed as _demo_seed
 from .core.embeddings import EmbeddingModel
 from .core.events import EventLogger
 from .core.indexer import Indexer
-from .core.ingest import IngestServer
 from .core.search import SearchEngine
 from .core.watcher import IndexWatcher
+# Phase 2A — the local memory API replaces the Phase 1B stdlib
+# IngestServer. Exposes the same surface (start/stop, set_enabled,
+# set_excluded_domains, counters) so Settings doesn't need to know.
+from api import APIService  # type: ignore[import-not-found]
 
 # Demo mode — when enabled, the launcher uses an in-memory dataset of
 # curated sample memories so the product can be demonstrated immediately
@@ -45,6 +49,21 @@ DEMO_MODE = (
     os.environ.get("RECALL_DEMO", "").strip().lower() in {"1", "true", "yes", "on"}
     or "--demo" in sys.argv
 )
+
+# Phase 4B — RECALL_DEMO_MODE=1 is the public-readiness variant. It
+# triggers the same in-memory file-search demo *and* seeds the event
+# log with a deterministic developer/researcher/founder/casual-
+# browsing trace (`app.core.demo_seed`) so the launcher's idle
+# digest lights up with "Continue where you left off" / active
+# threads / "On your radar" content immediately. Used by the
+# screenshot-capture pipeline and by anyone who wants to evaluate
+# Recall without waiting a week for real activity to accumulate.
+DEMO_FULL_MODE = (
+    os.environ.get("RECALL_DEMO_MODE", "").strip().lower()
+    in {"1", "true", "yes", "on"}
+)
+if DEMO_FULL_MODE:
+    DEMO_MODE = True  # full mode is a superset of file-only demo
 from .db.store import VectorStore
 from .ui.hotkey import HotkeyBridge, HotkeyListener
 from .ui.launcher import Launcher
@@ -187,10 +206,12 @@ class RecallApp(QObject):
         self.hotkey: Optional[HotkeyListener] = None
         self.watcher: Optional[IndexWatcher] = None
         self.event_logger = event_logger
-        # Phase 1B — browser ingestion. The server is started later,
-        # in its own boot stage, so a port-bind failure surfaces with
-        # a recognizable [FAIL] / [SLOW] line in DEBUG mode.
-        self.ingest_server: Optional[IngestServer] = None
+        # Phase 2A — the local memory API. Replaces Phase 1B's
+        # IngestServer; same Settings-facing surface so existing
+        # UI hooks don't change. Initialised in the boot stage so
+        # bind failures show up as recognisable [FAIL] / [SLOW]
+        # lines under RECALL_DEBUG.
+        self.ingest_server: Optional[APIService] = None
 
     def _build_tray_menu(self) -> None:
         menu = QMenu()
@@ -375,11 +396,21 @@ def main() -> int:
                 search_engine = SearchEngine(store, model)
 
         with _step("construct EventLogger (episodic memory)"):
-            # Honors the persisted on/off preference. The Settings
-            # toggle calls set_enabled() on this instance live, so a
-            # restart isn't required to disable capture.
-            event_logger = EventLogger(enabled=config.episodic_enabled)
-            _log(f"   episodic_enabled={config.episodic_enabled}")
+            if DEMO_FULL_MODE:
+                # Phase 4B — point the logger at a dedicated demo
+                # event dir and pre-seed it with a deterministic
+                # trace. Never touches the user's real event log.
+                event_logger = _demo_seed.event_logger_for_demo()
+                _log(
+                    "   DEMO_FULL_MODE active — seeded demo events into "
+                    f"{event_logger.base_dir}"
+                )
+            else:
+                # Honors the persisted on/off preference. The Settings
+                # toggle calls set_enabled() on this instance live, so
+                # a restart isn't required to disable capture.
+                event_logger = EventLogger(enabled=config.episodic_enabled)
+                _log(f"   episodic_enabled={config.episodic_enabled}")
 
         with _step("construct Launcher widget"):
             launcher = Launcher(search_engine, event_logger=event_logger)
@@ -425,27 +456,43 @@ def main() -> int:
         with _step("start background filesystem watcher"):
             app.start_watcher()
 
-        with _step("start browser ingestion server"):
-            # Localhost-only HTTP listener for the bundled browser
-            # extension. Failure to bind (port in use) is non-fatal —
-            # the rest of the launcher works exactly as before.
-            ingest_server = IngestServer(
+        with _step("start local memory API (Phase 2A)"):
+            # FastAPI service bound to 127.0.0.1 only. Owns ingestion,
+            # episodic retrieval, session reconstruction, and
+            # micro-context reconstruction. The launcher consumes it
+            # over HTTP; the bundled extension POSTs to the same
+            # service. No external network surface.
+            api_service = APIService(
                 event_logger=event_logger,
                 port=config.browser_ingest_port,
                 excluded_domains=config.browser_excluded_domains,
                 enabled=config.browser_ingest_enabled,
+                resurfacing_enabled=getattr(
+                    config, "resurfacing_enabled", True
+                ),
+                threads_enabled=getattr(
+                    config, "threads_enabled", True
+                ),
+                evolution_enabled=getattr(
+                    config, "evolution_enabled", True
+                ),
+                recovery_enabled=getattr(
+                    config, "recovery_enabled", True
+                ),
             )
-            started = ingest_server.start()
-            app.ingest_server = ingest_server
+            started = api_service.start()
+            app.ingest_server = api_service  # legacy attribute name
             _log(
-                f"   ingest server: {'running' if started else 'NOT started'} "
-                f"on 127.0.0.1:{config.browser_ingest_port}"
+                f"   api service: {'running' if started else 'NOT started'} "
+                f"on 127.0.0.1:{config.browser_ingest_port} "
+                f"(docs at /docs-api)"
             )
             if not started:
                 _log_always(
-                    "WARNING: browser ingestion server could not bind to "
+                    "WARNING: local memory API could not bind to "
                     f"127.0.0.1:{config.browser_ingest_port} "
-                    "(port in use?). Browser memory disabled this session."
+                    "(port in use?). Launcher retrieval will fall back to "
+                    "empty results until the next restart."
                 )
 
         with _step("sync launch-on-login from config"):

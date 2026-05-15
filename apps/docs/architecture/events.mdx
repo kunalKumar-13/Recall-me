@@ -1,0 +1,193 @@
+---
+title: "Events"
+description: "The append-only JSONL log that underpins every retrieval layer."
+---
+
+The event log is the single source of truth for everything Recall
+knows. Every layer above it — episodic retrieval, session
+reconstruction, micro-context splitting — is a pure function over
+this log.
+
+## Location
+
+```
+~/.recall/events/
+├── 2026-05-08.jsonl
+├── 2026-05-09.jsonl
+└── 2026-05-10.jsonl   ← today, append-only
+```
+
+One file per UTC day. Files are append-only; the system never
+rewrites a past day except when the user explicitly chooses to
+forget something through Settings.
+
+This shape is deliberate. *Forget yesterday* becomes a single
+`unlink()`. *Audit what was captured* becomes `cat`. *Sync to
+another machine* becomes `rsync`.
+
+## Schema
+
+Every line is one event encoded as a single JSON object:
+
+```json
+{
+  "ts": "2026-05-10T14:32:11Z",
+  "session_id": "s_20260510_143211_004812",
+  "kind": "browser_visit",
+  "payload": {
+    "url": "https://arxiv.org/abs/2203.02155",
+    "title": "Training language models to follow instructions",
+    "domain": "arxiv.org",
+    "browser": "chrome"
+  }
+}
+```
+
+| Field | Type | Notes |
+|---|---|---|
+| `ts` | string | UTC ISO-8601, second resolution. Parsed via a fast manual parser so 5K-event reads finish in <40 ms. |
+| `session_id` | string | Weakly-sortable opaque token. New ID allocated when the inter-event gap exceeds 30 minutes. |
+| `kind` | string | One of the kinds listed below. |
+| `payload` | object | Kind-specific shape. Field allowlist is enforced server-side at ingest time. |
+
+## Event kinds
+
+Recall recognises six event kinds. Three are emitted by the
+desktop launcher, three are emitted by the browser extension.
+
+<CardGroup cols={2}>
+  <Card title="Launcher events" icon="terminal">
+    Written directly by the desktop app via `EventLogger`.
+    - `query` — user searched
+    - `open` — user opened a file
+    - `reveal` — user revealed a file in Finder/Explorer
+  </Card>
+  <Card title="Browser events" icon="globe">
+    Posted to the ingest server by the Chrome extension.
+    - `browser_visit` — completed page load
+    - `browser_search` — search engine query
+    - `chat_session` — page on chatgpt.com / claude.ai
+  </Card>
+</CardGroup>
+
+### Per-kind payload shapes
+
+```json
+// query
+{
+  "kind": "query",
+  "payload": { "text": "websocket retry", "result_count": 4 }
+}
+
+// open / reveal
+{
+  "kind": "open",
+  "payload": { "path": "~/Documents/pitch_deck.pdf", "title": "Pitch deck v3" }
+}
+
+// browser_visit
+{
+  "kind": "browser_visit",
+  "payload": {
+    "url": "https://...", "title": "...", "domain": "...",
+    "browser": "chrome"
+  }
+}
+
+// browser_search
+{
+  "kind": "browser_search",
+  "payload": {
+    "url": "https://google.com/search?q=...", "query": "rlhf reward",
+    "engine": "google", "domain": "google.com", "browser": "chrome"
+  }
+}
+
+// chat_session
+{
+  "kind": "chat_session",
+  "payload": {
+    "url": "https://chatgpt.com/c/...", "title": "Discussion title",
+    "domain": "chatgpt.com", "platform": "chatgpt", "browser": "chrome"
+  }
+}
+```
+
+## Session inference
+
+There is no separate `sessions` table. Session boundaries are
+derived from event gaps at write time:
+
+```python
+if (now - last_event_ts) > SESSION_GAP_SECONDS:   # 30 min
+    new session_id
+```
+
+The session ID is encoded as `s_<UTC_ymd>_<HMS>_<microseconds>`
+so two consecutive sessions started in the same wall-clock second
+still have distinct IDs.
+
+This is a *temporal* session, not a topical one. A 30-minute
+working block may contain three different topics; the
+[micro-context](/architecture/micro-contexts) layer splits those
+out at query time.
+
+## Field allowlist + sanitization
+
+The ingest server (the only writer outside the desktop process)
+strips any payload key it doesn't recognise before handing the
+event to the logger. The full whitelist:
+
+```
+url, title, tab_title, query, domain, engine, platform, browser, source
+```
+
+Long fields are truncated:
+
+| Field | Cap |
+|---|---|
+| `url` | 2048 chars |
+| `title`, `tab_title`, `query` | 500 chars |
+| `domain`, `engine`, `platform`, `browser`, `source` | 60-240 chars |
+
+The HTTP server also blocks events whose URL scheme is in:
+
+```
+chrome, chrome-extension, chrome-search, chrome-devtools,
+edge, extension, moz-extension, about, file, data, blob,
+view-source, javascript
+```
+
+Browser-internal pages, local files, and JavaScript URIs never
+hit the log.
+
+## Privacy guarantees
+
+<Note>
+  These guarantees are enforced at the layer where the event is
+  written, not as policy. See [Privacy](/features/privacy) for
+  the full set.
+</Note>
+
+- Plain text on disk — any text editor opens the log.
+- One file per day — deleting a day is a `rm`.
+- Logger is a no-op when episodic capture is disabled in
+  Settings. The toggle is honored synchronously; existing days
+  are preserved unless the user explicitly forgets them.
+- No network code in the writer module. The `events.py` file
+  imports only stdlib + `config.py`.
+
+## Reading the log programmatically
+
+```python
+from app.core.events import EventStore
+
+store = EventStore()
+for ev in store.iter_events(days=7):
+    print(ev.ts, ev.kind, ev.payload.get("title"))
+```
+
+`iter_events` yields newest-first across the merged per-day
+stream. Lines that fail to parse are skipped silently — the log
+is auditable, which means a user may have hand-edited it, and
+the reader never crashes because of that.

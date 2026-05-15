@@ -32,7 +32,7 @@ from ..core import autostart
 from ..core.config import Config
 from ..core.events import EventLogger, EventStore, forget_all, forget_window
 from ..core.indexer import Indexer, IndexProgress
-from ..core.ingest import IngestServer
+from api.main import APIService
 from .styles import SETTINGS_QSS, TEXT_DIM
 
 
@@ -68,7 +68,7 @@ class SettingsDialog(QDialog):
         store_count: int = 0,
         parent=None,
         event_logger: Optional[EventLogger] = None,
-        ingest_server: Optional[IngestServer] = None,
+        ingest_server: Optional[APIService] = None,
     ) -> None:
         super().__init__(parent)
         self.config = config
@@ -81,9 +81,11 @@ class SettingsDialog(QDialog):
             event_logger.base_dir if event_logger is not None
             else EventStore().base_dir
         )
-        # Phase 1B browser memory wiring. The IngestServer reference
-        # lets the dialog toggle the live server's enabled flag and
-        # push exclude-list changes to it without a restart.
+        # The APIService reference lets the dialog toggle the live
+        # service's enabled flag and push exclude-list changes to it
+        # without a restart. Named `ingest_server` for historical
+        # reasons (the field predates the Phase-2A rename); the type
+        # is `APIService`.
         self.ingest_server = ingest_server
         self._worker: Optional[IndexWorker] = None
         self.setWindowTitle("Recall — Settings")
@@ -179,14 +181,18 @@ class SettingsDialog(QDialog):
         section_browser = QLabel("BROWSER MEMORY")
         section_browser.setObjectName("section")
 
-        self.browser_check = QCheckBox(
-            "Capture browsing from the Recall browser extension"
-        )
+        # Phase 1D framing — the toggle reads as the user's *current
+        # state*: "Browser memory is on" / "Browser memory is paused".
+        # Quieter than "capture browsing", which read as data-pipeline
+        # vocabulary.
+        self.browser_check = QCheckBox("Browser memory")
         self.browser_check.setChecked(self.config.browser_ingest_enabled)
         self.browser_check.setToolTip(
-            "Page visits, searches, and chat sessions captured by the "
-            "extension are written to the same local activity log "
-            "(~/.recall/events). Nothing is ever sent to the network."
+            "When on, page visits, searches, and chat sessions captured "
+            "by the Recall browser extension are written to the local "
+            "activity log (~/.recall/events). Uncheck to pause browser "
+            "memory — nothing on disk changes, just new events stop "
+            "being recorded. Nothing is ever sent to the network."
         )
 
         self.browser_status = QLabel("")
@@ -217,6 +223,68 @@ class SettingsDialog(QDialog):
         )
         browser_action_row.addWidget(self.browser_forget_btn)
         browser_action_row.addStretch(1)
+
+        # ── Resurfacing section (Phase 2B) ────────────────────────
+        # Toggle for the launcher's "Continue where you left off"
+        # digest section, plus a dedicated "clear" action for the
+        # resurfacing history file. Kept distinct from "Forget all
+        # browser events" because that wipes raw capture; this
+        # only resets the resurfacing engine's own counters.
+        section_resurface = QLabel("RESURFACING")
+        section_resurface.setObjectName("section")
+
+        self.resurface_check = QCheckBox("Show \"Continue where you left off\"")
+        self.resurface_check.setChecked(
+            getattr(self.config, "resurfacing_enabled", True)
+        )
+        self.resurface_check.setToolTip(
+            "When on, the launcher's idle digest gets a quiet section "
+            "that surfaces topics you've returned to across days — no "
+            "feed, no notifications, max four items. Uncheck to hide "
+            "the section entirely; the engine stops running. The "
+            "history file at ~/.recall/resurfacing.json stays on disk "
+            "until you click 'Clear resurfacing history' below."
+        )
+
+        resurface_btn_row = QHBoxLayout()
+        self.resurface_clear_btn = QPushButton("Clear resurfacing history")
+        self.resurface_clear_btn.setToolTip(
+            "Delete ~/.recall/resurfacing.json (surfacing counters + "
+            "muted topics). Your captured events are not touched."
+        )
+        resurface_btn_row.addWidget(self.resurface_clear_btn)
+        resurface_btn_row.addStretch(1)
+
+        # ── Threads section (Phase 2C) ────────────────────────────
+        # The "Active memory threads" digest section is a separate
+        # surface and gets its own controls — the toggle hides the
+        # section in the launcher, "Clear cache" wipes the identity
+        # file at ~/.recall/threads.json (events stay).
+        section_threads = QLabel("MEMORY THREADS")
+        section_threads.setObjectName("section")
+
+        self.threads_check = QCheckBox("Show \"Active memory threads\"")
+        self.threads_check.setChecked(
+            getattr(self.config, "threads_enabled", True)
+        )
+        self.threads_check.setToolTip(
+            "When on, the launcher's idle digest grows an 'Active "
+            "memory threads' section listing topics you keep returning "
+            "to across days and sessions. Uncheck to hide the section "
+            "entirely; the engine stops running. The identity cache at "
+            "~/.recall/threads.json stays on disk until you click "
+            "'Clear thread cache' below."
+        )
+
+        threads_btn_row = QHBoxLayout()
+        self.threads_clear_btn = QPushButton("Clear thread cache")
+        self.threads_clear_btn.setToolTip(
+            "Delete ~/.recall/threads.json (the thread-identity cache). "
+            "Your captured events are not touched; the next rebuild "
+            "re-derives thread ids from current events."
+        )
+        threads_btn_row.addWidget(self.threads_clear_btn)
+        threads_btn_row.addStretch(1)
 
         self.status_label = QLabel("")
         self.status_label.setStyleSheet(f"color: {TEXT_DIM}; font-size: 12px;")
@@ -264,6 +332,14 @@ class SettingsDialog(QDialog):
         root.addLayout(excluded_btn_row)
         root.addLayout(browser_action_row)
         root.addSpacing(6)
+        root.addWidget(section_resurface)
+        root.addWidget(self.resurface_check)
+        root.addLayout(resurface_btn_row)
+        root.addSpacing(6)
+        root.addWidget(section_threads)
+        root.addWidget(self.threads_check)
+        root.addLayout(threads_btn_row)
+        root.addSpacing(6)
         root.addWidget(self.status_label)
         root.addWidget(self.progress_label)
         root.addWidget(self.progress_bar)
@@ -288,6 +364,12 @@ class SettingsDialog(QDialog):
         self.exclude_add_btn.clicked.connect(self._add_excluded_domain)
         self.exclude_remove_btn.clicked.connect(self._remove_excluded_domain)
         self.browser_forget_btn.clicked.connect(self._forget_browser_events)
+        self.resurface_check.toggled.connect(self._toggle_resurfacing)
+        self.resurface_clear_btn.clicked.connect(
+            self._clear_resurfacing_history
+        )
+        self.threads_check.toggled.connect(self._toggle_threads)
+        self.threads_clear_btn.clicked.connect(self._clear_threads_cache)
 
         self._refresh_episodic_status()
         self._refresh_excluded_list()
@@ -599,6 +681,87 @@ class SettingsDialog(QDialog):
             except OSError:
                 pass
         return removed
+
+    # ── Phase 2B: resurfacing controls ─────────────────────────────
+
+    def _toggle_resurfacing(self, checked: bool) -> None:
+        """Honoured live: the API service flips its enabled flag, the
+        config persists for next boot. No restart required."""
+        self.config.resurfacing_enabled = bool(checked)
+        self.config.save()
+        if self.ingest_server is not None:
+            try:
+                self.ingest_server.set_resurfacing_enabled(bool(checked))
+            except AttributeError:
+                # Older builds may not have the surface; just persist.
+                pass
+
+    def _clear_resurfacing_history(self) -> None:
+        confirm = QMessageBox.question(
+            self,
+            "Clear resurfacing history?",
+            "This removes the file at ~/.recall/resurfacing.json — the "
+            "surfacing counters and the list of topics you've muted.\n\n"
+            "Your captured events stay untouched. The next time you "
+            "open the launcher with an empty query, the engine will "
+            "rebuild what to surface from scratch.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
+        )
+        if confirm != QMessageBox.StandardButton.Yes:
+            return
+        cleared = False
+        if self.ingest_server is not None:
+            try:
+                self.ingest_server.clear_resurfacing_history()
+                cleared = True
+            except AttributeError:
+                pass
+        if not cleared:
+            # Fallback path for headless / pre-2B builds: blow the file
+            # away on disk directly. Same behaviour, no API roundtrip.
+            from ..core.resurfacing import ResurfacingHistory
+            ResurfacingHistory().clear()
+        self.status_label.setText("Resurfacing history cleared.")
+
+    # ── Phase 2C: thread controls ──────────────────────────────────
+
+    def _toggle_threads(self, checked: bool) -> None:
+        """Honoured live: API service flips its flag, config persists."""
+        self.config.threads_enabled = bool(checked)
+        self.config.save()
+        if self.ingest_server is not None:
+            try:
+                self.ingest_server.set_threads_enabled(bool(checked))
+            except AttributeError:
+                pass
+
+    def _clear_threads_cache(self) -> None:
+        confirm = QMessageBox.question(
+            self,
+            "Clear thread cache?",
+            "This removes the file at ~/.recall/threads.json — the "
+            "identity cache for memory threads (stable ids, titles, "
+            "and first-seen timestamps).\n\n"
+            "Your captured events are NOT touched. The next time the "
+            "launcher opens with an empty query, the engine will "
+            "re-derive thread ids from current events.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
+        )
+        if confirm != QMessageBox.StandardButton.Yes:
+            return
+        cleared = False
+        if self.ingest_server is not None:
+            try:
+                self.ingest_server.clear_threads_cache()
+                cleared = True
+            except AttributeError:
+                pass
+        if not cleared:
+            from ..core.threads import ThreadStore
+            ThreadStore().clear()
+        self.status_label.setText("Thread cache cleared.")
 
     def _start_index(self) -> None:
         if not self.config.indexed_folders:

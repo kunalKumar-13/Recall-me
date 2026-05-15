@@ -1,0 +1,135 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Recall",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg",
+    "href": "https://recall.me"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#8B7FE3",
+    "light": "#B5A8FF",
+    "dark": "#6B5FCF",
+    "anchors": {
+      "from": "#8B7FE3",
+      "to": "#B5A8FF"
+    },
+    "background": {
+      "light": "#FBF7F4",
+      "dark": "#0A0B12"
+    }
+  },
+  "modeToggle": {
+    "default": "system"
+  },
+  "topbarCtaButton": {
+    "type": "github",
+    "url": "https://github.com/kunalKumar-13/Recall-me"
+  },
+  "topbarLinks": [
+    {
+      "name": "Download",
+      "url": "https://github.com/kunalKumar-13/Recall-me/releases/latest"
+    }
+  ],
+  "tabs": [
+    {
+      "name": "Guides",
+      "url": "/"
+    },
+    {
+      "name": "Architecture",
+      "url": "architecture"
+    },
+    {
+      "name": "API",
+      "url": "api"
+    },
+    {
+      "name": "SDK",
+      "url": "sdk"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Get started",
+      "pages": [
+        "introduction",
+        "install-3min",
+        "self-hosting",
+        "install-validation",
+        "troubleshooting",
+        "faq",
+        "uninstall"
+      ]
+    },
+    {
+      "group": "Philosophy",
+      "pages": [
+        "philosophy/local-first",
+        "philosophy/episodic-memory"
+      ]
+    },
+    {
+      "group": "Features",
+      "pages": [
+        "features/browser-memory",
+        "features/resume-context",
+        "features/privacy"
+      ]
+    },
+    {
+      "group": "Extensions",
+      "pages": [
+        "extensions/chrome-extension"
+      ]
+    },
+    {
+      "group": "Roadmap",
+      "pages": [
+        "roadmap"
+      ]
+    },
+    {
+      "group": "Architecture",
+      "pages": [
+        "architecture/events",
+        "architecture/sessions",
+        "architecture/micro-contexts",
+        "architecture/retrieval-pipeline",
+        "architecture/threading",
+        "architecture/evolution",
+        "architecture/recovery",
+        "architecture/visual-system"
+      ]
+    },
+    {
+      "group": "API reference",
+      "pages": [
+        "api/introduction",
+        "api/events",
+        "api/search"
+      ]
+    },
+    {
+      "group": "SDK",
+      "pages": [
+        "sdk/introduction"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/kunalKumar-13/Recall-me"
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true
+  },
+  "search": {
+    "prompt": "Search the Recall docs"
+  },
+  "metadata": {
+    "og:site_name": "Recall — documentation"
+  }
+}

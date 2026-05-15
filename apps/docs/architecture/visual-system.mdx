@@ -1,0 +1,178 @@
+---
+title: "Visual system"
+description: "The scales, tokens, and motion rules that make every Recall surface read as the same product. Calm by construction."
+---
+
+Recall ships three visible surfaces — launcher, docs site, and
+marketing site — that share one design language. This page is the
+contract that keeps them aligned. Any pixel choice in any surface
+should answer to a token on this page.
+
+The system is intentionally narrow. Three palettes, two type
+families, one motion ramp, one elevation ladder. Variety is the
+enemy of trust for an operating-layer product.
+
+## Tone
+
+| Adjective | Yes | No |
+|---|---|---|
+| **Calm** | Quiet motion, room to breathe, hairline dividers. | Pulsing badges, oversized animations. |
+| **Infrastructural** | Mono labels, deterministic visuals, schematic diagrams. | AI-startup gradients, "intelligent" framing. |
+| **Inevitable** | Same rhythm everywhere, restrained variety. | Surprise interactions, novelty patterns. |
+| **Honest** | Real endpoint names in mockups, real perf numbers in copy. | Curated screenshots that don't match what runs. |
+
+## Colour
+
+The palette below is the *complete* set. Anything else used in a
+component is a bug.
+
+### Ink (text + structure)
+
+| Token | Hex | Use |
+|---|---|---|
+| `ink-bright` | `#16112B` | Primary text, headings, hard borders. |
+| `ink` | `#332E51` | Body text. |
+| `ink-dim` | `#6B6585` | Secondary copy, mono labels. |
+| `ink-dimmer` | `#9B95B0` | Tertiary copy, dim time labels. |
+
+### Surface
+
+| Token | Hex | Use |
+|---|---|---|
+| `cream` | `#FBF7F4` | Page base. |
+| `cream-deep` | `#F1ECE5` | Hero stage, atmospheric darker variant. |
+| `white` | `#FFFFFF` | Cards, dialog backgrounds. |
+
+### Accent — lavender (primary, ~90% of accent usage)
+
+| Token | RGB | Use |
+|---|---|---|
+| `lavender` | `169, 156, 247` | Primary accent. CTAs, active states. |
+| `lavender-deep` | `125, 95, 200` | Strong accent. Eyebrows, footers, focus rings. |
+| `lavender-soft` | `232, 226, 251` | Tinted backgrounds. |
+
+### Accent — supporting (rare, semantic)
+
+Used **only** for transition encoding in evolution / recovery
+visuals. Never for general decoration. Never more than one
+non-lavender accent per surface.
+
+| Token | RGB | Semantics |
+|---|---|---|
+| `mint` | `135, 222, 183` | Acceleration. Forward motion. |
+| `cyan` | `125, 216, 232` | Pivot. Direction change. |
+| `rose` | `214, 120, 150` | Revisit. Returning to old material. |
+| `amber` | `199, 151, 60` | Resumption. Came back after a gap. |
+
+## Typography
+
+Two families. No third.
+
+| Family | Use | Source |
+|---|---|---|
+| **Fraunces** (`font-editorial`) | Display headings, italic accent words. | Google Fonts. |
+| **Inter** (default) | All body, UI, and labels. | Google Fonts. |
+| **JetBrains Mono** (`font-mono`) | Codes, endpoint names, kbd chips, all mono labels. | Google Fonts. |
+
+### Type scale
+
+| Token | Px (mobile / desktop) | Use |
+|---|---|---|
+| `display-hero` | `42 / 72` | Hero headline only. Once per page. |
+| `display-md` | `32 / 44` | Section H2. The common headline. |
+| `body-lg` | `15 / 16` | Long-form body copy. `leading-[1.65]`. |
+| `body` | `14 / 15` | Standard UI body. |
+| `caption` | `12.5` | Card subtitles, dim secondary lines. |
+| `label` | `11` | Section eyebrows, status mono labels. |
+| `mono-xs` | `10` | Time labels, tracking-uppercase keyword labels. |
+
+Letter-spacing follows two values: `tracking-editorial` (subtle
+negative) on Fraunces displays, `tracking-[0.2em]` on uppercase
+eyebrows. Body inherits Inter's default.
+
+## Spacing
+
+The spacing scale is the Tailwind 4-px ramp. The disciplined
+*usage* is what matters:
+
+| Surface | Section padding (mobile / desktop) | Card padding |
+|---|---|---|
+| Marketing section | `py-24 / py-28` | `p-5 / p-7` |
+| Launcher row | `py-3` | `px-5` |
+| Settings dialog | `py-4` | `px-5` |
+
+Gutters between adjacent elements default to `gap-2` (in-row),
+`gap-6` (between groups), `gap-12 / gap-16` (between marketing
+columns).
+
+A surface without enough air is a worse problem than a surface
+with too much. When in doubt, increase the padding.
+
+## Elevation
+
+Three depths, no more. Anything that demands a fourth tier
+should reconsider being on screen.
+
+| Class | Use | Definition |
+|---|---|---|
+| `shadow-card` | Default for any card that's not the page surface. | `0 1px 2px rgba(24,17,45,.04), 0 10px 28px -14px rgba(24,17,45,.16)` |
+| `edge-highlight` | Cards that need to read "lit from above" — the launcher panel, the topology card. | `inset 0 1px 0 rgba(255,255,255,.92), inset 0 0 0 1px rgba(24,17,45,.05), 0 1px 2px rgba(24,17,45,.04), 0 12px 28px -16px rgba(24,17,45,.18)` |
+| `shadow-lift` | CTAs in their hover state. | `0 8px 20px -10px rgba(125,95,200,.35)` |
+
+`backdrop-filter: blur(...)` is **not** part of the system. We do
+not ship glassmorphism. The cream-on-cream layering and inset
+highlights give cards their physical feel without a filter.
+
+## Motion
+
+| Token | Duration | Easing | Use |
+|---|---|---|---|
+| `motion-instant` | `0` ms | — | Inside the launcher's hot path. Hover states, focus rings. |
+| `motion-fast` | `150` ms | `cubic-bezier(0.32, 0.72, 0, 1)` | Acknowledgements, status flips. |
+| `motion-base` | `250` ms | `cubic-bezier(0.32, 0.72, 0, 1)` | Interaction feedback, card hover lift. |
+| `motion-stage` | `550` ms | `cubic-bezier(0.32, 0.72, 0, 1)` | Section-enter animations on the landing page. |
+| `motion-trace` | `1600` ms | same | One-shot draw-on visuals (the evolution timeline trace, the continuity-core convergence). |
+
+### Motion rules (non-negotiable)
+
+1. **No infinite loops.** Exception: the ContinuityCore's 14-s
+   `y` drift (4 px) and the `12 active threads` footer dot
+   pulse (2.4-s). Both are barely-perceptible.
+2. **No blur animations.** `filter: blur(...)` is reserved for
+   static page glows; it never changes over time.
+3. **No parallax.** Scroll-tied transforms are explicitly
+   excluded.
+4. **`whileInView` defaults to `once: true`.** Scroll up,
+   re-enter — no replay.
+5. **Respect `prefers-reduced-motion`.** Global CSS clamp +
+   `useReducedMotion()` in any component with a continuous
+   animation.
+
+## Iconography
+
+Stroke-only, 1.4-px weight, rounded caps and joins. Inline SVG
+only — no icon font dependency. The launcher's existing glyphs
+(`KindGlyph` in `web/app/components/ContinueWorking.tsx`) set
+the visual contract.
+
+No filled glyphs. No multicolour icons. No emoji in product
+copy.
+
+## Surface inventory
+
+Each visible surface in Recall maps to specific tokens above.
+This table is the audit list — any drift from it is a bug to
+fix, not a design choice to debate.
+
+| Surface | Headline type | Card style | Accent usage |
+|---|---|---|---|
+| **Marketing Hero** | `display-hero`, italic accent on one word | `hero-stage` background, no card | lavender + lavender-deep only |
+| **Marketing section** | `display-md` | `bg-white edge-highlight` | lavender primary; transition palette in evolution/recovery viz only |
+| **Marketing topology card** | `display-md` | `topology-card` | mint dot for "loopback bind" indicator |
+| **Launcher digest** | (no display type) | hairline-divider stripe | lavender rails, transition palette in evolution strip |
+| **Launcher recovery row** | (none — row pattern) | flat in card | lavender-deep rail + accent on `Restore →` |
+| **Settings dialog** | section labels in `label` | flat surface | minimal lavender on toggles |
+
+When a new surface lands, the first design question is
+*"which row of this table is it?"* If the answer is "a new
+one", revisit whether it should exist.

@@ -1,0 +1,110 @@
+---
+title: "Local-first"
+description: "What 'local-first' means for Recall, and how that commitment is enforced in code."
+---
+
+Recall is local-first not as a marketing posture but as an
+architectural commitment. Every feature in this codebase is
+evaluated against a single rule before it ships: *can it work with
+the network unplugged?*
+
+## What the user owns
+
+| What lives on disk | Where |
+|---|---|
+| Configuration + folder list | `~/.recall/config.json` |
+| The full event log (every event, every day) | `~/.recall/events/YYYY-MM-DD.jsonl` |
+| The file index (vector store) | `~/.recall/chroma/` |
+| The instance lock used to keep one process running | `~/.recall/instance.lock` |
+
+That folder is the entire memory of the system. Deleting it resets
+everything; copying it to another machine carries the memory with
+you.
+
+## What network calls exist
+
+Exactly one, and it runs once:
+
+1. On first launch, the embedding model
+   (`sentence-transformers/all-MiniLM-L6-v2`, ~80 MB) is
+   downloaded from Hugging Face into the user's local
+   `~/.cache/huggingface/`.
+
+After that, the loader is invoked with `local_files_only=True`.
+The app does not check for updates. It does not phone home. It
+does not load anything else from the network for any reason. You
+can verify this by running with the machine offline after the
+first launch — search, retrieval, file open, browser ingestion,
+and session reconstruction all continue to work.
+
+ChromaDB anonymous telemetry is disabled at boot:
+
+```python
+os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
+```
+
+Hugging Face progress bars are silenced. Sentry, PostHog, and other
+common telemetry dependencies are not in `requirements.txt`.
+
+## What the browser extension is permitted to reach
+
+The Chrome / Edge extension declares exactly one host permission:
+
+```json
+{
+  "host_permissions": ["http://127.0.0.1:4545/*"]
+}
+```
+
+The browser's permission system physically refuses any other
+fetch from the extension's service worker. The extension does
+not load remote scripts, does not read page content (the `tabs`
+API exposes URL + title only), and does not have a `<all_urls>`
+permission.
+
+## Privacy is structural, not policy
+
+Recall does not have a privacy policy because there is nothing
+about the user to have a policy on:
+
+- No accounts. No login. No email collection.
+- No analytics. No usage metrics. No error reporting.
+- No file content is ever transmitted. The embedding model runs
+  on local CPU.
+
+These are properties of the implementation, not promises in a
+document. The full source tree is open; the network code is
+trivial to audit. Searching for `requests.` or `urllib.` or
+`fetch(` will surface every line of network code in under thirty
+seconds.
+
+## Why local-first matters here
+
+The product Recall is trying to be — a memory layer that survives
+ten years of a person's working life — is incompatible with a
+cloud architecture. A SaaS memory layer outlives the company only
+as long as the company outlives its server bill. Recall's memory
+outlives the laptop only because it's a folder on the disk you
+already own.
+
+This is also the only architecture in which it's reasonable to
+capture the activity Recall captures. A cloud version would have
+to negotiate consent, retention, breach notification, and the
+question of who else can subpoena it. A local version negotiates
+none of those things because there is no third party to negotiate
+with.
+
+## What's not negotiable
+
+Future versions of Recall may add:
+
+- A sync protocol for the same user across multiple machines.
+- A team-scoped sharing primitive built on top of the local
+  primitive.
+- A plugin protocol that lets the user point Recall at other
+  local data sources.
+
+None of those will lift the no-cloud constraint. The local event
+log is the source of truth, always. Anything that adds a network
+edge will do so as an explicit, opt-in connection initiated by
+the user — never as a default-on background service.

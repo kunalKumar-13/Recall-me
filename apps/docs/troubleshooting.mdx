@@ -1,0 +1,267 @@
+---
+title: "Troubleshooting"
+description: "Quiet recovery paths for the failures the launcher absorbs silently. If something feels off, this is the page to read."
+---
+
+Recall is designed to absorb most failures into quiet recoverable
+states — the launcher never crashes because the disk is full or
+the extension is offline. But when something does feel off, this
+is the page that tells you what to look at and what to do.
+
+If a fix below doesn't resolve your issue, please file a
+[bug report](https://github.com/kunalKumar-13/Recall-me/issues/new?template=bug_report.md)
+with the boot-diagnostics output (see [Boot diagnostics](#boot-diagnostics)).
+
+---
+
+## The launcher doesn't open when I press Ctrl+Space
+
+**Most likely:** the global hotkey is being captured by another
+process. Common offenders on Windows: PowerToys' Spotlight,
+Logitech Options, Citrix Workspace.
+
+**Check:** does Ctrl+Space type a space character somewhere
+visible? If yes, no other process owns it — Recall isn't running.
+Open Task Manager and look for `Recall.exe` (or `python.exe` if
+you ran from source).
+
+**Fix:**
+
+1. Reopen the app (re-launch from the Start Menu or run
+   `python recall.py` if you're on source).
+2. If the launcher still won't open, run boot diagnostics:
+   ```bash
+   python recall.py --debug
+   ```
+   The line beginning `>> register global hotkey` will tell you
+   whether the binding succeeded.
+3. If that also fails, [report a bug](#filing-a-good-bug-report)
+   with the boot log attached.
+
+---
+
+## "Recall daemon not responding" in the browser extension popup
+
+**Cause:** the desktop app isn't running, or its local API
+service didn't start.
+
+**Check:**
+
+1. Open Recall from the Start Menu / Dock.
+2. Wait three seconds. The extension polls
+   `http://127.0.0.1:4545/v1/health` every time you open the
+   popup; the next open should switch to *"Connected · N
+   captured"*.
+
+**If that doesn't fix it:**
+
+- Run `python recall.py --debug` and look for `api.service.start
+  port=4545`. If you see `api.service.slow_start`, uvicorn is
+  taking longer than 2 s to come up — usually a sign of a port
+  collision.
+- Check whether something else is bound to port 4545:
+  ```bash
+  netstat -ano | findstr :4545          # Windows
+  lsof -i :4545                          # macOS / Linux
+  ```
+- If a collision is the culprit, the only mitigation today is to
+  stop the conflicting process; the port is hardcoded in this
+  release. (See [audit report](../AUDIT_REPORT.md) item 1.4.)
+
+---
+
+## The Continue where you left off section is empty
+
+**This is usually correct, not a bug.** Recovery is intentionally
+conservative — it surfaces nothing on a fresh install, and stays
+empty until you have at least one thread with:
+
+- 4 or more events,
+- across at least 2 sessions,
+- with at least one *depth* event (file open, chat session, or
+  search — not just browser visits),
+- and at least 2 distinct URL/path targets,
+- and a `max(continuity, confidence)` score above 0.45.
+
+Recall would rather show no card than fabricate one.
+
+**Check:** the audit signal — open the launcher, press Ctrl+Space,
+type a recent topic you've been working on. If episodic results
+appear but recovery still doesn't, the topic hasn't crossed the
+recovery thresholds yet.
+
+**Confirm with the debug overlay:**
+
+```bash
+RECALL_DEBUG=1 python recall.py
+```
+
+Hover any visible card; the tooltip explains exactly which
+signals fired.
+
+---
+
+## A recovery card opened the wrong things
+
+**Cause:** the canonical-topic-key derivation grouped two
+unrelated topics under the same key.
+
+**Check the debug overlay:**
+
+```bash
+RECALL_DEBUG=1 python recall.py
+```
+
+Hover the row. The footer line shows the topic key — e.g.
+`(topic key: "feedback")`. If two different threads are sharing
+that key, the synonym map in `app/core/episodic.py` is
+collapsing them.
+
+**Fix:**
+
+1. Settings → *Clear thread cache*. The next rebuild may produce
+   a cleaner identity.
+2. If the collision keeps happening, file a bug — the synonym
+   map is hand-curated and a missed pair is fixable in a few
+   lines.
+
+---
+
+## "Couldn't restore" appears for one or more files
+
+**Cause:** the file has moved or been deleted since Recall last
+saw it.
+
+**Check the explanation:**
+
+```bash
+RECALL_EXPLAIN_RECOVERY=1 python recall.py --debug
+```
+
+After the restore, the stdout log lists every skipped target
+with its reason. `file no longer exists` means exactly what it
+says.
+
+**Fix:** there's nothing to fix — the launcher told the truth.
+Click the row again and Recall will recompute the candidate;
+moved files drop out of the suggested-target list naturally
+after a few days.
+
+---
+
+## Search results feel slow
+
+**Expected perf on a 10K-event log:**
+
+| Endpoint | Server-side, p50 |
+|---|---|
+| `GET /v1/search` | 45–60 ms |
+| `GET /v1/recovery/recent` | 35–45 ms |
+| `GET /v1/threads/recent` | 25–55 ms |
+| `GET /v1/resurface/idle` | < 5 ms (warm) |
+
+If your launcher feels slow, run the smoke test:
+
+```bash
+python _smoke_api.py
+```
+
+The 11th section prints the actual measured times on your
+machine. If they're significantly higher than the table above,
+the dominant culprit is usually:
+
+1. **Cold OS page cache.** First boot after a reboot pays a
+   one-time cost. Reopen the launcher; subsequent searches
+   should land warm.
+2. **A huge event log.** Past 100K events the JSONL parse cost
+   grows linearly. Run *Settings → Forget last 24 hours* or
+   *Forget everything* to trim.
+3. **`orjson` not installed.** The launcher falls back to
+   stdlib `json` if `orjson` is absent, which is ~5× slower.
+   `pip install orjson` resolves it.
+
+---
+
+## The browser extension's "captured" counter isn't going up
+
+**Cause flow:**
+
+1. **Extension paused?** Open the popup; the toggle should be
+   on.
+2. **Domain in your blocklist?** Open Settings → Browser
+   Memory → *Domains never captured*. Domains there are dropped
+   server-side.
+3. **Browser-memory toggle off?** Same Settings panel. The
+   toggle pauses the entire ingestion path.
+4. **API down?** Run `curl http://127.0.0.1:4545/v1/health` (or
+   click the extension popup — same endpoint). If you don't get
+   `{"status": "ok"}`, see the
+   [daemon-not-responding section](#recall-daemon-not-responding-in-the-browser-extension-popup).
+
+The popup-shown counter is the API's `ingested_total`, not the
+extension's local count. They should match unless the API was
+restarted (which resets the in-memory counter; the on-disk JSONL
+log is unaffected).
+
+---
+
+## "Domain blocked: chrome" in the popup or in `dropped_total`
+
+**Cause:** the extension is dutifully refusing to capture
+`chrome://`, `edge://`, `about:`, `file://`, and other special
+URLs. These are dropped server-side too — Recall doesn't
+capture private OS surfaces.
+
+**Fix:** nothing to fix; this is the privacy contract working.
+
+---
+
+## Settings won't open / "Settings — Recall" window is blank
+
+**Cause:** a transient PyQt rendering glitch, usually after a
+multi-monitor change.
+
+**Fix:** close Recall from the tray icon (right-click → Exit)
+and reopen. If it persists across a full app restart, file a
+bug with the boot-diagnostics output.
+
+---
+
+## Boot diagnostics
+
+`python recall.py --debug` prints a per-stage timing trace at
+startup. The most diagnostic lines:
+
+| Line | Means |
+|---|---|
+| `>> load config` then `[OK] load config (Nms)` | `~/.recall/config.json` loaded. Slow here usually means a corrupt file. |
+| `>> initialize event logger` | The JSONL log is being opened for append. Slow = disk issue. |
+| `>> start local memory API (Phase 2A)` | uvicorn boot. Slow = port collision; see above. |
+| `>> initialize search engine` | ChromaDB + the embedding model. The first run on a fresh install downloads `all-MiniLM-L6-v2` (~80 MB) here. |
+| `>> register global hotkey` | The Ctrl+Space binding. Failure here usually means another process owns the hotkey. |
+
+Anything that takes longer than 1 second is logged as
+`[SLOW] …`. The launcher will start even if a non-critical stage
+slow-starts; critical failures (config corruption, API port
+unavailable) abort the boot.
+
+---
+
+## Filing a good bug report
+
+The launcher absorbs most failures quietly, which is great until
+something genuinely breaks and you can't see why. When that
+happens, include:
+
+1. The output of `python recall.py --debug` from boot to where
+   things felt wrong. Redact paths if they reveal anything
+   sensitive — none of this is sent to us automatically.
+2. Your OS + Python version.
+3. The version of Recall (Settings → About, or
+   `~/.recall/version.json` if you have it).
+4. A short reproduction: what you clicked / typed, what you
+   expected, what happened.
+
+The [bug report template](../.github/ISSUE_TEMPLATE/bug_report.md)
+walks through the structure. Logs paste cleanly into the
+*"Boot diagnostics"* section.

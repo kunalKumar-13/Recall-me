@@ -1,7 +1,9 @@
-"""Recall — an AI memory layer for your digital life.
+"""Recall — a local-first continuity operating system.
 
-Ask your computer what you forgot. The `Recall` class below is a thin
-composition layer so the engine is one-line usable from a REPL or script.
+The `Recall` class below is a thin composition layer so the file-search
+engine is one-line usable from a REPL or script. The full launcher /
+recovery / threads stack lives in `app.main`; this package facade is
+the read-only surface that scripts and tests typically import.
 
     from app import Recall
     r = Recall()

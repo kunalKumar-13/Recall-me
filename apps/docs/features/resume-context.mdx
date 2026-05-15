@@ -1,0 +1,166 @@
+---
+title: "Resume context"
+description: "Selecting a session or micro-context reopens every URL and file in it. One keystroke; full context restored."
+---
+
+The most common operation in a long-running project is *picking
+up where you left off*. Recall reduces this to one keystroke.
+
+## What "Resume" does
+
+Selecting a [micro-context](/architecture/micro-contexts) or
+[session](/architecture/sessions) card and pressing `Enter` twice
+reopens, in order, every URL and file the user touched inside
+that context:
+
+| Event kind | What happens on Resume |
+|---|---|
+| `browser_visit` | URL opens in the system default browser |
+| `browser_search` | The search results page reopens |
+| `chat_session` | The chat URL reopens (ChatGPT / Claude conversation) |
+| `open` | The file opens in its native handler |
+| `reveal` | Skipped on Resume (reveal is a UI action, not a content one) |
+| `query` | Skipped on Resume (the launcher query itself isn't reopenable) |
+
+URLs and paths are deduplicated by case-insensitive identity, so
+a context with three visits to the same article only opens it
+once.
+
+## Two flavours: Continue vs. Resume
+
+There are two cards, two actions, and a deliberate vocabulary
+distinction between them:
+
+| Card | Verb | Scope |
+|---|---|---|
+| [Session](/architecture/sessions) (lavender pill) | **Continue this session** | Broader — every event in the 30-minute block |
+| [Micro-context](/architecture/micro-contexts) (cyan pill) | **Resume context** | Tighter — just the topical thread inside the session |
+
+The distinction maps to the user's mental model: *"I was in a
+session that had three things going on; right now I want to
+resume the RLHF thread, not all three."*
+
+## Interaction model
+
+The keyboard contract is the same on both card types:
+
+<Steps>
+  <Step title="Arrow keys move selection">
+    The launcher list walks episodic events, micro-contexts,
+    sessions, and file rows in a single flow.
+  </Step>
+  <Step title="First Enter on a context/session expands the card">
+    The card grows to show up to 5–6 event sublines + the action
+    button.
+  </Step>
+  <Step title="Second Enter triggers Resume / Continue">
+    Every URL and file in the context is handed to the OS in
+    sequence. The launcher flashes confirmation
+    (*"Resuming · 4 of 5 reopened from rlhf · reward"*) and hides
+    after ~220 ms.
+  </Step>
+  <Step title="Ctrl+C copies instead of opening">
+    Copies a newline-separated list of every openable target to
+    the clipboard. Useful for sharing what you were working on,
+    or for reopening in a different browser session.
+  </Step>
+</Steps>
+
+This mirrors how Spotlight / Raycast handle multi-action rows —
+never collapse two intents into one ambiguous keystroke.
+
+## What happens under the hood
+
+```python
+def _resume_context(self, ctx: MicroContext) -> None:
+    targets = ctx.openable_targets()
+    opened = 0
+    for _, target in targets:
+        if _open_file(target):
+            opened += 1
+    self._flash_footer(
+        f"Resuming  ·  {opened} of {len(targets)} reopened from {ctx.topic}"
+    )
+    QTimer.singleShot(220, self.hide)
+```
+
+`_open_file` is the same path used for opening file rows. On
+Windows it calls `os.startfile`; on macOS it shells out to
+`open`; on Linux it shells out to `xdg-open`. URLs and file paths
+flow through the same code path because every major OS handler
+accepts both.
+
+There is no staggering, no manual queue. The OS handler is
+asynchronous — it returns to Python immediately and queues the
+launch itself. Six opens in quick succession produce six
+sequential launches without blocking the launcher.
+
+## What Resume does *not* restore
+
+<Warning>
+  Resume is content restoration, not workspace restoration.
+</Warning>
+
+It does not restore:
+
+- **Tab order.** Browsers open URLs in whatever order the OS
+  hands them off, not necessarily the order they originally
+  appeared.
+- **Scroll position.** Each page loads fresh.
+- **Form state.** Anything you'd typed into a field is gone
+  unless the site itself saved it.
+- **Window layout.** All URLs go to the active browser window;
+  multi-window layouts are not preserved.
+
+These could be added, but they require either a much more
+invasive browser extension (capturing scroll + form data) or
+OS-level window-management hooks. Neither is a Phase 1 problem.
+
+## When Resume can't fully execute
+
+`_open_file` returns `False` when a path no longer exists or
+the OS handler rejects it. The launcher reports the partial
+success:
+
+```
+Resuming  ·  3 of 5 reopened from pitch · deck
+```
+
+The two that failed are usually files that have been moved or
+deleted since the events were captured. The flash stays visible
+for 700 ms so you can read it.
+
+If *zero* targets open, the flash reads:
+
+```
+Couldn't reopen  ·  paths may have moved
+```
+
+And the launcher stays open so you can pick a different result.
+
+## Programmatic access
+
+For headless use, the same operation is two method calls:
+
+```python
+from app.core.events import EventStore
+from app.core.episodic import EpisodicRetriever
+from app.core.sessions import SessionReconstructor
+from app.core.microcontexts import MicroContextReconstructor
+
+events = EventStore()
+episodic = EpisodicRetriever(events)
+sessions = SessionReconstructor(events, episodic)
+contexts = MicroContextReconstructor()
+
+# Find a context
+sess = sessions.reconstruct_for_query("rlhf reward shaping", n=1)[0]
+ctx = contexts.reconstruct(sess.events)[0]
+
+# Enumerate what would be reopened
+for kind, target in ctx.openable_targets():
+    print(kind, target)
+```
+
+That same `openable_targets()` list is what the launcher's
+Resume button hands to the OS, in order.

@@ -1,0 +1,141 @@
+---
+title: "Episodic memory"
+description: "The cognitive model underneath the launcher, and why it shapes every retrieval decision."
+---
+
+Most knowledge tools treat the user as a librarian organising
+shelves. Recall treats the user as a person who remembers
+*episodically* — by what they were doing, who they were doing it
+with, and what came before or after — and tries to build the
+fastest possible bridge from a vague half-thought back to a
+specific moment.
+
+## What episodic memory means
+
+In cognitive psychology, episodic memory is the recall of
+specific events tied to time, place, and surrounding context. It
+is contrasted with *semantic* memory, which is the recall of
+facts independent of when you learned them.
+
+Most "search your stuff" tools — Spotlight, full-text search,
+vector embeddings over your notes — answer semantic questions.
+*Recall is built to answer episodic ones.*
+
+| Semantic question | Episodic question |
+|---|---|
+| "Find every file mentioning RLHF." | "What was I researching last Tuesday afternoon?" |
+| "Search for 'pitch deck'." | "That GPT chat about pricing — what came before it?" |
+| "Open the document called retry.md." | "The websocket thing I was reading right before I started writing this." |
+
+A semantic system can answer the left column. An episodic system
+must answer the right.
+
+## What changes when you commit to episodic
+
+Three things, in order:
+
+### 1. Time becomes a first-class column
+
+Every event stores a timestamp in UTC ISO-8601. Every query
+parses temporal phrases (`yesterday`, `last night`, `this
+afternoon`) and turns them into hard time filters, not soft
+ranking signals.
+
+```python
+parse_temporal("the kanye interview yesterday")
+# → ("the kanye interview", TimeWindow(start=now-48h, end=now-24h))
+```
+
+This is why "yesterday" in Recall is a filter, not a boost.
+
+### 2. Context becomes the unit of recall
+
+The launcher does not surface "the file you want". It surfaces a
+hierarchy that maps to how the user actually remembers:
+
+- An *episodic event* — a specific moment ("the article I read at
+  3:14 pm").
+- A *micro-context* — the topical thread that moment belongs to
+  ("the RLHF research thread, which contained three articles and
+  one ChatGPT session").
+- A *session* — the temporal block the topical thread lived
+  inside ("the working session that ran from 2:50 to 4:10 pm and
+  also contained some unrelated tab switches").
+
+The launcher shows all three layers, ordered narrowest to
+broadest. The user picks the granularity they actually have a
+handle on.
+
+### 3. Continuity becomes the action verb
+
+The default verb for a search engine is *open*. The default verb
+for an episodic memory system is *resume*. Selecting a
+micro-context and pressing `Enter` reopens every URL and file in
+that thread, in order. Five steps of remembering become one
+keystroke.
+
+## What the system does not try to do
+
+Episodic memory in humans is reconstructive and unreliable.
+People misremember. They confabulate. They retroactively edit
+their own memories.
+
+Recall does none of those things. It records exactly what
+happened — every URL visited, every file opened, every query
+typed — and surfaces what it has, without inference. The system
+is honest about what it does and does not know:
+
+- It knows you visited a page. It does not know whether you read
+  it.
+- It knows you opened a file. It does not know whether you
+  closed it because you finished, or because you got
+  interrupted.
+- It knows you searched for "rlhf reward shaping". It does not
+  know whether that search was for you, or for a colleague you
+  were helping.
+
+The launcher's vocabulary reflects this. Cards say *Captured
+2h ago*, not *Active session*. Resume reopens the things that
+were actually there, not the things the system thinks were
+relevant.
+
+## Why no embeddings (yet)
+
+Recall's retrieval layer is keyword + synonym + fuzzy + recency,
+not embeddings. This is a considered choice for the current
+phase, not an oversight.
+
+Reasons:
+
+- **Latency.** The launcher must respond in under 100 ms. A
+  local embedding model per query costs 20–50 ms on its own,
+  which is half the budget.
+- **Inspectability.** A keyword match is debuggable in your
+  head. A vector match is a number with no story.
+- **Storage.** A 384-dim float32 vector per event is ~1.5 KB. A
+  year of heavy use is gigabytes. The JSONL log is single-digit
+  megabytes.
+- **Synonym expansion already handles most plural forms.**
+  `websocket / websockets / ws` resolve to the same set. So do
+  `rlhf / reinforcement / reward / human / feedback`.
+
+Embeddings will eventually layer on top — see [roadmap](/roadmap)
+— but only for the small fraction of queries where keyword
+matching genuinely misses.
+
+## What this means in practice
+
+When you read the architecture chapters, notice how the data
+model is shaped by episodic intent:
+
+- Events have timestamps, kinds, and session IDs — not relevance
+  scores.
+- Sessions and micro-contexts are reconstructed at query time
+  from the same flat log. There is no "session table" precomputed
+  in advance; the temporal facts are the only facts on disk.
+- Every layer of the retrieval pipeline is a function from
+  `(query, log)` to `(results)`. Pure, deterministic, no hidden
+  state.
+
+That shape exists because episodic memory is the goal, and
+everything else is in service of it.

@@ -1,0 +1,219 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  color-scheme: light;
+  scroll-behavior: smooth;
+}
+
+body {
+  /* Warm cream page wash with a single faint lavender top-glow. The
+     calm pass collapsed three corner washes (lavender + cyan + mint)
+     down to one — a quieter background that lets section-level glows
+     read as intentional moments rather than competing with ambient
+     noise. Still static; nothing animates here. */
+  background:
+    radial-gradient(
+      ellipse 60% 40% at 50% 0%,
+      rgba(169, 156, 247, 0.07),
+      transparent 60%
+    ),
+    linear-gradient(180deg, #FBF7F4 0%, #F8F4F0 100%);
+  background-attachment: fixed;
+  color: #16112B;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Calm scrollbars — lavender at very low alpha. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(169, 156, 247, 0.20);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(169, 156, 247, 0.35);
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+
+/* Selection — lavender wash. */
+::selection {
+  background: rgba(169, 156, 247, 0.30);
+  color: #16112B;
+}
+
+/* Editorial display — applied to serif headlines so they sit at the
+   right optical weight against Inter body text. */
+.font-editorial {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-feature-settings: "ss01", "ss02";
+  font-optical-sizing: auto;
+}
+
+/* Handwritten — used only on the peripheral annotations. Caveat sits
+   at a heavier optical weight than Inter at the same size, so callers
+   typically render it ~120% of the surrounding text. */
+.font-script {
+  font-family: var(--font-caveat), "Bradley Hand", cursive;
+  letter-spacing: 0;
+}
+
+/* Highlighted-term style — used inside excerpts to mark query matches.
+   The yellow marker effect is achieved with a soft underlay rather
+   than a fill, so the underlying text stays legible. */
+.term-highlight {
+  background: linear-gradient(
+    180deg,
+    transparent 60%,
+    rgba(254, 242, 166, 0.85) 60%
+  );
+  padding: 0 1px;
+}
+
+/* Lavender underline used on a single phrase per section ("all
+   locally", "what you forgot", etc.) — wavy, hand-drawn-ish. */
+.lavender-underline {
+  background-image: linear-gradient(
+    90deg,
+    rgba(169, 156, 247, 0.55),
+    rgba(169, 156, 247, 0.55)
+  );
+  background-size: 100% 2px;
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  padding-bottom: 2px;
+}
+
+/* Hairline — neutral mid divider. */
+.hairline {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(24, 17, 45, 0.10),
+    transparent
+  );
+}
+
+/* Dot-grid texture — barely-there. Static, masked toward edges. */
+.grid-texture {
+  background-image: radial-gradient(
+    rgba(24, 17, 45, 0.05) 1px,
+    transparent 1px
+  );
+  background-size: 36px 36px;
+  background-position: 0 0;
+  -webkit-mask-image: radial-gradient(
+    ellipse 70% 50% at 50% 35%,
+    rgba(0, 0, 0, 1) 30%,
+    rgba(0, 0, 0, 0) 78%
+  );
+  mask-image: radial-gradient(
+    ellipse 70% 50% at 50% 35%,
+    rgba(0, 0, 0, 1) 30%,
+    rgba(0, 0, 0, 0) 78%
+  );
+}
+
+/* GPU promotion — used only on the few elements that actually animate. */
+.gpu {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* ────────────────────────────────────────────────────────────
+ *  Cinematic depth utilities (Phase 3A art-direction pass).
+ *  Inspired by Apple product films + Linear / Stripe Press
+ *  surfaces: lighting is the composition. No bloom, no
+ *  glassmorphism, no continuous animation.
+ * ──────────────────────────────────────────────────────────── */
+
+/* Dark-ivory hero wash. Sits *behind* the hero stage light to
+   give the section atmospheric depth without going dark-mode.
+   Two stacked radial gradients: a centred glow that lifts the
+   continuity-core composition, and a soft graphite vignette on
+   the corners that pulls the eye inward. */
+.hero-stage {
+  background:
+    radial-gradient(
+      ellipse 70% 60% at 50% 38%,
+      rgba(255, 255, 255, 0.55),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 90% 70% at 50% 100%,
+      rgba(24, 17, 45, 0.045),
+      transparent 70%
+    ),
+    linear-gradient(180deg, #F1ECE5 0%, #EDE6DD 100%);
+}
+
+/* Edge highlight — a 1px white-ish bevel along the top of a
+   surface, giving it the feel of being lit from above. Pair
+   with .shadow-card for a card that reads as physically
+   layered against the page. */
+.edge-highlight {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 0 0 1px rgba(24, 17, 45, 0.05),
+    0 1px 2px rgba(24, 17, 45, 0.04),
+    0 12px 28px -16px rgba(24, 17, 45, 0.18);
+}
+
+/* Terminal / topology card — graphite ink on near-black ivory,
+   used by the local-first section. Monospace contents inherit
+   their tonal palette from this container. */
+.topology-card {
+  background:
+    linear-gradient(180deg, #16141F 0%, #1B1828 100%);
+  color: rgba(232, 226, 251, 0.92);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 24px 60px -28px rgba(24, 17, 45, 0.35);
+}
+
+/* Drawing-on hairline — used by section dividers that the
+   composition asks to "establish" via a single sweep on view.
+   Animated *once* via Framer's `pathLength`; no continuous
+   motion. */
+.hairline-rule {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(24, 17, 45, 0.12) 40%,
+    rgba(24, 17, 45, 0.12) 60%,
+    transparent 100%
+  );
+}
+
+/* Respect reduced-motion preference globally. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus ring — accessible without being shouty. */
+:focus-visible {
+  outline: 2px solid rgba(169, 156, 247, 0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

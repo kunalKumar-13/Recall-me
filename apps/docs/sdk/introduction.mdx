@@ -1,0 +1,268 @@
+---
+title: "SDK introduction"
+description: "Programmatic access to Recall lives in the Python `app/` package. This page is the type tour."
+---
+
+The "SDK" for Recall is the same Python package the launcher
+uses. There is no separate client library — the in-process
+classes documented here are stable, documented, and import-safe
+for external scripts.
+
+A loose JavaScript SDK is on the [roadmap](/roadmap) but will
+only ever talk to the loopback HTTP layer, not the Python
+package.
+
+## Import path
+
+```python
+# Event log
+from app.core.events        import Event, EventLogger, EventStore
+
+# Episodic retrieval
+from app.core.episodic      import (
+    EpisodicResult, EpisodicRetriever,
+    parse_temporal, parse_kind_hint,
+)
+
+# Session reconstruction
+from app.core.sessions      import (
+    Session, SessionReconstructor,
+    derive_topic, derive_label, format_time_range,
+)
+
+# Micro-context reconstruction
+from app.core.microcontexts import MicroContext, MicroContextReconstructor
+
+# File search (vector + boost layer)
+from app.core.search        import SearchEngine, SearchResult
+
+# Local HTTP client (the launcher's reader for live retrieval)
+from app.core.api_client    import APIClient
+```
+
+## Lifecycle
+
+Two layers — the *writer* and the *reader* — each constructible
+independently:
+
+```python
+# Writer side (typically only the desktop process touches this)
+logger = EventLogger(enabled=True)
+logger.log_query("websocket retry", result_count=4)
+logger.log_open("~/Documents/notes.md", title="Notes")
+
+# Reader side (safe to construct in any script)
+store = EventStore()
+for ev in store.iter_events(days=7):
+    print(ev.ts, ev.kind, ev.payload.get("title"))
+```
+
+`EventLogger` is thread-safe (a single `threading.Lock` serializes
+session-id allocation + the file append). Multiple writers in the
+same process are fine; multiple writer *processes* are not — the
+desktop app's single-instance lock prevents that.
+
+## Event
+
+The unit of writing and reading:
+
+```python
+@dataclass
+class Event:
+    ts: str            # UTC ISO-8601, second resolution
+    session_id: str    # weakly sortable, gap-detected
+    kind: str          # query | open | reveal |
+                       # browser_visit | browser_search | chat_session
+    payload: dict
+
+    def ts_epoch(self) -> float: ...   # cached on instance
+```
+
+`ts_epoch()` caches its parse result after the first call —
+useful for code that touches `.ts_epoch()` repeatedly per event
+(retrieval, reconstruction, scoring). The first call uses a fast
+manual ISO-8601 parser; subsequent calls are O(1).
+
+## EpisodicResult
+
+What `EpisodicRetriever.search()` returns:
+
+```python
+@dataclass
+class EpisodicResult:
+    kind: str
+    title: str           # display title
+    subtitle: str        # "ChatGPT  ·  2h ago"
+    url: str
+    ts_epoch: float
+    score: float
+    session_id: str
+    payload: dict
+```
+
+The score is a float in roughly `0.18 - 1.0`. Below `_MIN_CONFIDENCE = 0.18`
+results are not surfaced.
+
+## Session
+
+What `SessionReconstructor.reconstruct_for_query()` returns:
+
+```python
+@dataclass
+class Session:
+    session_id: str
+    events: list[Event]            # ALL events in the session, chronological
+    matching_events: list[Event]   # the subset that matched the query
+    topic: str                     # "websocket · retry"
+    label: str                     # "Researching websocket · retry"
+    time_label: str                # "2h ago  ·  ~25min"
+    score: float
+
+    @property
+    def event_count(self) -> int: ...
+    @property
+    def kinds(self) -> list[str]: ...
+
+    def preview_events(max_n: int = 6) -> list[Event]: ...
+    def openable_targets() -> list[tuple[str, str]]: ...
+```
+
+`openable_targets()` returns `[(kind, target)]` pairs — `kind`
+is `"url"` or `"path"`; `target` is what you'd hand to the OS.
+The list is already deduplicated by case-insensitive identity.
+
+## MicroContext
+
+What `MicroContextReconstructor.reconstruct()` returns (a list,
+one item per topical sub-block within a session):
+
+```python
+@dataclass
+class MicroContext:
+    events: list[Event]
+    topic: str
+    label: str
+    time_label: str
+    match_count: int   # set by the caller after ranking; 0 by default
+
+    @property
+    def event_count(self) -> int: ...
+    @property
+    def kinds(self) -> list[str]: ...
+
+    def preview_events(max_n: int = 6) -> list[Event]: ...
+    def openable_targets() -> list[tuple[str, str]]: ...
+```
+
+A reconstructor never returns more than `MAX_CONTEXTS = 6` items
+for one session. Sessions with fewer than `MIN_EVENTS_TO_SPLIT = 3`
+events return as a single context (no fragmentation).
+
+## SearchResult
+
+What `SearchEngine.search()` returns. The only result type backed
+by embeddings:
+
+```python
+@dataclass
+class SearchResult:
+    path: str
+    name: str
+    snippet: str        # excerpt windowed around query-match cluster
+    chunk: str          # full chunk text (for preview pane)
+    score: float
+    ext: str
+    chunk_index: int
+
+    @property
+    def folder(self) -> str: ...
+```
+
+## Helpers worth knowing
+
+The retrieval modules expose a handful of utility functions that
+are sometimes useful in external scripts:
+
+```python
+from app.core.episodic import parse_temporal, parse_kind_hint
+
+parse_temporal("the kanye article yesterday")
+# → ("the kanye article", TimeWindow(start=now-48h, end=now-24h, label="yesterday"))
+
+parse_kind_hint("that GPT chat about websocket")
+# → ("that about websocket", KindHint(kind="chat_session", platform="chatgpt"))
+
+
+from app.core.sessions import derive_topic, derive_label, format_time_range
+
+derive_topic(events)
+# → "websocket · retry"
+
+derive_label(events, derive_topic(events))
+# → "Researching websocket · retry"
+```
+
+These are pure functions; safe to call from anywhere.
+
+## A complete script
+
+End-to-end retrieval as a one-file CLI:
+
+```python
+#!/usr/bin/env python3
+"""recall-query.py — minimal CLI over the Recall pipeline."""
+import sys
+import os
+
+from app.core.config       import CHROMA_DIR
+from app.core.embeddings   import EmbeddingModel
+from app.core.events       import EventStore
+from app.core.episodic     import EpisodicRetriever
+from app.core.microcontexts import MicroContextReconstructor
+from app.core.search       import SearchEngine
+from app.core.sessions     import SessionReconstructor
+from app.db.store          import VectorStore
+
+
+def main() -> int:
+    if len(sys.argv) < 2:
+        print("usage: recall-query.py <query>", file=sys.stderr)
+        return 2
+
+    query = " ".join(sys.argv[1:])
+
+    events    = EventStore()
+    episodic  = EpisodicRetriever(events)
+    sessions  = SessionReconstructor(events, episodic)
+    contexts  = MicroContextReconstructor()
+
+    print("\n— Episodic —")
+    for r in episodic.search(query, n=5):
+        print(f"  {r.score:.2f}  {r.title}")
+        print(f"        {r.subtitle}")
+
+    print("\n— Sessions —")
+    for s in sessions.reconstruct_for_query(query, n=2):
+        print(f"  {s.label}  ·  {s.time_label}")
+        for c in contexts.reconstruct(s.events):
+            print(f"    {c.label}  ({c.event_count} events)")
+
+    # File search is optional — only meaningful if the user has
+    # indexed folders. Comment out if not relevant to your script.
+    store  = VectorStore(CHROMA_DIR)
+    model  = EmbeddingModel()
+    engine = SearchEngine(store, model)
+    print("\n— Files —")
+    for r in engine.search(query, top_k=5):
+        print(f"  {r.score:.2f}  {r.name}")
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+```
+
+This is, intentionally, very close to the body of the launcher's
+worker. There's no special API to learn — what runs the GUI is
+what runs in a script.

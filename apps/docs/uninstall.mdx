@@ -1,0 +1,183 @@
+---
+title: "Uninstall Recall"
+description: "Removing Recall and the data it created. Same promise as the rest of the product: you can leave at any time, with no residue."
+---
+
+Recall is built on the assumption that you might want to leave.
+This page is the exit. After the steps below, your machine has
+zero Recall files, zero registry / launchd entries, and zero
+captured events.
+
+The whole sequence takes about a minute.
+
+## What Recall installed
+
+| Location | What it is |
+|---|---|
+| **The launcher process** (`recall.py` or `Recall.exe`) | The desktop app. Bundled via PyInstaller, or run from source. |
+| **`~/.recall/`** | All user data: event log, indexes, caches, config. Plain JSON / JSONL — readable with `cat`. |
+| **The Chrome / Edge extension** (optional) | Sits in your browser's extensions list. `host_permissions` locked to `http://127.0.0.1:4545/*`. |
+| **An autostart entry** (optional, Windows only today) | A registry key under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` if you enabled *"Start Recall when I log in"* in Settings. |
+| **`~/.cache/huggingface/`** (or platform equivalent) | The one-time embedding-model download (`all-MiniLM-L6-v2`, ~80 MB). Shared with any other tool you've installed that uses sentence-transformers. |
+
+## Step-by-step
+
+### 1. Stop the running process
+
+Right-click the Recall tray icon → **Exit**. (On macOS / Linux, the
+launcher's window or tray menu has the same option.)
+
+If you ran from source, close the terminal that's running
+`python recall.py`, or `Ctrl + C` in that terminal.
+
+Verify nothing is left running:
+
+```bash
+# Windows
+tasklist | findstr /i recall
+
+# macOS / Linux
+ps aux | grep -i recall
+```
+
+You should see no Recall processes.
+
+### 2. Remove the autostart entry (if you enabled it)
+
+If *"Start Recall when I log in"* was on in Settings:
+
+```powershell
+# Windows / PowerShell
+Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" `
+                    -Name "Recall" -ErrorAction SilentlyContinue
+```
+
+```bash
+# macOS — LaunchAgents (when the macOS launch-on-login feature ships)
+rm -f ~/Library/LaunchAgents/com.recall.launcher.plist
+
+# Linux — XDG autostart (when the Linux feature ships)
+rm -f ~/.config/autostart/recall.desktop
+```
+
+If you never enabled autostart, this step is a no-op.
+
+### 3. Uninstall the browser extension
+
+1. Open `chrome://extensions` (or `edge://extensions`).
+2. Find *Recall*.
+3. Click **Remove**.
+
+The extension takes its `host_permissions` lock with it; once
+removed, the browser can no longer reach the local API even if
+Recall is still running.
+
+### 4. Delete `~/.recall/`
+
+This is the data step. Everything Recall knows about you lives
+under this single directory; deleting it is a complete reset.
+
+```bash
+# Windows / PowerShell
+Remove-Item -Recurse -Force $env:USERPROFILE\.recall
+
+# macOS / Linux
+rm -rf ~/.recall
+```
+
+What you just deleted:
+
+| File / directory | What it held |
+|---|---|
+| `events/YYYY-MM-DD.jsonl` | Your per-day event log |
+| `chroma/` | The vector index for file search |
+| `threads.json` | Thread identity cache |
+| `evolution.json` | Phase cache |
+| `resurfacing.json` | Surfacing-counter cache |
+| `config.json` | Folder list, Settings toggles |
+| `version.json` | Channel + version metadata |
+| `events-demo/` | Demo-mode event log (if you ran `RECALL_DEMO_MODE=1`) |
+| `instance.lock` | Single-instance guard |
+
+### 5. Remove the launcher binary
+
+If you installed from a release:
+
+- **Windows** — uninstall via *Settings → Apps → Installed apps*
+  (when the signed installer ships) or delete the `Recall/`
+  folder where you extracted the build.
+- **macOS** — drag `Recall.app` from `/Applications` to the
+  Trash.
+- **Linux** — delete the AppImage you downloaded.
+
+If you ran from source, delete the cloned repo:
+
+```bash
+rm -rf path/to/recall
+```
+
+### 6. (Optional) Remove the embedding-model cache
+
+This step is **opt-in** because the model is shared with any
+other tool you have that uses
+[sentence-transformers](https://www.sbert.net/). Removing it
+forces other tools to re-download.
+
+If Recall is the only such tool on your machine, you can safely
+remove:
+
+```bash
+# Windows
+Remove-Item -Recurse -Force $env:USERPROFILE\.cache\huggingface\hub
+
+# macOS / Linux
+rm -rf ~/.cache/huggingface/hub
+```
+
+This frees ~80 MB.
+
+## Verification
+
+After all the steps above:
+
+- `ls ~/.recall` → *No such file or directory*.
+- `chrome://extensions` → Recall not present.
+- `tasklist | findstr /i recall` / `ps aux | grep -i recall` →
+  no matches.
+- (Optional) `du -sh ~/.cache/huggingface 2>/dev/null` → either
+  zero, or contains models from other tools you use.
+
+You've left zero residue.
+
+## What didn't change
+
+Recall never wrote to anything outside the locations listed
+above. Specifically:
+
+- It did **not** modify your shell profile (`.bashrc`,
+  `.zshrc`, PowerShell profile).
+- It did **not** install any system-wide packages or services.
+- It did **not** add any cron jobs or scheduled tasks.
+- It did **not** modify your browser's settings beyond the
+  extension you explicitly installed.
+
+If you find a Recall-related file outside the locations above,
+that is a bug — please [report it](troubleshooting#filing-a-good-bug-report)
+with the file's path.
+
+## Reinstalling later
+
+The event log under `~/.recall/events/` is the only artefact
+that's not re-derivable. If you might come back later, you can
+back it up before deleting:
+
+```bash
+cp -r ~/.recall/events ~/Documents/recall-events-backup
+```
+
+Drop the backup folder under `~/.recall/events/` on a fresh
+install and the engine will read your historical activity as if
+it had been there all along.
+
+Everything else (`chroma/`, `threads.json`, `evolution.json`,
+`resurfacing.json`) re-derives from events on the next run.

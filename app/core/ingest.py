@@ -38,7 +38,7 @@ from .events import EventLogger
 # Default port chosen from the IANA dynamic range. Picked once and
 # hard-coded into both the daemon and the extension. Changing it
 # requires updating the extension manifest's host_permissions.
-DEFAULT_PORT = 49827
+DEFAULT_PORT = 4545
 LOOPBACK = "127.0.0.1"
 
 # The only event kinds the ingest server will accept. Matches what
@@ -74,6 +74,10 @@ SCHEME_BLOCKLIST: frozenset[str] = frozenset({
 # with tracking params); titles + queries are usually short. The
 # limits are generous enough to be informative and small enough
 # that an event line stays well under 4 KB.
+#
+# `browser` is the Phase 1D field name; `source` is the legacy alias
+# from Phase 1B. Both flow through the same allowlist so older event
+# payloads continue to round-trip cleanly without rewrites on disk.
 _FIELD_LIMITS: dict[str, int] = {
     "url": 2048,
     "title": 500,
@@ -82,6 +86,7 @@ _FIELD_LIMITS: dict[str, int] = {
     "domain": 240,
     "engine": 60,
     "platform": 60,
+    "browser": 60,
     "source": 60,
 }
 

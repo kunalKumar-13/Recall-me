@@ -1,4 +1,4 @@
-# Phase 1B — full product (engine + launcher + watcher).
+# Recall — full product (engine + launcher + watcher + local API).
 
 # Engine
 sentence-transformers>=2.5.0
@@ -11,6 +11,16 @@ pynput>=1.7.6
 
 # Background indexing — keeps the memory layer alive between launches
 watchdog>=3.0.0
+
+# Phase 2A — unified local API. The desktop process embeds a FastAPI
+# service for ingestion + retrieval + reconstruction; the launcher
+# and the browser extension both talk to it via 127.0.0.1 only.
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+# orjson keeps the <100ms /v1/search budget on 10K-event logs — the
+# stdlib parser is 5-10x slower per line and dominated the cost.
+orjson>=3.9.0
 
 # Optional parsers — uncomment to enable
 # python-docx>=1.1.0   # .docx

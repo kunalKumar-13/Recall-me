@@ -1,0 +1,172 @@
+---
+title: "Search"
+description: "Retrieval over HTTP. Episodic + sessions + micro-contexts in one bundle."
+---
+
+`GET /v1/search` returns the three retrieval layers in one response.
+It is the launcher's primary read path and the recommended way for
+anything else to ask Recall what the user was doing.
+
+```http
+GET /v1/search?q=rlhf+reward+shaping HTTP/1.1
+Host: 127.0.0.1:4545
+```
+
+## Query parameters
+
+| Param | Default | Range | Meaning |
+|---|---|---|---|
+| `q` | *required* | min length 1 | The user's free-text query. Temporal phrases ("yesterday", "this morning") and kind hints ("chat", "article", "claude") are parsed out before scoring. |
+| `n_episodic` | `3` | 0–20 | Number of episodic moments to return. |
+| `n_sessions` | `2` | 0–10 | Number of reconstructed sessions. |
+| `n_contexts` | `2` | 0–10 | Number of micro-contexts. |
+
+## Response
+
+```ts
+type SearchResponse = {
+  query: string;
+  episodic: EpisodicResultOut[];
+  sessions: SessionOut[];
+  contexts: MicroContextOut[];
+  elapsed_ms: number;       // server-side scoring time
+};
+
+type EpisodicResultOut = {
+  kind: "browser_visit" | "browser_search" | "chat_session";
+  title: string;
+  subtitle: string;         // "ChatGPT · 2h ago", "google · yesterday"
+  url: string;
+  ts_epoch: number;         // Unix seconds
+  score: number;
+  session_id: string;
+};
+
+type SessionOut = {
+  session_id: string;
+  topic: string;            // dominant content tokens
+  label: string;            // "Researching X", "Chats about Y"
+  time_label: string;       // "2h ago · ~25min"
+  score: number;
+  event_count: number;
+  kinds: string[];
+  preview_events: EventOut[];      // newest-first, deduped, max 6
+  openable_targets: OpenableTarget[];   // max 32
+};
+
+type MicroContextOut = {
+  topic: string;
+  label: string;
+  time_label: string;
+  event_count: number;
+  kinds: string[];
+  match_count: number;      // events in this context that match the query
+  preview_events: EventOut[];
+  openable_targets: OpenableTarget[];
+};
+
+type OpenableTarget = {
+  kind: "url" | "path";
+  target: string;
+};
+
+type EventOut = {
+  ts: string;               // UTC ISO 8601, second resolution
+  session_id: string;
+  kind: string;
+  title: string;
+  url: string;
+  domain: string;
+  payload: Record<string, unknown>;
+};
+```
+
+## Scoring pipeline
+
+The server runs three layered passes:
+
+1. **Episodic** — keyword + recency + kind-hint scoring over the
+   14-day event log. See [retrieval pipeline](/architecture/retrieval-pipeline).
+2. **Sessions** — group the episodic results by `session_id`,
+   enrich with every event in those sessions, score by match
+   density.
+3. **Micro-contexts** — split each session into 2–6 topic-coherent
+   sub-blocks. Return the ones containing at least one matched event.
+
+The three layers share a single 10K-event scoring pass; the server
+does not score the log twice.
+
+## Performance
+
+On a 10,000-event log:
+
+| Operation | Median |
+|---|---|
+| Cold call (first request after boot) | ~95 ms wall |
+| Warm call | ~70 ms wall |
+| Server-side scoring | 50–60 ms |
+
+The remaining wall-clock cost is HTTP serialization. Most clients
+will see warm-call latency in their loop because the per-file parse
+cache lives across requests.
+
+## Examples
+
+<CodeGroup>
+
+```bash curl
+curl -s 'http://127.0.0.1:4545/v1/search?q=rlhf%20reward%20shaping' | jq
+```
+
+```python Python
+import urllib.parse, urllib.request, json
+
+q = urllib.parse.quote("rlhf reward shaping")
+with urllib.request.urlopen(
+    f"http://127.0.0.1:4545/v1/search?q={q}", timeout=2
+) as r:
+    data = json.loads(r.read())
+
+for m in data["episodic"]:
+    print(f"{m['score']:.2f}  {m['title']}  ({m['subtitle']})")
+```
+
+```typescript TypeScript
+const q = encodeURIComponent("rlhf reward shaping");
+const res = await fetch(`http://127.0.0.1:4545/v1/search?q=${q}`);
+const data = await res.json();
+
+for (const m of data.episodic) {
+  console.log(`${m.score.toFixed(2)}  ${m.title}  (${m.subtitle})`);
+}
+```
+
+</CodeGroup>
+
+## Python facade
+
+The same retrieval is reachable in-process without an HTTP round trip
+— useful for tests and scripts that already have `app/` imported:
+
+```python
+from app.core.events        import EventStore
+from app.core.episodic      import EpisodicRetriever
+from app.core.sessions      import SessionReconstructor
+from app.core.microcontexts import MicroContextReconstructor
+
+events    = EventStore()
+episodic  = EpisodicRetriever(events)
+sessions  = SessionReconstructor(events, episodic)
+contexts  = MicroContextReconstructor()
+
+results       = episodic.search("rlhf reward shaping", n=3)
+session_list  = sessions.reconstruct_for_query("rlhf reward shaping", n=2)
+for sess in session_list:
+    for ctx in contexts.reconstruct(sess.events):
+        print(ctx.label, ctx.event_count)
+```
+
+The HTTP and Python paths return the same data, modeled with two
+parallel type names (`SearchResponse` in `api/schemas.py` for the
+HTTP payload, the dataclasses in `app/core/api_client.py` for the
+decoded client form).

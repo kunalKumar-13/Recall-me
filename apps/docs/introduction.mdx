@@ -1,0 +1,120 @@
+---
+title: "Why Recall exists"
+description: "An infrastructure-grade memory layer for a single laptop."
+---
+
+Recall is a local memory layer for a personal computer. It records
+small events — page visits, search queries, files you open, chat
+sessions you have — and turns them into a queryable record of what
+you were doing and when.
+
+It runs only on your machine. There is no cloud, no account, no
+remote inference. Every event lives in plain-text JSONL under
+`~/.recall/events/`. You can read it, edit it, delete it.
+
+## The shape of the problem
+
+Knowledge work is fragmented across surfaces. A typical hour spans
+a browser, an IDE, a chat platform, a PDF viewer, and a few terminal
+windows. Each surface remembers a piece. None of them remember the
+whole.
+
+The cost of that fragmentation is small per occurrence and large
+in aggregate:
+
+- The article you read on Tuesday that you now need to cite.
+- The half-finished thought you had between two unrelated meetings.
+- The chat with a model that contained the exact retry strategy
+  you've spent an hour trying to re-derive.
+- The pitch deck you closed because Slack pinged, then never reopened.
+
+These aren't search problems. They're continuity problems. Recall
+treats them as such.
+
+## What Recall does
+
+<CardGroup cols={2}>
+  <Card title="Captures activity" icon="signal-stream">
+    A tiny browser extension and the desktop app together emit small
+    JSON events: page visits, searches, chat sessions, file opens.
+    Append-only. Plain text. Local.
+  </Card>
+  <Card title="Reconstructs context" icon="layer-group">
+    A retrieval pipeline turns those events into episodic moments,
+    micro-contexts (topical work blocks), and sessions (temporal
+    work blocks) — surfaced through one keyboard launcher.
+  </Card>
+  <Card title="Resumes work" icon="rotate-right">
+    Selecting a context or session re-opens every URL and file in
+    it. Continuing a thread becomes one keystroke instead of fifteen
+    minutes of remembering.
+  </Card>
+  <Card title="Stays out of the way" icon="eye-slash">
+    No tray notifications. No "weekly summary" emails. No
+    background calls. The launcher is the only surface; everything
+    else is invisible infrastructure.
+  </Card>
+</CardGroup>
+
+## How it feels
+
+<Frame caption="Empty input: the digest surfaces recent activity quietly. Replace with a real screenshot from your launcher.">
+  <img src="/images/launcher-digest.png" alt="Launcher digest" />
+</Frame>
+
+Press `Ctrl + Space` anywhere. Type the half-thought you have:
+
+```
+that GPT chat about websocket retries
+```
+
+The launcher surfaces — in this order — the specific matching
+moments (episodic events), the topical work blocks they belong to
+(micro-contexts), and the broader sessions that contain those
+work blocks. Arrow keys move through everything. `Enter` opens
+the highlighted result. `Enter` on a context expands it; a second
+`Enter` reopens every file and URL inside.
+
+## What Recall is not
+
+- Not a search engine for files. (A separate full-text + vector
+  search layer handles files; episodic recall is layered on top.)
+- Not a chat interface. There is no conversational surface, no
+  model inference at runtime, no AI-generated summaries.
+- Not a productivity dashboard. The launcher has no analytics view,
+  no charts, no graphs.
+- Not multi-user. One laptop, one user, one event log.
+
+## Reading order
+
+If this is your first time here, this is the path that minimises
+the number of pages you need to read to ship something:
+
+<Steps>
+  <Step title="Run the daemon">
+    [Self-hosting](/self-hosting) walks through installing the
+    desktop app and confirming the ingest server binds on
+    `127.0.0.1:4545`.
+  </Step>
+  <Step title="Install the extension">
+    [Chrome extension](/extensions/chrome-extension) ships in a
+    folder you can load unpacked in two minutes.
+  </Step>
+  <Step title="Understand the data model">
+    [Events](/architecture/events) describes the JSONL schema. Open
+    your event log in a text editor while reading it; nothing
+    elsewhere will explain the system faster.
+  </Step>
+  <Step title="Read the retrieval pipeline">
+    [Retrieval pipeline](/architecture/retrieval-pipeline) is the
+    one page that ties the entire system together.
+  </Step>
+</Steps>
+
+## Status
+
+Recall is the work of a single developer. The desktop app and
+extension are stable and deploy-ready. Embeddings, cross-session
+context merging, and a plugin protocol are tracked on the
+[roadmap](/roadmap). Nothing on the roadmap will change the
+local-first commitment.

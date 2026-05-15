@@ -39,13 +39,48 @@ class Config:
     # The local HTTP server that accepts events from the browser
     # extension. Loopback-only; nothing external can ever reach it.
     browser_ingest_enabled: bool = True
-    # Default port chosen from the unprivileged dynamic range. Hard-
-    # coded so the bundled extension can connect without configuration;
-    # change requires updating both ends.
-    browser_ingest_port: int = 49827
+    # Phase 1D pins the port at 4545 (memorable, well outside the
+    # commonly-used dev port range). Hard-coded into the bundled
+    # extension; changing it here requires editing both ends.
+    browser_ingest_port: int = 4545
     # Domains the user has chosen to never capture. Matched as suffixes
     # so adding "google.com" silently filters mail.google.com, docs etc.
     browser_excluded_domains: List[str] = field(default_factory=list)
+
+    # ── Phase 2B: passive resurfacing ────────────────────────────
+    # When True the launcher's idle digest grows a quiet
+    # "continue where you left off" section over unfinished thinking.
+    # When False the engine is skipped entirely and no extra disk
+    # state is created. The toggle is honoured live; existing
+    # `~/.recall/resurfacing.json` history stays on disk and is only
+    # removed via the explicit "Clear resurfacing history" control.
+    resurfacing_enabled: bool = True
+
+    # ── Phase 2C: memory threads ─────────────────────────────────
+    # When True the idle digest grows an "Active memory threads"
+    # section listing topics the user keeps returning to. When False
+    # the engine is skipped (no event-log scan, no cache writes).
+    # Existing `~/.recall/threads.json` stays on disk and is only
+    # removed via the Settings "Clear thread cache" control.
+    threads_enabled: bool = True
+
+    # ── Phase 3A: thread evolution ───────────────────────────────
+    # When True the launcher fetches a chronological evolution
+    # strip after opening a thread. When False the API returns 404
+    # for `/v1/threads/{id}/evolution` and the launcher skips the
+    # fetch entirely. The on-disk cache at
+    # `~/.recall/evolution.json` only stores derived data; it's
+    # always safe to delete.
+    evolution_enabled: bool = True
+
+    # ── Phase 3B: continuity recovery ───────────────────────────
+    # When True the launcher's idle digest leads with a
+    # "Continue where you left off" recovery section that supports
+    # one-click restoration of every URL/path the user was using.
+    # When False the section is empty and the recovery engine is
+    # skipped (no event-log scan, no cache writes — recovery has
+    # no persistent cache, the surface is derived on demand).
+    recovery_enabled: bool = True
 
     @classmethod
     def load(cls) -> "Config":

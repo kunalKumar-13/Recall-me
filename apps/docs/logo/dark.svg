@@ -1,0 +1,18 @@
+<svg viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Recall">
+  <defs>
+    <linearGradient id="dg" x1="4" y1="4" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D4CCFF"/>
+      <stop offset="1" stop-color="#A99CF7"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(0,4)">
+    <circle cx="16" cy="16" r="13.5" fill="rgba(212,204,255,0.10)" stroke="url(#dg)" stroke-opacity="0.65" stroke-width="1.1"/>
+    <path d="M11.5 9.5 C 8.5 11, 8.5 14, 10 16 C 8.5 18, 9 21, 11.5 22.5" stroke="url(#dg)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M20.5 9.5 C 23.5 11, 23.5 14, 22 16 C 23.5 18, 23 21, 20.5 22.5" stroke="url(#dg)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M16 9 L16 23" stroke="url(#dg)" stroke-width="1.2" stroke-linecap="round" stroke-opacity="0.75"/>
+    <circle cx="16" cy="16" r="1.7" fill="url(#dg)"/>
+  </g>
+  <text x="42" y="27" font-family="-apple-system, system-ui, 'Segoe UI', sans-serif" font-size="20" font-weight="600" fill="#EEEAE2" letter-spacing="-0.5">
+    Recall<tspan fill="#A8A39A" font-weight="400">.me</tspan>
+  </text>
+</svg>

@@ -1,0 +1,212 @@
+---
+title: "Events endpoints"
+description: "POST /v1/events/{browser,search,chat,open} on the local API. The write path for browser and file-system activity."
+---
+
+The ingest surface accepts JSON-encoded events from clients running on
+the same machine. The bundled Chrome extension is the primary writer;
+any local script can post to the same endpoints.
+
+There is one endpoint per kind. The kind is encoded in the URL; the
+body carries the typed payload only.
+
+| Endpoint | Body | Use |
+|---|---|---|
+| `POST /v1/events/browser` | `BrowserVisitIn` | Completed page load |
+| `POST /v1/events/search` | `BrowserSearchIn` | Search-engine query |
+| `POST /v1/events/chat` | `ChatSessionIn` | ChatGPT / Claude / etc. session |
+| `POST /v1/events/open` | `FileOpenIn` | File open or reveal-in-Finder |
+| `POST /events` | `{kind, payload}` | Backward-compatibility generic — prefer `/v1/events/{kind}` |
+
+The legacy `/events` route forwards the body to the right `/v1/events/{kind}`
+endpoint based on `kind`. New clients should write to the versioned
+routes directly.
+
+## `POST /v1/events/browser`
+
+Submit one browser visit.
+
+```http
+POST /v1/events/browser HTTP/1.1
+Host: 127.0.0.1:4545
+Content-Type: application/json
+
+{
+  "url": "https://arxiv.org/abs/2203.02155",
+  "title": "Training language models to follow instructions",
+  "domain": "arxiv.org",
+  "browser": "chrome"
+}
+```
+
+### Body
+
+```ts
+type BrowserVisitIn = {
+  url: string;          // required, capped at 2048 chars
+  title?: string;       // capped at 500
+  domain?: string;      // derived from url if absent, capped at 240
+  browser?: string;     // "chrome" | "edge" | "firefox" | ...
+  tab_title?: string;   // capped at 500
+};
+```
+
+### Response
+
+```json
+{ "received": 1, "ingested": 1, "reason": null }
+```
+
+`received` is always `1` (one URL = one event). `ingested` is `1` on
+success and `0` when the event was rejected; in that case `reason` is
+a short, human-readable string. Reasons include:
+
+- The URL scheme is blocked (`chrome://`, `file://`, …).
+- The domain is in the user's exclude list.
+- The user has paused browser memory in Settings.
+- The payload failed validation (missing URL, payload too large, …).
+
+The server never raises into the request handler; structurally bad
+input returns `422` with a Pydantic error body.
+
+## `POST /v1/events/search`
+
+Submit one search-engine query.
+
+```ts
+type BrowserSearchIn = {
+  url: string;
+  query: string;        // capped at 500
+  engine: string;       // "google" | "duckduckgo" | "bing" | "kagi" | ...
+  domain?: string;
+  browser?: string;
+};
+```
+
+## `POST /v1/events/chat`
+
+Submit one chat-platform session entry.
+
+```ts
+type ChatSessionIn = {
+  url: string;
+  title?: string;
+  platform: string;     // "chatgpt" | "claude" | ...
+  domain?: string;
+  browser?: string;
+};
+```
+
+## `POST /v1/events/open`
+
+Submit one file-open or reveal event. Typically only the launcher
+writes these — they're exposed in the API so headless scripts can
+record opens for testing.
+
+```ts
+type FileOpenIn = {
+  path: string;
+  title?: string;
+  reveal?: boolean;     // true → recorded as kind="reveal"
+};
+```
+
+## Status codes
+
+| Code | Meaning |
+|---|---|
+| `200` | Request accepted. See `ingested` for whether it wrote. |
+| `422` | Pydantic validation error (missing fields, wrong types). |
+| `404` | Unknown path. |
+
+## Examples
+
+<CodeGroup>
+
+```bash curl
+curl -X POST http://127.0.0.1:4545/v1/events/browser \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://arxiv.org/abs/2203.02155",
+    "title": "Training language models to follow instructions",
+    "domain": "arxiv.org",
+    "browser": "chrome"
+  }'
+```
+
+```python Python
+import json
+import urllib.request
+
+event = {
+    "url": "https://arxiv.org/abs/2203.02155",
+    "title": "Training language models to follow instructions",
+    "domain": "arxiv.org",
+    "browser": "chrome",
+}
+
+req = urllib.request.Request(
+    "http://127.0.0.1:4545/v1/events/browser",
+    data=json.dumps(event).encode("utf-8"),
+    headers={"Content-Type": "application/json"},
+    method="POST",
+)
+with urllib.request.urlopen(req, timeout=2) as r:
+    print(r.read().decode())
+# → {"received": 1, "ingested": 1, "reason": null}
+```
+
+```typescript TypeScript
+const event = {
+  url: "https://arxiv.org/abs/2203.02155",
+  title: "Training language models to follow instructions",
+  domain: "arxiv.org",
+  browser: "chrome",
+};
+
+const res = await fetch("http://127.0.0.1:4545/v1/events/browser", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(event),
+});
+
+console.log(await res.json());
+// → { received: 1, ingested: 1, reason: null }
+```
+
+</CodeGroup>
+
+## Legacy `POST /events`
+
+The pre-2A generic ingest is still accepted. The body wraps the
+typed payload in `{kind, payload}`:
+
+```bash
+curl -X POST http://127.0.0.1:4545/events \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "kind": "browser_visit",
+    "payload": {
+      "url": "https://arxiv.org/abs/2203.02155",
+      "title": "Training language models",
+      "domain": "arxiv.org",
+      "browser": "chrome"
+    }
+  }'
+```
+
+Prefer the versioned routes; the legacy path exists only so older
+extensions still work during an upgrade.
+
+## Threat model
+
+The ingest surface is **not** a permission boundary against hostile
+local processes. A process running as the same user could spam events,
+just as it could read the JSONL log directly. The loopback bind is
+protection against *remote* attackers, not against the same user's
+other software.
+
+If your threat model includes hostile local processes, the correct
+mitigation is OS-level filesystem ACLs on `~/.recall/` plus running
+the daemon under a separate user — not adding an auth layer to a
+loopback endpoint.

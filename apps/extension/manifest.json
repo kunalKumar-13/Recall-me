@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Recall.me — Memory Sync",
+  "short_name": "Recall",
+  "version": "1.1.0",
+  "description": "Quietly remember what you browsed and chatted about — locally, on your machine. Your activity goes only to the local Recall daemon. Nothing leaves the device.",
+  "permissions": [
+    "tabs",
+    "storage"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:4545/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Recall Memory Sync"
+  }
+}

@@ -1,0 +1,108 @@
+---
+title: "API overview"
+description: "Recall ships a versioned HTTP surface at 127.0.0.1:4545. It is local-only by design."
+---
+
+Recall exposes two programmatic surfaces:
+
+| Surface | Reach | What it's for |
+|---|---|---|
+| **HTTP API** | `http://127.0.0.1:4545/v1/*` | Event ingestion, retrieval, session + micro-context reconstruction, replay |
+| **Python facade** | `app/` package | In-process integration tests, scripts, anything that already has the codebase imported |
+
+The HTTP API is a versioned FastAPI service running in-process inside
+the Recall desktop application. It binds to `127.0.0.1` only — there is
+no public port and no auth, because the loopback bind is the security
+boundary.
+
+Interactive Swagger docs are served at
+`http://127.0.0.1:4545/docs-api` whenever the app is running. The
+OpenAPI document lives at `http://127.0.0.1:4545/openapi.json`.
+
+## Why loopback-only
+
+```mermaid
+graph LR
+    Ext[Extension] --> S
+    Cli[CLI scripts] --> S
+    Launcher[Launcher] --> S
+    S[FastAPI service bound to 127.0.0.1:4545]
+    S --> L[Event log]
+    R[Remote network] -.x.- S
+    style R color:#D67896
+```
+
+The service calls `uvicorn` with `host="127.0.0.1"`. Connections from
+anything other than `localhost` never reach the handler. There is no
+auth token because there is no remote endpoint to protect.
+
+The Chrome extension is bound to the same address by its
+`host_permissions` declaration — Chrome's permission system physically
+refuses any other URL.
+
+## Endpoint summary
+
+### Ingest
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/v1/events/browser` | Browser page visit |
+| `POST` | `/v1/events/search` | Search-engine query |
+| `POST` | `/v1/events/chat` | Chat-platform session (ChatGPT, Claude, …) |
+| `POST` | `/v1/events/open` | File open or reveal-in-Finder |
+| `POST` | `/events` | Legacy generic ingest — `{kind, payload}` body, backward compatibility only |
+
+### Retrieval
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/v1/search?q=…` | Episodic moments + sessions + micro-contexts in one bundle |
+| `GET` | `/v1/sessions/recent` | Recent sessions, no query filter |
+| `GET` | `/v1/contexts/recent` | Recent micro-contexts |
+| `GET` | `/v1/events/recent` | Newest-first event stream, filterable by kind |
+| `GET` | `/v1/queries/recent` | Distinct recent launcher queries |
+| `POST` | `/v1/replay/day` | Reconstruct sessions + micro-contexts for a past day |
+
+### Health
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/v1/health` | Liveness + ingest counters |
+| `GET` | `/health` | Legacy alias for `/v1/health` |
+
+Full reference: [Events](/api/events) for the write surface,
+[Search](/api/search) for the bundle, and [Retrieval](/api/retrieval)
+for the rest of the read surface.
+
+## Python facade
+
+For programmatic retrieval, the in-process classes are the API:
+
+```python
+from app.core.events        import EventLogger, EventStore
+from app.core.episodic      import EpisodicRetriever
+from app.core.sessions      import SessionReconstructor
+from app.core.microcontexts import MicroContextReconstructor
+
+events    = EventStore()
+episodic  = EpisodicRetriever(events)
+sessions  = SessionReconstructor(events, episodic)
+contexts  = MicroContextReconstructor()
+
+results      = episodic.search("websocket retry yesterday", n=5)
+session_list = sessions.reconstruct_for_query("websocket retry", n=2)
+```
+
+See the [SDK introduction](/sdk/introduction) for a tour of every type
+these methods return.
+
+## Versioning
+
+HTTP routes are versioned in the URL (`/v1/`). Adding a field to a
+request or response is backward compatible (older clients ignore
+unknown fields, older servers ignore unknown request fields). Removing
+or repurposing a field would require `/v2/`.
+
+The Python facade follows the same contract: public classes and
+methods (the ones documented here) are stable. Underscore-prefixed
+names are internal and may change without notice.

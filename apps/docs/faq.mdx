@@ -1,0 +1,151 @@
+---
+title: "FAQ"
+description: "The questions that come up over and over. Answers are short and honest."
+---
+
+## Is Recall an AI?
+
+No. Recall has no LLM, no embeddings above the file-search layer,
+no probabilistic ranking, no cloud inference. It captures events,
+groups them deterministically, and surfaces resumable work using
+seven layers of explicit heuristics. Same events in → same
+outputs out, every time.
+
+The one place a model exists is the file-search layer, which
+uses `all-MiniLM-L6-v2` (~80 MB, runs on your CPU) over your
+chosen folders. The model is downloaded once on first run, then
+loaded with `local_files_only=True` forever after.
+
+## Does Recall send any data anywhere?
+
+No. The HTTP API binds to `127.0.0.1` only; Chrome's
+`host_permissions` for the extension is locked to the same
+address. The browser physically refuses to fetch any other URL
+from the extension's worker. There is no telemetry, no
+analytics, no error reporting, no model-update pings.
+
+The only outbound network call is the one-time embedding-model
+download on first run. After that, you can pull the network
+cable and Recall keeps working.
+
+## Where does my data live?
+
+Entirely under `~/.recall/`:
+
+| File / directory | What it holds |
+|---|---|
+| `config.json` | Your folder list + Settings toggles. |
+| `events/YYYY-MM-DD.jsonl` | One file per day. Plain text, hand-editable. |
+| `chroma/` | The vector index for file search. |
+| `resurfacing.json` | Surfacing counters for "On your radar". |
+| `threads.json` | Identity cache for memory threads. |
+| `evolution.json` | Phase cache for thread evolution. |
+
+Delete any file and Recall keeps working — the engine
+re-derives everything except the event log and the vector
+index. Delete the whole folder for a complete reset.
+
+## Will it work offline?
+
+After the first run, yes, completely. The launcher, the API,
+the file search, and the recovery engine all run with no
+network at all.
+
+## Does it have accounts? Sync?
+
+No. Recall is a single-user, single-machine product on purpose.
+A cloud-sync design would make the engineering easier and the
+trust impossible; we picked the harder side.
+
+## Why are the recovery cards so conservative? My laptop has tons of activity.
+
+Recovery is deliberately strict. The brief was *fewer but
+believable*, not *more and noisier*. To surface a thread as
+"Continue where you left off", it needs to:
+
+- have at least 4 events,
+- span at least 2 sessions,
+- include at least one "depth" event (file open, chat session,
+  or active search — not just browser visits),
+- touch at least 2 distinct targets (URLs / file paths),
+- have a `max(continuity, recovery_confidence)` score ≥ 0.45.
+
+Pure passive browsing — even if it's multi-day, multi-session —
+flows through *Resurfacing* instead. Recovery is for work you
+were doing, not work you were reading.
+
+See [`architecture/recovery.mdx`](architecture/recovery.mdx)
+for the full signal table.
+
+## What's the difference between "Continue where you left off"
+and "On your radar"?
+
+Both are quiet idle-launcher sections. They answer different
+questions:
+
+| Section | Question |
+|---|---|
+| **Continue where you left off** | What should I open right now to resume? Backed by Phase 3B recovery: deterministic, max-3, one-click restoration. |
+| **On your radar** | What topics am I drifting back to? Backed by Phase 2B resurfacing: passive surfacing of unfinished thinking, no restore action. |
+
+A topic can appear in both. They're independent engines.
+
+## Why doesn't Recall summarise my work for me?
+
+Because deterministic summaries are dishonest (you can never
+verify them) and probabilistic summaries are LLM output (which
+contradicts the product's local-first, deterministic contract).
+
+Where Recall *does* generate prose — the `preview_caption` line
+on a recovery card — it's assembled by counting suggested
+targets and naming the last evolution phase. Same inputs always
+produce the same caption, byte for byte. No model, no
+probabilities, nothing you can't reproduce by hand.
+
+## Can I use Recall on multiple machines?
+
+You can install it on multiple machines. They won't sync — see
+above. We don't see this as a limitation; the brief's claim is
+that a continuity layer for your own thinking is only useful if
+it stays on the machine.
+
+If you want a shared event log across machines, the JSONL
+format is hand-editable and you could in principle `rsync` the
+`events/` folder. We don't support it, and the resurfacing /
+threads / evolution / recovery layers will get confused if two
+machines mutate the same files concurrently. Better to keep one
+machine's worth of Recall on each machine.
+
+## Why Python? Why PyQt?
+
+Because the engine is small enough to read in an afternoon, and
+shipping a Python codebase plus its dependencies via PyInstaller
+gets us a native-feeling desktop app without leaving a language
+the engine is written in. PyQt6 has mature platform integration
+on Windows (tray, native frameless windows, real hotkey
+support) and reasonable support on macOS and Linux.
+
+Rewriting in a faster language is on the table only if the
+profiler says it's needed. So far it hasn't.
+
+## Is Recall open source?
+
+Yes, MIT licensed. The retrieval engine is small enough to read
+in an afternoon, and you should before trusting it with your
+data. See [`CONTRIBUTING.md`](../CONTRIBUTING.md) for how to
+get involved, and [`AUDIT_REPORT.md`](../AUDIT_REPORT.md) for
+the standing list of things that need work.
+
+## Is there a roadmap?
+
+[`docs/roadmap.mdx`](roadmap) lists the actively-planned items.
+[`AUDIT_REPORT.md`](../AUDIT_REPORT.md) lists the standing
+backlog. We do not promise dates and we do not commit to
+features the brief explicitly excludes (cloud sync, LLM chat,
+multi-user, recommendation feeds, dashboards, telemetry).
+
+## Where does the project name come from?
+
+Recall is what you actually want when you go looking for "that
+thing I was thinking about". Not search. Not retrieval.
+Recall.

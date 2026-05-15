@@ -1,0 +1,184 @@
+---
+title: "Install validation"
+description: "A six-step check that your install is healthy. Takes about three minutes."
+---
+
+After installing Recall, run this checklist once. Each step
+takes a few seconds and confirms one specific layer is alive.
+If any step fails, the [troubleshooting page](troubleshooting)
+has the diagnostic command.
+
+The checklist is also the *first-run smoke pass*. It exercises
+exactly the surfaces a real user will touch in their first
+session. If all six pass, the install is good.
+
+## 1. Boot the launcher
+
+```bash
+python recall.py --debug
+```
+
+On a clean install, the boot log ends with:
+
+```
+[OK] load config
+[OK] initialize event logger
+[OK] start local memory API (Phase 2A)  ·  127.0.0.1:4545
+[OK] initialize search engine
+[OK] register global hotkey
+recall · ready
+```
+
+If any line shows `[SLOW]`, the corresponding stage took
+longer than a second. The launcher will still come up — slow
+stages aren't fatal — but worth noting.
+
+**Failure mode:** any `[FAIL]` line. See
+[troubleshooting](troubleshooting).
+
+## 2. Press Ctrl + Space
+
+The launcher should appear within ~100 ms anywhere on the
+screen. Press `Esc` to dismiss.
+
+**Failure mode:** nothing happens. The global hotkey is being
+captured by another process; see *"The launcher doesn't open
+when I press Ctrl+Space"* in
+[troubleshooting](troubleshooting).
+
+## 3. Type a query
+
+Open Ctrl + Space, type any word you'd expect to be in your
+notes or browser history, hit `Enter`. On a fresh install the
+launcher will show *"No results yet — try indexing a folder
+under Settings"*. On an established install, results should
+populate within 100 ms.
+
+**Verify perf**: server-side time appears in
+`~/.recall/logs/api.log` (or stdout when running with
+`--debug`). It should be under 60 ms server-side for the
+`/v1/search` line.
+
+## 4. Confirm the API is alive
+
+```bash
+curl http://127.0.0.1:4545/v1/health
+```
+
+Expected response:
+
+```json
+{
+  "status": "ok",
+  "name": "recall-api",
+  "version": "2A",
+  "enabled": true,
+  "ingested_total": 0,
+  "dropped_total": 0,
+  "events_dir": "/home/you/.recall/events"
+}
+```
+
+`ingested_total` will be 0 on a brand-new install. The number
+goes up after the browser extension or any client posts an
+event.
+
+**Failure mode:** `Connection refused`. The launcher's API
+service didn't start. See *"Recall daemon not responding"* in
+[troubleshooting](troubleshooting).
+
+## 5. Install the Chrome / Edge extension
+
+1. Open the desktop app (any state — idle is fine).
+2. Open `chrome://extensions` (or `edge://extensions`).
+3. Enable *Developer mode* (top-right).
+4. *Load unpacked* → select the `extension/` directory from
+   the Recall source.
+5. Click the extension icon in the toolbar. The popup should
+   show *"Connected · 0 captured"*.
+6. Visit any page (e.g. https://example.com). The next time
+   you open the popup, the count should increment.
+
+**Failure mode:** *"Recall daemon not responding"* — confirm
+the desktop app is open and the API is alive (step 4).
+
+## 6. Confirm the smoke test passes
+
+```bash
+python _smoke_api.py
+```
+
+This runs the full 29-section regression suite against an
+in-process FastAPI instance with a temp event log. It takes
+about 5 seconds end-to-end. All 29 sections should print
+`[OK]`.
+
+**Failure mode:** any `Traceback`. Two pre-existing flakes are
+known:
+
+- **Section 11** (10K-event search perf, 100 ms wall budget) —
+  Windows page-cache cold start can blow this; re-run and it
+  usually passes.
+- **Section 20** (threads rebuild perf, 75 ms server-side
+  best-of-3) — same cause.
+
+A `Traceback` from any other section means a real problem on
+your platform. File a bug with the full stderr; the bug-report
+template asks for exactly the right context.
+
+## Optional: confirm orjson is installed
+
+`orjson` is an optional fast-path JSON parser. With it,
+`/v1/search` runs ~5× faster on cold caches. Verify:
+
+```bash
+python -c "import orjson; print(orjson.__version__)"
+```
+
+If you get an `ImportError`, install it:
+
+```bash
+pip install orjson
+```
+
+The engine works without `orjson` — it falls back to stdlib
+`json` — but the perf budgets in
+[`docs/architecture/recovery.mdx`](architecture/recovery)
+assume it's present.
+
+## Optional: confirm your folders are indexed
+
+On a fresh install, the file-search layer (the bottom of the
+launcher results) is empty until you tell it where to look:
+
+1. Open Settings (`Ctrl + ,`).
+2. *Add folder…* — pick your notes / docs / code folder.
+3. *Refresh memory* — kicks off the indexer. The progress bar
+   shows files processed.
+4. Once indexing completes, Ctrl + Space → type something
+   you'd find in those folders → file rows should appear at
+   the bottom of the launcher.
+
+The indexer runs incrementally after that: save a file, it's
+re-indexed within ~10 seconds (the watchdog file watcher).
+
+## What "healthy" looks like over time
+
+A few days into using Recall, the launcher's idle digest
+should populate with:
+
+- *Continue where you left off* — up to 3 cards, once your
+  activity crosses the recovery thresholds (see
+  [`architecture/recovery.mdx`](architecture/recovery)).
+- *Active memory threads* — up to 5 cards.
+- *On your radar* — up to 4 cards.
+- *Lately you searched* — your recent launcher queries.
+- *Recent digital activity* — recent browser events.
+- *Recently active* + *Resurfaced this week* — files from your
+  indexed folders.
+
+If none of those show anything after a week of normal use,
+either the engine has nothing it considers worth surfacing (a
+clean digest is healthy — recovery in particular is
+conservative on purpose), or something's stuck — see
+[troubleshooting](troubleshooting).

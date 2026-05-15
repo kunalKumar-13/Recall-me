@@ -214,8 +214,8 @@ class OnboardingDialog(QDialog):
         title.setObjectName("title")
 
         subtitle = QLabel(
-            "An AI memory layer for your laptop.  Press Ctrl + Space anytime "
-            "to ask your computer what you forgot."
+            "A local-first continuity layer.  Press Ctrl + Space anytime "
+            "to find the tabs, files, and chats you were working with."
         )
         subtitle.setObjectName("subtitle")
         subtitle.setWordWrap(True)

@@ -1,0 +1,137 @@
+---
+title: "Three-minute install"
+description: "The fastest honest path to a working Recall — from clone to a launcher that responds to Ctrl+Space, in under three minutes."
+---
+
+This page is the *speedrun* version of
+[install validation](install-validation). If you are a
+technical user, run these five commands and you'll have a
+working Recall in under three minutes. If anything looks
+off, swap to the slower, fully-explained path linked at the
+bottom.
+
+## Prerequisites
+
+- Python **3.10 or newer** on your `PATH`. Check with
+  `python --version` (or `python3 --version`).
+- ~200 MB of disk space (the embedding model is ~80 MB; the
+  rest is the venv and ChromaDB).
+- A working internet connection for the *first* run only
+  (model download). After that, Recall is fully offline.
+
+If either prerequisite is missing, install Python from
+[python.org](https://www.python.org/downloads/) first.
+
+## The five commands
+
+```bash
+git clone https://github.com/kunalKumar-13/Recall-me.git recall
+cd recall
+
+# Windows / PowerShell
+./infra/scripts/dev.ps1
+
+# macOS / Linux
+./infra/scripts/dev.sh
+```
+
+`dev.ps1` / `dev.sh` are idempotent. They:
+
+1. Verify Python ≥ 3.10
+2. Create `.venv/` if missing
+3. `pip install -r requirements.txt` (only when the file's
+   hash changes — cached)
+4. Run the 31-section smoke test (skip with `-SkipSmoke` /
+   `--skip-smoke`)
+5. Launch the desktop app
+
+If the smoke test passes and the launcher window appears,
+you're done. Press `Ctrl + Space` from anywhere to open the
+launcher; press `Ctrl + ,` once it's open to reach Settings.
+
+## What you should see
+
+```
+[boot] recall.py starting (python 3.11.x on win32)
+[boot] >> importing app.main
+[boot] [OK] app.main imported (180ms)
+[boot] >> load config
+[boot] [OK] load config (3ms)
+[boot] >> initialize event logger
+[boot] [OK] initialize event logger (1ms)
+[boot] >> start local memory API (Phase 2A)
+[boot] [OK] start local memory API (Phase 2A) (220ms)  ·  127.0.0.1:4545
+[boot] >> initialize search engine
+[boot] [OK] initialize search engine (340ms)
+[boot] >> register global hotkey
+[boot] [OK] register global hotkey (12ms)
+[boot] recall · ready
+```
+
+Total boot time on a 2020-era laptop with a warm Hugging Face
+cache: ~800 ms. First-ever boot pays an additional ~30 seconds
+for the one-time model download.
+
+## Add a folder to index
+
+The launcher has no memories yet. Open Settings (`Ctrl + ,`),
+click *Add folder…*, pick `~/Documents` or `~/code` (or both),
+then *Refresh memory*. The progress bar shows files processed.
+
+Once indexing completes, Ctrl + Space → type something you'd
+find in those folders → file rows appear.
+
+## Install the browser extension (optional, ~30 seconds)
+
+If you also want browser activity captured:
+
+1. The desktop app must be running.
+2. Open `chrome://extensions` (or `edge://extensions`).
+3. Toggle *Developer mode* (top-right).
+4. Click *Load unpacked* → pick the `apps/extension/`
+   directory from the cloned repo.
+5. Click the puzzle icon → pin the Recall extension.
+6. Click the extension icon. The popup should read
+   *"Connected · 0 captured"*.
+
+Visit any page; the count goes up. Pages you visit before
+this step are not retroactively captured — that's by design.
+
+## Run in demo mode (no real data)
+
+Want to see what a populated Recall looks like before you
+trust it with your real activity?
+
+```bash
+RECALL_DEMO_MODE=1 python recall.py
+```
+
+The launcher boots against a deterministic seeded event log
+under `~/.recall/events-demo/`. Open Ctrl + Space with an
+empty query — you'll see *Continue where you left off*,
+*Active memory threads*, and *On your radar* populated with
+the websocket-retry / RLHF / healthcare-startup / casual-
+browsing stories from
+[`apps/desktop/app/core/demo_seed.py`](../../apps/desktop/app/core/demo_seed.py).
+
+The demo and real event logs are stored in separate
+directories; running demo mode never affects your real data.
+
+## When this doesn't work in three minutes
+
+The full path is on the [install-validation](install-validation)
+page, with diagnostics for each step. The most common
+failure modes:
+
+- **Python < 3.10** → install Python from python.org.
+- **Smoke test fails on perf** (section 11 or 24) → re-run.
+  Windows page-cache cold starts are noisy; the third run
+  is usually clean. If it fails three times, see
+  [troubleshooting](troubleshooting).
+- **`pip install` fails on `chromadb`** → you're on
+  Python 3.13 or newer with no pre-built wheel. Stay on
+  3.10–3.12 until the wheel set catches up.
+- **`Ctrl + Space` doesn't open anything** → another
+  process (PowerToys, Logitech Options, Citrix Workspace)
+  has the hotkey. See
+  [troubleshooting](troubleshooting#the-launcher-doesnt-open-when-i-press-ctrlspace).

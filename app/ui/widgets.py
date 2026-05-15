@@ -41,8 +41,10 @@ from PyQt6.QtWidgets import (
 )
 
 from ..core.events import humanize_age
+from ..core.microcontexts import MicroContext
 from ..core.parsers import CODE_EXTS
 from ..core.search import SearchResult
+from ..core.sessions import Session, _event_display_text
 from .styles import (
     HIGHLIGHT,
     TEXT,
@@ -958,6 +960,100 @@ class PreviewPane(QWidget):
             row.setObjectName("preview_related_row")
             self._related_layout.addWidget(row)
 
+    def show_context(self, ctx) -> None:
+        """Render a MicroContext in the preview pane.
+
+        Same widget hierarchy as `show_session()`, narrower copy
+        because a micro-context is a tighter topical slice — it's
+        always a subset of a session, never larger. The pill is
+        cyan-tinted in the launcher card; the preview here doesn't
+        repeat the tint, it speaks in the same calm voice as every
+        other preview state.
+        """
+        self.empty_placeholder.hide()
+        for w in self._content_widgets:
+            w.show()
+
+        self.title.setText(ctx.label)
+        self.path_lbl.setText(
+            f"{ctx.event_count} events  ·  {ctx.time_label}"
+        )
+        self.path_lbl.setToolTip(ctx.time_label)
+        self.last_seen_lbl.setText(f"Topic  ·  {ctx.topic}")
+
+        n_kinds = len(ctx.kinds)
+        kind_summary = ", ".join(ctx.kinds[:4])
+        self.about.setText(
+            f"A topical work block of {ctx.event_count} events "
+            f"across {n_kinds} kind(s): {kind_summary}."
+        )
+
+        # Excerpt + sources don't apply.
+        self.excerpt.hide()
+        self.sources_header.hide()
+        self.sources_subtitle.hide()
+        self.sources_container.hide()
+
+        # Full event list in the related-rows container.
+        self._clear(self._related_layout)
+        for ev in ctx.events:
+            glyph = SessionCard._kind_glyph(ev.kind)
+            text = _event_display_text(ev)
+            row = QLabel(f"{glyph}  {text}")
+            row.setObjectName("preview_related_row")
+            row.setToolTip(text)
+            self._related_layout.addWidget(row)
+
+    def show_session(self, session) -> None:
+        """Render a Session in the preview pane.
+
+        Reuses the same widget hierarchy as `update_group()` but with
+        session-shaped copy: the label is the session topic, the path
+        line carries the time range + event count, the "About" block
+        carries a one-line summary of what kinds of events are in the
+        session, and the related-rows container becomes a full event
+        list (every event in the session, not just the preview).
+
+        Excerpt + Sources are hidden because sessions don't have
+        excerpts or cluster-style file sources.
+        """
+        self.empty_placeholder.hide()
+        for w in self._content_widgets:
+            w.show()
+
+        self.title.setText(session.label)
+        self.path_lbl.setText(
+            f"{session.event_count} events  ·  {session.time_label}"
+        )
+        self.path_lbl.setToolTip(session.time_label)
+
+        # The "Last seen" line gets the session id — useful when the
+        # user wants to inspect the raw log file for this session.
+        self.last_seen_lbl.setText(f"Session id  ·  {session.session_id}")
+
+        n_kinds = len(session.kinds)
+        kind_summary = ", ".join(session.kinds[:4])
+        self.about.setText(
+            f"A working session containing {session.event_count} events "
+            f"across {n_kinds} kind(s): {kind_summary}."
+        )
+
+        # Hide excerpt + sources for sessions.
+        self.excerpt.hide()
+        self.sources_header.hide()
+        self.sources_subtitle.hide()
+        self.sources_container.hide()
+
+        # Show every event in the session in the related-rows container.
+        self._clear(self._related_layout)
+        for ev in session.events:
+            kind_glyph = SessionCard._kind_glyph(ev.kind)
+            text = _event_display_text(ev)
+            row = QLabel(f"{kind_glyph}  {text}")
+            row.setObjectName("preview_related_row")
+            row.setToolTip(text)
+            self._related_layout.addWidget(row)
+
     def update_group(
         self,
         group: MemoryGroup,
@@ -1236,6 +1332,582 @@ class BrowserActivityRow(QWidget):
         super().mousePressEvent(event)
 
 
+# ----------------------------------------------------------------- resurfaced row
+
+
+class ResurfacedRow(QWidget):
+    """One row in the launcher's "Continue where you left off" digest.
+
+    Visually quieter than even the QueryRow — the row gets a single
+    hairline-thin dot in `lavender-deep` (no kind colour-coding; this
+    is not a feed), a 1-line label, and a dim, *plain-language* time
+    span on the right ("yesterday · across 2 days"). No badge, no
+    progress chevron, no confidence number — the only state we ever
+    surface to the user is "this looks like something you were
+    thinking about".
+
+    The full "why am I seeing this?" explanation is wired onto
+    `setToolTip` so it appears on hover, but *only when debug mode is
+    on at construction time* — production users get no hover at all,
+    which is what the brief asks for.
+
+    `target` carries the most-recent openable URL or filesystem path
+    (whichever the engine surfaced). Click → emits `clicked(kind,
+    target)`; the launcher passes that to the same handler it uses
+    for digest rows.
+    """
+
+    RESURFACED_ROW_HEIGHT = 32
+
+    # `kind` is "url" or "path"; `target` is what to hand to the OS.
+    clicked = pyqtSignal(str, str)
+
+    def __init__(
+        self,
+        label: str,
+        time_label: str,
+        kind: str,
+        target: str,
+        why_lines: List[str] | None = None,
+        debug_hover: bool = False,
+    ) -> None:
+        super().__init__()
+        self.kind = kind
+        self.target = target
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(14, 4, 14, 4)
+        layout.setSpacing(10)
+
+        # Single small dot — same lavender as the other digest rows
+        # so this section belongs visually without announcing itself.
+        dot = QLabel()
+        dot.setFixedSize(6, 6)
+        dot.setStyleSheet(
+            "background: rgba(181, 168, 255, 0.55);"
+            "border-radius: 3px;"
+        )
+
+        title = QLabel(label or "Untitled")
+        title.setStyleSheet(
+            f"color:{TEXT};font-size:11.5px;"
+        )
+        title.setTextFormat(Qt.TextFormat.PlainText)
+        # No setToolTip(label) — we reserve hover for the debug "why".
+
+        time_lbl = QLabel(time_label or "")
+        time_lbl.setStyleSheet(
+            f"color:{TEXT_DIMMER};font-size:10.5px;"
+        )
+
+        layout.addWidget(dot, 0, Qt.AlignmentFlag.AlignVCenter)
+        layout.addWidget(title, 1)
+        layout.addWidget(time_lbl, 0, Qt.AlignmentFlag.AlignVCenter)
+
+        if debug_hover and why_lines:
+            # "Why am I seeing this?" — debug-only. The wording is
+            # observational, not predictive. Lines come from the
+            # engine's `_explain` so we don't fabricate reasons here.
+            tip = (
+                "Why am I seeing this?\n  · "
+                + "\n  · ".join(why_lines)
+            )
+            self.setToolTip(tip)
+            for w in (title, time_lbl, dot):
+                w.setToolTip(tip)
+
+    def mousePressEvent(self, event) -> None:  # type: ignore[override]
+        if event.button() == Qt.MouseButton.LeftButton and self.target:
+            self.clicked.emit(self.kind, self.target)
+        super().mousePressEvent(event)
+
+
+# ----------------------------------------------------------------- recovery row
+
+
+class RecoveryRow(QWidget):
+    """A "continue where you left off" row — the primary launcher
+    idle surface (Phase 3B).
+
+    Two visual lines + a stacked target-count strip on the right:
+
+      ┌───────────────────────────────────────────────────────┐
+      │ │ WebSocket retry — production rollout                │
+      │ │ Last active 2d ago  ·  4 tabs · 2 files · 1 chat   │
+      └───────────────────────────────────────────────────────┘
+
+    Click → emits `restore(candidate_id, title, n_targets)`.
+    The launcher's handler then calls the API, gets the full
+    target list, and opens each via the OS — one-click
+    restoration.
+
+    The visual treatment is even quieter than the thread row: no
+    confidence number, no momentum bar, no badge. The brief is
+    explicit: "calm UI treatment, no dashboard feel, no
+    gamification, no productivity score." We comply by refusing
+    to add any number except the small mono target-count chip.
+
+    Debug hover (`debug_hover=True`) renders the engine's `why`
+    lines and the per-signal contributions — gated on
+    `RECALL_DEBUG=1` at launcher construction, off in production.
+    """
+
+    RECOVERY_ROW_HEIGHT = 56
+
+    # candidate_id, title, n_targets
+    restore = pyqtSignal(str, str, int)
+
+    def __init__(
+        self,
+        candidate_id: str,
+        title: str,
+        time_label: str,
+        target_counts: List[Tuple[str, int]],  # [("tabs", 3), ("files", 2), ...]
+        why_lines: List[str] | None = None,
+        debug_hover: bool = False,
+        n_targets_total: int = 0,
+    ) -> None:
+        super().__init__()
+        self.candidate_id = candidate_id
+        self.title = title
+        self.n_targets_total = n_targets_total
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(14, 8, 14, 8)
+        layout.setSpacing(12)
+
+        # The vertical lavender rail — same widget the thread row
+        # uses, so the user reads recovery + threads as siblings.
+        rail = QLabel()
+        rail.setFixedSize(2, RecoveryRow.RECOVERY_ROW_HEIGHT - 16)
+        rail.setStyleSheet(
+            "background: rgba(125, 95, 200, 0.75);"
+            "border-radius: 1px;"
+        )
+
+        text_col = QVBoxLayout()
+        text_col.setContentsMargins(0, 0, 0, 0)
+        text_col.setSpacing(2)
+
+        title_lbl = QLabel(title or "Untitled thread")
+        title_lbl.setStyleSheet(
+            f"color:{TEXT};font-size:12.5px;font-weight:500;"
+        )
+        title_lbl.setTextFormat(Qt.TextFormat.PlainText)
+
+        # Subtitle = time + a compact target-count strip in mono.
+        # We avoid icons; the count words ("tabs", "files", "chats")
+        # carry the surface kinds without needing colour codes.
+        count_parts = [
+            f"{count} {label}"
+            for label, count in target_counts
+            if count > 0
+        ]
+        if count_parts:
+            subtitle = f"{time_label}  ·  {' · '.join(count_parts)}"
+        else:
+            subtitle = time_label or ""
+
+        subtitle_lbl = QLabel(subtitle)
+        subtitle_lbl.setStyleSheet(
+            f"color:{TEXT_DIMMER};font-size:10.5px;"
+        )
+
+        text_col.addWidget(title_lbl)
+        text_col.addWidget(subtitle_lbl)
+
+        # The right-side "restore" hint. Renders as a small mono
+        # affordance — not a button, just a label that says what
+        # clicking the row does. Calmer than a CTA chip.
+        action_lbl = QLabel("Restore →")
+        action_lbl.setStyleSheet(
+            f"color:rgba(125, 95, 200, 0.85);"
+            "font-size:10.5px;font-weight:600;"
+            "letter-spacing:0.5px;"
+        )
+
+        layout.addWidget(rail, 0, Qt.AlignmentFlag.AlignVCenter)
+        layout.addLayout(text_col, 1)
+        layout.addWidget(action_lbl, 0, Qt.AlignmentFlag.AlignVCenter)
+
+        if debug_hover and why_lines:
+            tip = "Why this surface?\n  · " + "\n  · ".join(why_lines)
+            self.setToolTip(tip)
+            for w in (title_lbl, subtitle_lbl, action_lbl, rail):
+                w.setToolTip(tip)
+
+    def mousePressEvent(self, event) -> None:  # type: ignore[override]
+        if event.button() == Qt.MouseButton.LeftButton and self.candidate_id:
+            self.restore.emit(
+                self.candidate_id, self.title, self.n_targets_total
+            )
+        super().mousePressEvent(event)
+
+
+# ----------------------------------------------------------------- session timeline card
+
+
+class SessionTimelineCard(QWidget):
+    """Phase 3C — the visual language of continuity.
+
+    A compact horizontal strip rendering one thread's evolution
+    as a sequence of *active periods* punctuated by *transition
+    markers*: pivots, accelerations, revisits, resumptions,
+    abandonment gaps.
+
+    The widget is purely visual — no interaction beyond an
+    optional debug-mode tooltip per phase. It's drawn entirely
+    via labelled rectangles + thin connector segments; nothing
+    animates, nothing pulses, nothing decorates. The point is to
+    *show the user the shape of their own attention over time*,
+    not to entertain them with it.
+
+    Composition:
+
+      ┌───────┐  ━━╲  ┌───────────┐  ━━╱  ┌──────┐  ⋯  ┌──────┐
+      │ Reading│      │ Implement.│      │Discuss│      │Revisit│
+      └───────┘       └───────────┘       └──────┘      └──────┘
+        4d              1d                 1d            today
+
+    The connector slope encodes the transition kind: rising
+    (acceleration / momentum increase), falling (winding down),
+    flat (continuation), dashed (gap / resumption), dotted
+    (pivot). Colours are intentionally muted; the brief is calm.
+    """
+
+    CARD_HEIGHT = 72
+    PHASE_MIN_W = 84
+    PHASE_H = 36
+
+    def __init__(
+        self,
+        phases: List[dict],
+        debug_hover: bool = False,
+    ) -> None:
+        super().__init__()
+        self.setFixedHeight(SessionTimelineCard.CARD_HEIGHT)
+        self.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Fixed,
+        )
+        self._phases = phases or []
+        self._debug_hover = debug_hover
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(12, 8, 12, 8)
+        layout.setSpacing(0)
+
+        if not self._phases:
+            empty = QLabel("No timeline yet")
+            empty.setStyleSheet(
+                f"color:{TEXT_DIMMER};font-size:11px;"
+                "font-style:italic;"
+            )
+            layout.addWidget(empty)
+            layout.addStretch(1)
+            return
+
+        for i, ph in enumerate(self._phases):
+            if i > 0:
+                connector = self._make_connector(
+                    self._phases[i - 1], ph
+                )
+                layout.addWidget(connector, 0, Qt.AlignmentFlag.AlignVCenter)
+            pill = self._make_phase_pill(ph)
+            layout.addWidget(pill, 0, Qt.AlignmentFlag.AlignVCenter)
+        layout.addStretch(1)
+
+    # -- composition helpers -------------------------------------------
+
+    def _make_phase_pill(self, phase: dict) -> QWidget:
+        """Two-line pill: title (top) + relative-time hint (bottom).
+        Width scales with the relative length of the phase's
+        active window so a one-event phase doesn't look the same as
+        a six-event phase."""
+        pill = QWidget()
+        pill.setMinimumWidth(SessionTimelineCard.PHASE_MIN_W)
+        pill.setFixedHeight(SessionTimelineCard.PHASE_H + 12)
+        pill.setStyleSheet(
+            "QWidget {"
+            "  background: rgba(181, 168, 255, 0.10);"
+            "  border: 1px solid rgba(181, 168, 255, 0.24);"
+            "  border-radius: 6px;"
+            "}"
+        )
+        inner = QVBoxLayout(pill)
+        inner.setContentsMargins(8, 4, 8, 4)
+        inner.setSpacing(0)
+        title = QLabel(phase.get("title", "Phase"))
+        title.setStyleSheet(
+            f"color:{TEXT};font-size:11px;font-weight:500;"
+        )
+        sub = QLabel(phase.get("subtitle", ""))
+        sub.setStyleSheet(
+            f"color:{TEXT_DIMMER};font-size:9.5px;"
+            "font-family: ui-monospace, 'SF Mono', Menlo, monospace;"
+        )
+        inner.addWidget(title)
+        inner.addWidget(sub)
+
+        if self._debug_hover and phase.get("why"):
+            tip = "Why this phase?\n  · " + "\n  · ".join(phase["why"])
+            pill.setToolTip(tip)
+            title.setToolTip(tip)
+            sub.setToolTip(tip)
+        return pill
+
+    def _make_connector(
+        self, prev: dict, curr: dict
+    ) -> QWidget:
+        """A thin horizontal divider between two phases. Style
+        encodes the transition kind on `curr`:
+
+          • acceleration → solid mint
+          • pivot        → solid cyan
+          • revisit      → solid rose
+          • resumption   → dashed amber (visualizing the gap)
+          • continuation → solid muted grey
+        """
+        transition = (curr.get("transition") or "continuation").lower()
+        colour = _transition_colour(transition)
+        # Resumption renders as a dashed connector to imply the
+        # gap before the next phase started. Everything else is a
+        # solid 1 px line.
+        dashed = transition == "resumption"
+        connector = QLabel()
+        connector.setFixedHeight(2)
+        connector.setMinimumWidth(28)
+        if dashed:
+            connector.setStyleSheet(
+                "QLabel {"
+                f"  background: transparent;"
+                f"  border-top: 1px dashed {colour};"
+                "}"
+            )
+        else:
+            connector.setStyleSheet(
+                f"QLabel {{ background: {colour}; border-radius: 1px; }}"
+            )
+        return connector
+
+
+def _transition_colour(transition: str) -> str:
+    """Resolve a transition name to the canonical RGB string used
+    by the SessionTimelineCard connectors. Matches the landing-
+    page palette: same names, same shades, same restraint."""
+    if transition == "acceleration":
+        return "rgba(135, 222, 183, 0.55)"   # mint
+    if transition == "pivot":
+        return "rgba(125, 216, 232, 0.55)"   # cyan
+    if transition == "revisit":
+        return "rgba(214, 120, 150, 0.45)"   # rose
+    if transition == "resumption":
+        return "rgba(199, 151, 60, 0.55)"    # amber
+    # initial / continuation / unknown
+    return "rgba(160, 150, 180, 0.40)"
+
+
+# ----------------------------------------------------------------- evolution strip
+
+
+class EvolutionStrip(QWidget):
+    """A horizontal chronology of one thread's phases.
+
+    Visually a thin strip — each phase is a small pill labelled with
+    its title and a brief date hint. Phases are joined by a hairline
+    that reads as a timeline; *not* a dashboard, *not* a chart. The
+    brief asks for a Linear / Raycast aesthetic; we comply by
+    refusing to add chrome.
+
+    The strip is *display-only* in v1 — pills are not clickable. The
+    open-thread flow already typed the thread title into the input,
+    so the search results below already reflect the topic; clicking a
+    phase pill would only narrow the same data without adding a real
+    affordance. Keeping it passive avoids inventing UI that doesn't
+    earn its weight yet.
+
+    Transition labels (`acceleration`, `revisit`, `pivot`, …) ride as
+    a subtle colour cue on the dividers, not as their own widgets.
+    """
+
+    STRIP_HEIGHT = 56
+    PILL_MIN_WIDTH = 96
+    PILL_HEIGHT = 36
+
+    def __init__(
+        self,
+        phases: List[dict],          # list of {"title", "subtitle", "transition", "why"}
+        debug_hover: bool = False,
+    ) -> None:
+        super().__init__()
+        self.setFixedHeight(EvolutionStrip.STRIP_HEIGHT)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(14, 8, 14, 8)
+        layout.setSpacing(6)
+
+        if not phases:
+            empty = QLabel("No evolution yet")
+            empty.setStyleSheet(
+                f"color:{TEXT_DIMMER};font-size:11px;"
+                "font-style:italic;"
+            )
+            layout.addWidget(empty)
+            layout.addStretch(1)
+            return
+
+        # Header label so the strip is self-identifying.
+        head = QLabel("Evolution")
+        head.setStyleSheet(
+            f"color:{TEXT_DIM};"
+            "font-size:10px;"
+            "font-weight:600;"
+            "letter-spacing:1.2px;"
+            "text-transform:uppercase;"
+        )
+        layout.addWidget(head, 0, Qt.AlignmentFlag.AlignVCenter)
+
+        for i, ph in enumerate(phases):
+            if i > 0:
+                # Hairline divider — transition colour-coded.
+                div = QLabel()
+                div.setFixedSize(14, 1)
+                div.setStyleSheet(
+                    "background: "
+                    + _transition_colour(ph.get("transition", "continuation"))
+                    + ";"
+                )
+                layout.addWidget(div, 0, Qt.AlignmentFlag.AlignVCenter)
+
+            pill = QLabel(ph.get("title", "Phase"))
+            pill.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            pill.setMinimumWidth(EvolutionStrip.PILL_MIN_WIDTH)
+            pill.setFixedHeight(EvolutionStrip.PILL_HEIGHT)
+            pill.setStyleSheet(
+                f"color:{TEXT};"
+                "font-size:11px;font-weight:500;"
+                "padding: 4px 10px;"
+                "border-radius: 6px;"
+                "background: rgba(181, 168, 255, 0.10);"
+                "border: 1px solid rgba(181, 168, 255, 0.22);"
+            )
+            subtitle = ph.get("subtitle", "")
+            if subtitle:
+                pill.setText(f"{ph.get('title', 'Phase')}\n{subtitle}")
+                # Two-line — bump the height a touch so the second
+                # line reads without crowding.
+                pill.setFixedHeight(EvolutionStrip.PILL_HEIGHT + 4)
+            if debug_hover and ph.get("why"):
+                tip = "Why this phase?\n  · " + "\n  · ".join(ph["why"])
+                pill.setToolTip(tip)
+            layout.addWidget(pill, 0, Qt.AlignmentFlag.AlignVCenter)
+
+        layout.addStretch(1)
+
+
+def _transition_colour(transition: str) -> str:
+    """Map a phase transition to a hairline-divider colour. Kept
+    deliberately muted — these aren't status badges."""
+    if transition == "acceleration":
+        return "rgba(135, 222, 183, 0.55)"     # mint (forward energy)
+    if transition == "pivot":
+        return "rgba(125, 216, 232, 0.55)"     # cyan (direction change)
+    if transition == "revisit":
+        return "rgba(214, 120, 150, 0.45)"     # rose (returning)
+    if transition == "resumption":
+        return "rgba(199, 151, 60, 0.45)"      # amber (came back)
+    # initial / continuation
+    return "rgba(160, 150, 180, 0.30)"
+
+
+# ----------------------------------------------------------------- thread row
+
+
+class ThreadRow(QWidget):
+    """One row in the launcher's "Active memory threads" digest.
+
+    Two lines, hairline density — title on top, dim timeline summary
+    underneath ("Started 2w ago · 4 sessions · 12 events"). No badge,
+    no progress chevron, no confidence number, no surface icons.
+    The brief asks for an infrastructure aesthetic; we comply by
+    refusing to add chrome.
+
+    Click → emits `clicked(thread_id, topic_key, title)`. The launcher
+    uses the topic to trigger a search (which is the open-thread flow:
+    chronological reconstruction via existing sessions + contexts).
+
+    Debug hover ("Why am I seeing this?") only when `debug_hover=True`,
+    which the launcher gates on the `RECALL_DEBUG` env var.
+    """
+
+    THREAD_ROW_HEIGHT = 42
+
+    clicked = pyqtSignal(str, str, str)  # thread_id, topic_key, title
+
+    def __init__(
+        self,
+        thread_id: str,
+        topic_key: str,
+        title: str,
+        timeline_summary: str,
+        why_lines: List[str] | None = None,
+        debug_hover: bool = False,
+    ) -> None:
+        super().__init__()
+        self.thread_id = thread_id
+        self.topic_key = topic_key
+        self.title = title
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(14, 6, 14, 6)
+        layout.setSpacing(10)
+
+        # A single hairline-thin marker keeps the row visually anchored
+        # without a feed-like icon. Same lavender as every other
+        # digest row so the section reads as part of the same family.
+        rail = QLabel()
+        rail.setFixedSize(2, ThreadRow.THREAD_ROW_HEIGHT - 12)
+        rail.setStyleSheet(
+            "background: rgba(181, 168, 255, 0.55);"
+            "border-radius: 1px;"
+        )
+
+        text_col = QVBoxLayout()
+        text_col.setContentsMargins(0, 0, 0, 0)
+        text_col.setSpacing(1)
+
+        title_lbl = QLabel(title or "Untitled thread")
+        title_lbl.setStyleSheet(
+            f"color:{TEXT};font-size:12px;font-weight:500;"
+        )
+        title_lbl.setTextFormat(Qt.TextFormat.PlainText)
+
+        summary_lbl = QLabel(timeline_summary or "")
+        summary_lbl.setStyleSheet(
+            f"color:{TEXT_DIMMER};font-size:10.5px;"
+        )
+
+        text_col.addWidget(title_lbl)
+        text_col.addWidget(summary_lbl)
+
+        layout.addWidget(rail, 0, Qt.AlignmentFlag.AlignVCenter)
+        layout.addLayout(text_col, 1)
+
+        if debug_hover and why_lines:
+            tip = (
+                "Why am I seeing this?\n  · "
+                + "\n  · ".join(why_lines)
+            )
+            self.setToolTip(tip)
+            for w in (title_lbl, summary_lbl, rail):
+                w.setToolTip(tip)
+
+    def mousePressEvent(self, event) -> None:  # type: ignore[override]
+        if event.button() == Qt.MouseButton.LeftButton and self.thread_id:
+            self.clicked.emit(self.thread_id, self.topic_key, self.title)
+        super().mousePressEvent(event)
+
+
 # ----------------------------------------------------------------- episodic card
 
 
@@ -1353,6 +2025,434 @@ class EpisodicCard(QWidget):
 def make_episodic_item() -> QListWidgetItem:
     item = QListWidgetItem()
     item.setSizeHint(QSize(0, EpisodicCard.EPISODIC_ROW_HEIGHT))
+    return item
+
+
+# ----------------------------------------------------------------- session card
+
+
+class SessionCard(QWidget):
+    """A reconstructed working session, rendered as a single
+    expandable row in the launcher's results list.
+
+    Two states:
+      • Collapsed (default) — single header line with topic + time +
+        event count. Compact (~30 px tall).
+      • Expanded — adds up to N event sublines and a "Continue this
+        session" button. Taller (~180 px) but still single-card.
+
+    Keyboard contract from the launcher's perspective:
+      • Selection lands on the card normally.
+      • Enter on a collapsed card → expand (handled by the card).
+      • Enter on an expanded card → emit `continue_clicked(session)`
+        so the launcher can reopen everything in the session and hide.
+
+    The card emits two signals:
+      • expanded_changed(bool)         — internal state change
+      • continue_clicked(Session)      — the user wants to continue
+    """
+
+    SESSION_COLLAPSED_HEIGHT = 38
+    SESSION_EXPANDED_HEIGHT = 196
+    PREVIEW_LINE_HEIGHT = 22
+
+    expanded_changed = pyqtSignal(bool)
+    continue_clicked = pyqtSignal(object)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.session: Session | None = None
+        self._expanded: bool = False
+        self._build()
+
+    def _build(self) -> None:
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(10, 6, 10, 6)
+        outer.setSpacing(4)
+
+        # ── Header line: lavender chevron + topic + time + counter
+        header = QHBoxLayout()
+        header.setContentsMargins(0, 0, 0, 0)
+        header.setSpacing(8)
+
+        self.chevron = QLabel("›")
+        self.chevron.setStyleSheet(
+            "color:#A99CF7;font-size:14px;font-weight:700;"
+        )
+        self.chevron.setFixedWidth(10)
+
+        # Compact "session" pill so the card type reads at a glance
+        # alongside the file rows above and below it.
+        self.kind_pill = QLabel("SESSION")
+        self.kind_pill.setStyleSheet(
+            "background:rgba(169, 156, 247, 0.18);"
+            "color:#8B7FE3;"
+            "border:1px solid rgba(169, 156, 247, 0.36);"
+            "border-radius:6px;"
+            "padding:0 7px;"
+            "font-size:9px;"
+            "font-weight:700;"
+            "letter-spacing:0.15em;"
+        )
+        self.kind_pill.setFixedHeight(20)
+
+        self.label = QLabel("")
+        self.label.setStyleSheet(
+            f"color:{TEXT};font-size:12.5px;font-weight:600;"
+        )
+        self.label.setTextFormat(Qt.TextFormat.PlainText)
+
+        self.time_label = QLabel("")
+        self.time_label.setStyleSheet(
+            f"color:{TEXT_DIM};font-size:10.5px;"
+        )
+
+        self.count_label = QLabel("")
+        self.count_label.setStyleSheet(
+            f"color:{TEXT_DIMMER};font-size:10.5px;"
+        )
+
+        header.addWidget(self.chevron, 0, Qt.AlignmentFlag.AlignVCenter)
+        header.addWidget(self.kind_pill, 0, Qt.AlignmentFlag.AlignVCenter)
+        header.addWidget(self.label, 1, Qt.AlignmentFlag.AlignVCenter)
+        header.addWidget(self.time_label, 0, Qt.AlignmentFlag.AlignVCenter)
+        header.addWidget(self.count_label, 0, Qt.AlignmentFlag.AlignVCenter)
+
+        # ── Body container — created hidden, shown when expanded
+        self.body = QWidget()
+        body_layout = QVBoxLayout(self.body)
+        body_layout.setContentsMargins(20, 4, 4, 0)
+        body_layout.setSpacing(2)
+        self._event_lines: list[QLabel] = []
+        for _ in range(6):
+            row = QLabel("")
+            row.setStyleSheet(
+                f"color:{TEXT_DIM};font-size:11px;"
+            )
+            row.setTextFormat(Qt.TextFormat.PlainText)
+            row.setFixedHeight(self.PREVIEW_LINE_HEIGHT)
+            row.hide()
+            body_layout.addWidget(row)
+            self._event_lines.append(row)
+
+        # ── Continue button — lives at the bottom of the body
+        button_row = QHBoxLayout()
+        button_row.setContentsMargins(0, 6, 0, 0)
+        button_row.setSpacing(0)
+        self.continue_btn = QLabel("↵  Continue this session")
+        self.continue_btn.setStyleSheet(
+            "color:#8B7FE3;"
+            "font-size:11px;"
+            "font-weight:600;"
+            "padding:4px 10px;"
+            "border:1px solid rgba(169, 156, 247, 0.40);"
+            "border-radius:6px;"
+            "background:rgba(169, 156, 247, 0.10);"
+        )
+        self.continue_btn.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.continue_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        button_row.addStretch(1)
+        button_row.addWidget(self.continue_btn)
+        body_layout.addLayout(button_row)
+
+        self.body.hide()
+
+        outer.addLayout(header)
+        outer.addWidget(self.body)
+
+    # -- public API -----------------------------------------------------
+
+    def update_session(self, session: Session) -> None:
+        self.session = session
+        self.label.setText(session.label)
+        self.label.setToolTip(session.label)
+        self.time_label.setText(session.time_label)
+        n = session.event_count
+        plural = "event" if n == 1 else "events"
+        self.count_label.setText(f"{n} {plural}")
+
+        previews = session.preview_events()
+        for i, line in enumerate(self._event_lines):
+            if i < len(previews):
+                ev = previews[i]
+                kind_glyph = self._kind_glyph(ev.kind)
+                text = _event_display_text(ev)
+                # Truncate per row so the line doesn't overflow.
+                line.setText(f"{kind_glyph}  {text}")
+                line.setToolTip(text)
+                # Each row should also visually elide if too long
+                fm: QFontMetrics = line.fontMetrics()
+                elided = fm.elidedText(
+                    line.text(), Qt.TextElideMode.ElideRight, 280
+                )
+                line.setText(elided)
+                if self._expanded:
+                    line.show()
+            else:
+                line.hide()
+
+    def set_expanded(self, expanded: bool) -> None:
+        if self._expanded == expanded:
+            return
+        self._expanded = expanded
+        self.chevron.setText("⌄" if expanded else "›")
+        self.body.setVisible(expanded)
+        # Reapply the per-line visibility because hiding `body` doesn't
+        # propagate to the labels we kept hidden by default.
+        if self.session is not None:
+            previews_count = len(self.session.preview_events())
+            for i, line in enumerate(self._event_lines):
+                if expanded and i < previews_count:
+                    line.show()
+                else:
+                    line.hide()
+        self.expanded_changed.emit(expanded)
+
+    @property
+    def expanded(self) -> bool:
+        return self._expanded
+
+    @property
+    def desired_height(self) -> int:
+        return (
+            self.SESSION_EXPANDED_HEIGHT if self._expanded
+            else self.SESSION_COLLAPSED_HEIGHT
+        )
+
+    # -- click routing --------------------------------------------------
+
+    def mousePressEvent(self, event) -> None:  # type: ignore[override]
+        if event.button() == Qt.MouseButton.LeftButton:
+            # Continue button is a click target when expanded.
+            if self._expanded and self.continue_btn.geometry().contains(
+                self.continue_btn.mapFromParent(event.position().toPoint())
+                if hasattr(event, "position") else event.pos()
+            ):
+                if self.session is not None:
+                    self.continue_clicked.emit(self.session)
+                    return
+            # Otherwise toggle expansion.
+            self.set_expanded(not self._expanded)
+        super().mousePressEvent(event)
+
+    @staticmethod
+    def _kind_glyph(kind: str) -> str:
+        # Single-character glyphs so the per-event line stays one visual unit.
+        # Picked from a small set so users can scan the session quickly.
+        return {
+            "browser_visit": "◌",
+            "browser_search": "⌕",
+            "chat_session": "◇",
+            "open": "▢",
+            "reveal": "▢",
+            "query": "·",
+        }.get(kind, "·")
+
+
+def make_session_item() -> QListWidgetItem:
+    item = QListWidgetItem()
+    item.setSizeHint(QSize(0, SessionCard.SESSION_COLLAPSED_HEIGHT))
+    return item
+
+
+# ----------------------------------------------------------------- context card
+
+
+class ContextCard(QWidget):
+    """A topical micro-context inside a temporal session.
+
+    Sits between the EpisodicCard layer (single moments) and the
+    SessionCard layer (broader temporal blocks). Visually tighter
+    than SessionCard because micro-contexts are more abundant — the
+    launcher may surface two of these alongside one session card.
+
+    Same two-state shape as SessionCard:
+      • Collapsed (~32 px): pill + label + time + event count.
+      • Expanded (~160 px): up to 5 event sublines + Resume button.
+
+    Signals:
+      • expanded_changed(bool)            — internal toggle
+      • resume_clicked(MicroContext)      — user wants to resume context
+    """
+
+    CONTEXT_COLLAPSED_HEIGHT = 34
+    CONTEXT_EXPANDED_HEIGHT = 168
+    PREVIEW_LINE_HEIGHT = 21
+
+    expanded_changed = pyqtSignal(bool)
+    resume_clicked = pyqtSignal(object)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.context: MicroContext | None = None
+        self._expanded: bool = False
+        self._build()
+
+    def _build(self) -> None:
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(10, 5, 10, 5)
+        outer.setSpacing(3)
+
+        # ── Header line: chevron + CONTEXT pill + label + time + count
+        header = QHBoxLayout()
+        header.setContentsMargins(0, 0, 0, 0)
+        header.setSpacing(8)
+
+        self.chevron = QLabel("›")
+        self.chevron.setStyleSheet(
+            "color:#A99CF7;font-size:13px;font-weight:700;"
+        )
+        self.chevron.setFixedWidth(10)
+
+        # Cyan-tinted pill so the row reads as visually distinct from
+        # the lavender SessionCard pill — micro-contexts are tighter,
+        # cyan suggests "thread of attention".
+        self.kind_pill = QLabel("CONTEXT")
+        self.kind_pill.setStyleSheet(
+            "background:rgba(125, 216, 232, 0.20);"
+            "color:#3FB1C9;"
+            "border:1px solid rgba(125, 216, 232, 0.40);"
+            "border-radius:6px;"
+            "padding:0 7px;"
+            "font-size:9px;"
+            "font-weight:700;"
+            "letter-spacing:0.15em;"
+        )
+        self.kind_pill.setFixedHeight(18)
+
+        self.label = QLabel("")
+        self.label.setStyleSheet(
+            f"color:{TEXT};font-size:12px;font-weight:600;"
+        )
+        self.label.setTextFormat(Qt.TextFormat.PlainText)
+
+        self.time_label = QLabel("")
+        self.time_label.setStyleSheet(
+            f"color:{TEXT_DIM};font-size:10px;"
+        )
+
+        self.count_label = QLabel("")
+        self.count_label.setStyleSheet(
+            f"color:{TEXT_DIMMER};font-size:10px;"
+        )
+
+        header.addWidget(self.chevron, 0, Qt.AlignmentFlag.AlignVCenter)
+        header.addWidget(self.kind_pill, 0, Qt.AlignmentFlag.AlignVCenter)
+        header.addWidget(self.label, 1, Qt.AlignmentFlag.AlignVCenter)
+        header.addWidget(self.time_label, 0, Qt.AlignmentFlag.AlignVCenter)
+        header.addWidget(self.count_label, 0, Qt.AlignmentFlag.AlignVCenter)
+
+        # ── Body — five event preview rows + Resume affordance
+        self.body = QWidget()
+        body_layout = QVBoxLayout(self.body)
+        body_layout.setContentsMargins(18, 3, 4, 0)
+        body_layout.setSpacing(1)
+        self._event_lines: list[QLabel] = []
+        for _ in range(5):
+            row = QLabel("")
+            row.setStyleSheet(
+                f"color:{TEXT_DIM};font-size:10.5px;"
+            )
+            row.setTextFormat(Qt.TextFormat.PlainText)
+            row.setFixedHeight(self.PREVIEW_LINE_HEIGHT)
+            row.hide()
+            body_layout.addWidget(row)
+            self._event_lines.append(row)
+
+        button_row = QHBoxLayout()
+        button_row.setContentsMargins(0, 5, 0, 0)
+        self.resume_btn = QLabel("↵  Resume context")
+        self.resume_btn.setStyleSheet(
+            "color:#3FB1C9;"
+            "font-size:11px;"
+            "font-weight:600;"
+            "padding:3px 10px;"
+            "border:1px solid rgba(125, 216, 232, 0.45);"
+            "border-radius:6px;"
+            "background:rgba(125, 216, 232, 0.10);"
+        )
+        self.resume_btn.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.resume_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        button_row.addStretch(1)
+        button_row.addWidget(self.resume_btn)
+        body_layout.addLayout(button_row)
+
+        self.body.hide()
+
+        outer.addLayout(header)
+        outer.addWidget(self.body)
+
+    # -- public API -----------------------------------------------------
+
+    def update_context(self, ctx: MicroContext) -> None:
+        self.context = ctx
+        self.label.setText(ctx.label)
+        self.label.setToolTip(ctx.label)
+        self.time_label.setText(ctx.time_label)
+        n = ctx.event_count
+        plural = "event" if n == 1 else "events"
+        self.count_label.setText(f"{n} {plural}")
+
+        previews = ctx.preview_events(max_n=5)
+        for i, line in enumerate(self._event_lines):
+            if i < len(previews):
+                ev = previews[i]
+                glyph = SessionCard._kind_glyph(ev.kind)
+                text = _event_display_text(ev)
+                line.setText(f"{glyph}  {text}")
+                line.setToolTip(text)
+                fm: QFontMetrics = line.fontMetrics()
+                elided = fm.elidedText(
+                    line.text(), Qt.TextElideMode.ElideRight, 280
+                )
+                line.setText(elided)
+                if self._expanded:
+                    line.show()
+            else:
+                line.hide()
+
+    def set_expanded(self, expanded: bool) -> None:
+        if self._expanded == expanded:
+            return
+        self._expanded = expanded
+        self.chevron.setText("⌄" if expanded else "›")
+        self.body.setVisible(expanded)
+        if self.context is not None:
+            previews_count = len(self.context.preview_events(max_n=5))
+            for i, line in enumerate(self._event_lines):
+                if expanded and i < previews_count:
+                    line.show()
+                else:
+                    line.hide()
+        self.expanded_changed.emit(expanded)
+
+    @property
+    def expanded(self) -> bool:
+        return self._expanded
+
+    @property
+    def desired_height(self) -> int:
+        return (
+            self.CONTEXT_EXPANDED_HEIGHT if self._expanded
+            else self.CONTEXT_COLLAPSED_HEIGHT
+        )
+
+    def mousePressEvent(self, event) -> None:  # type: ignore[override]
+        if event.button() == Qt.MouseButton.LeftButton:
+            if self._expanded and self.resume_btn.geometry().contains(
+                self.resume_btn.mapFromParent(event.position().toPoint())
+                if hasattr(event, "position") else event.pos()
+            ):
+                if self.context is not None:
+                    self.resume_clicked.emit(self.context)
+                    return
+            self.set_expanded(not self._expanded)
+        super().mousePressEvent(event)
+
+
+def make_context_item() -> QListWidgetItem:
+    item = QListWidgetItem()
+    item.setSizeHint(QSize(0, ContextCard.CONTEXT_COLLAPSED_HEIGHT))
     return item
 
 
