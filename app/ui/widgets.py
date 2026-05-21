@@ -1521,7 +1521,7 @@ class RecoveryRow(QWidget):
         # clicking the row does. Calmer than a CTA chip.
         action_lbl = QLabel("Restore →")
         action_lbl.setStyleSheet(
-            f"color:rgba(125, 95, 200, 0.85);"
+            "color:rgba(125, 95, 200, 0.85);"
             "font-size:10.5px;font-weight:600;"
             "letter-spacing:0.5px;"
         )
@@ -1689,22 +1689,6 @@ class SessionTimelineCard(QWidget):
                 f"QLabel {{ background: {colour}; border-radius: 1px; }}"
             )
         return connector
-
-
-def _transition_colour(transition: str) -> str:
-    """Resolve a transition name to the canonical RGB string used
-    by the SessionTimelineCard connectors. Matches the landing-
-    page palette: same names, same shades, same restraint."""
-    if transition == "acceleration":
-        return "rgba(135, 222, 183, 0.55)"   # mint
-    if transition == "pivot":
-        return "rgba(125, 216, 232, 0.55)"   # cyan
-    if transition == "revisit":
-        return "rgba(214, 120, 150, 0.45)"   # rose
-    if transition == "resumption":
-        return "rgba(199, 151, 60, 0.55)"    # amber
-    # initial / continuation / unknown
-    return "rgba(160, 150, 180, 0.40)"
 
 
 # ----------------------------------------------------------------- evolution strip

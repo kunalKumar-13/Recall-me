@@ -9,7 +9,7 @@ launcher entry point (`recall.py`), the smoke test
 
 The Python tree currently lives **at the repository root** and is
 not yet relocated under this directory. This is deliberate. See
-[REPO_STRUCTURE.md](../../REPO_STRUCTURE.md) §
+[REPO_STRUCTURE.md](../../docs/engineering/REPO_STRUCTURE.md) §
 *"Why the Python tree is still at the root"* for the rationale
 and the migration plan.
 

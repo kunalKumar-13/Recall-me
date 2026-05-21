@@ -1,0 +1,28 @@
+                    ┌─────────────────────────────┐
+                    │   end-of-week-one return    │
+                    └─────────────────────────────┘
+
+Three things to send back to your alpha contact:
+
+  1. FEEDBACK.md       - filled out (in the parent alpha/ folder)
+  2. stats.json        - the count-only export
+                         (run inside the installed Recall:
+                            Settings → "Export stats" → save)
+  3. screenshot        - of doctor_check.bat's output
+
+Channel:        whatever the alpha contact told you
+                (no upload form, no account, no link in this
+                 file - the loop is intentionally human)
+
+What is NEVER sent back:
+
+  - your event log              (%USERPROFILE%\.recall\events\)
+  - your indexed folder list
+  - any screenshot showing filenames, URLs, or queries
+
+If you screenshot something with private content by accident,
+redact before sending. The founder will refuse to look at
+non-export content - it is part of the trust ledger.
+
+Thank you. The alpha-001 cohort is the only reason Recall
+ever becomes 0.2.

@@ -73,14 +73,24 @@ _RECOVERY_WINDOW_DAYS: int = 14
 # thin to call "work the user was doing".
 _MIN_EVENTS: int = 4
 
-# Minimum recovery confidence — below this the candidate is
-# suppressed entirely. Phase 3C raised this from 0.40 → 0.45;
-# Phase 4C raised again to 0.50 as part of the *fewer, stronger
-# recoveries* sharpness pass. The smoke fixture sits at conf
-# ≈ 0.74, well clear of the new floor; in real-world data the
-# extra 0.05 separates "I'm reading about this" (sub-0.50) from
-# "I was in the middle of this" (above 0.50).
-_MIN_CONFIDENCE: float = 0.50
+# Minimum recovery *trust* — the gate on `max(continuity,
+# confidence)`. Below this the candidate is suppressed entirely.
+# History: 0.40 → 0.45 (3C) → 0.50 (4C) → 0.55 (4E). Phase 4E's
+# directive is *behavioral indispensability*: a recovery the user
+# bounces off of is worse than no recovery at all, because it
+# teaches them the surface is noise. The smoke fixture sits at
+# ≈ 0.74, well clear of the floor.
+_MIN_CONFIDENCE: float = 0.55
+
+# Phase 4E — minimum *resume intent*. The trust floor above gates
+# on `max(continuity, confidence)`, which let a context surface on
+# continuity *alone* — an intact set of files the user had in fact
+# finished with. `recovery_confidence` is the score that answers
+# "does the user actually want back in?"; this floor makes it a
+# hard requirement, not a tie-breaker. A candidate the user has no
+# intent to resume is suppressed even if its context is pristine.
+# The smoke fixture's confidence sits well above this.
+_MIN_RESUME_INTENT: float = 0.32
 
 # Phase 4C — last-phase recency guard. The thread's
 # `updated_at` (which gates the 14-day window above) is the
@@ -91,7 +101,11 @@ _MIN_CONFIDENCE: float = 0.50
 # "still in flow" actually means. If the last phase ended more
 # than this many days ago, the topic isn't recoverable —
 # resurfacing can still catch it as "on your radar".
-_LAST_PHASE_RECENCY_DAYS: float = 10.0
+# Phase 4E tightened 10.0 -> 7.0: "interrupted" means the work is
+# still warm in the user's head. A week is the outer edge of that;
+# past it the recovery card stops feeling like re-entering a room
+# and starts feeling like an archive lookup.
+_LAST_PHASE_RECENCY_DAYS: float = 7.0
 
 # Phase 3C: substantive-engagement floor. A topic that consists
 # entirely of `browser_visit` events with no `open`, `reveal`, or
@@ -109,9 +123,11 @@ _DEPTH_KINDS: frozenset[str] = frozenset({
 # Phase 3C: minimum distinct targets. A thread whose entire
 # activity is "the user reopened the same URL six times" reads as
 # "stuck on one page", not "in the middle of multi-source work".
-# Two distinct targets is the smallest pool that implies a
-# *context* rather than a single reference.
-_MIN_DISTINCT_TARGETS: int = 2
+# Phase 4E raised 2 -> 3. Two distinct targets can be a single
+# reference plus one stray click; three is the smallest pool that
+# reliably reads as *multi-source work* — the kind of context
+# whose restoration genuinely saves a reconstruction.
+_MIN_DISTINCT_TARGETS: int = 3
 
 # How many representative events to surface per candidate. Three is
 # the sweet spot: enough to feel like a context, not enough to read
@@ -350,7 +366,7 @@ class RecoveryEngine:
         if last_phase_age_days > _LAST_PHASE_RECENCY_DAYS:
             return None
 
-        events = self._collect_thread_events(thread.topic_key)
+        events = self._collect_thread_events(thread.topic_key, now)
         if len(events) < _MIN_EVENTS:
             return None
 
@@ -413,8 +429,17 @@ class RecoveryEngine:
         )
         confidence = round(min(1.0, confidence), 4)
 
-        # Confidence floor. Trivial / completed work fails here.
+        # Trust floor — trivial / completed work fails here.
         if max(continuity, confidence) < _MIN_CONFIDENCE:
+            return None
+
+        # Phase 4E — resume-intent floor. The trust gate above can
+        # pass on continuity alone (an intact but *finished*
+        # context). Recovery's whole promise is "re-enter work you
+        # were interrupted in", so a candidate the user shows no
+        # intent to resume is suppressed even when its context is
+        # pristine. A missed recovery is better than a weak one.
+        if confidence < _MIN_RESUME_INTENT:
             return None
 
         # ── assemble the candidate ──
@@ -457,7 +482,7 @@ class RecoveryEngine:
         # Phase 3C — deterministic preview caption built from
         # surface counts + last phase. No AI prose; same inputs
         # always produce the same caption.
-        preview = self._preview_caption(targets, last_phase)
+        preview = self._preview_caption(targets, last_phase, events)
 
         return RecoveryCandidate(
             id=cand_id,
@@ -482,16 +507,29 @@ class RecoveryEngine:
 
     # -- inputs ---------------------------------------------------------
 
-    def _collect_thread_events(self, topic_key: str) -> List[Event]:
-        """Reuse the thread builder's canonical-topic-key lookup
-        so the filter stays in one place. Returns chronologically
-        sorted events for the topic across the recovery window."""
-        out: list[Event] = []
-        for ev in self.event_store.iter_events(days=_RECOVERY_WINDOW_DAYS):
-            if self.thread_builder._thread_key(ev) == topic_key:
-                out.append(ev)
-        out.sort(key=lambda e: e.ts_epoch())
-        return out
+    def _collect_thread_events(
+        self, topic_key: str, now: float
+    ) -> List[Event]:
+        """Events the thread layer groups under `topic_key`, within
+        the recovery window, chronologically sorted.
+
+        Phase 4H — membership now comes from
+        `ThreadBuilder.events_for_topic`, the *same* session-anchored
+        bucketing `rebuild()` uses. This is what lets a recovery
+        candidate carry the file artifacts that bridged into the
+        investigation — `backoff.py` and `client.py` in the
+        WebSocket thread, not just its tabs. Re-deriving membership
+        per event with `_thread_key` (the pre-4H approach) keyed
+        those files back to their own filename and dropped them, so
+        recovery restored the room's tabs but not its code."""
+        cutoff = now - _RECOVERY_WINDOW_DAYS * 86400
+        events = [
+            ev
+            for ev in self.thread_builder.events_for_topic(topic_key, now)
+            if ev.ts_epoch() >= cutoff
+        ]
+        events.sort(key=lambda e: e.ts_epoch())
+        return events
 
     # -- component scores -----------------------------------------------
 
@@ -657,20 +695,26 @@ class RecoveryEngine:
     def _preview_caption(
         targets: List[Tuple[str, str]],
         last_phase,
+        events: Optional[List[Event]] = None,
     ) -> str:
         """Deterministic one-liner for the launcher's recovery row.
 
         Format examples:
-            "3 tabs · 2 files · 1 chat · last active during implementation"
-            "4 tabs · last active during research"
+            "3 tabs · 2 files · 1 chat · re-ran the same search 3 times · last active during implementation"
+            "4 tabs · reopened after a 2-day gap · last active during research"
             "2 files · 1 chat · last active during discussion"
 
         The caption is built entirely from the candidate's own
         data — same inputs, same string, every time. No prose
-        generation, no model, no LLM. The phase suffix names the
-        last evolution phase the user lived through; it's the
-        signal closest to "what state of mind were you in?"
-        without inventing one.
+        generation, no model, no LLM.
+
+        Phase 4E added the *behavioral* middle clause. Counts alone
+        ("3 tabs · 2 files") describe the context's shape; they
+        don't say what the user was *doing*. A repeated search or a
+        page reopened many times is the most legible "you were
+        chasing something here" signal in the data — so when one is
+        present it earns a clause. At most one such clause is
+        added, search-first, to keep the row a single quiet line.
         """
         groups = _classify_targets(targets)
         parts: list[str] = []
@@ -683,6 +727,12 @@ class RecoveryEngine:
         if groups["chats"]:
             n = len(groups["chats"])
             parts.append(f"{n} chat{'s' if n != 1 else ''}")
+
+        # Behavioral clause — one signal, search before reopen.
+        behavior = _behavior_clause(events or [])
+        if behavior:
+            parts.append(behavior)
+
         # Phase suffix — anchored on the *title* of the last phase
         # which is itself already produced by the evolution layer's
         # deterministic title heuristic.
@@ -857,6 +907,72 @@ _CHAT_HOSTS: tuple[str, ...] = (
     "perplexity.ai",
     "poe.com",
 )
+
+
+def _behavior_clause(events: List[Event]) -> str:
+    """Pick the single most legible "what were you doing" signal,
+    stated with **specific evidence** — a count or a gap, never a
+    vague adjective.
+
+    Phase 4G sharpened this from generic phrases ("repeated
+    search") to evidence the user can check against their own
+    memory ("re-ran the same search 3 times", "reopened after a
+    2-day gap"). Trust is built from specificity: a caption that
+    names exactly what it saw is one the user can confirm — and a
+    caption the user can confirm is one they come to rely on.
+
+    Deterministic and conservative. One clause, in priority order:
+      1. a search query re-run >= 2 times — the clearest "still
+         chasing an answer" tell;
+      2. a target reopened after a real multi-day gap — the
+         strongest *return-intent* signal: the user deliberately
+         came back days later;
+      3. a target reopened >= 3 times in a tight window —
+         stuck-or-iterating.
+    Returns "" when nothing crosses the bar, so a calm caption
+    stays calm. A stray double-open is never a "behavior".
+    """
+    search_counts: Counter = Counter()
+    # target -> [count, first_ts, last_ts]
+    target_spans: Dict[str, list] = {}
+    for ev in events:
+        payload = ev.payload or {}
+        if ev.kind == "browser_search":
+            q = (payload.get("query") or "").strip().lower()
+            if q:
+                search_counts[q] += 1
+        elif ev.kind == "query":
+            t = (payload.get("text") or "").strip().lower()
+            if t:
+                search_counts[t] += 1
+        tgt = (payload.get("url") or payload.get("path") or "").strip().lower()
+        if tgt and ev.kind in ("open", "reveal", "browser_visit"):
+            ts = ev.ts_epoch()
+            span = target_spans.get(tgt)
+            if span is None:
+                target_spans[tgt] = [1, ts, ts]
+            else:
+                span[0] += 1
+                span[1] = min(span[1], ts)
+                span[2] = max(span[2], ts)
+
+    # 1. Re-run search.
+    if search_counts:
+        _, n = search_counts.most_common(1)[0]
+        if n >= 2:
+            return f"re-ran the same search {n} times"
+
+    # 2./3. Most-reopened target — gap first, then raw repetition.
+    if target_spans:
+        _, span = max(target_spans.items(), key=lambda kv: kv[1][0])
+        count, first_ts, last_ts = span
+        gap_days = (last_ts - first_ts) / 86400.0
+        if count >= 2 and gap_days >= 1.5:
+            # int() floors — the caption never overstates the gap.
+            return f"reopened after a {int(gap_days)}-day gap"
+        if count >= 3:
+            return f"returned to this {count} times"
+    return ""
 
 
 def _classify_targets(

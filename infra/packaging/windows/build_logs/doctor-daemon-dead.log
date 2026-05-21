@@ -1,0 +1,17 @@
+
+  Recall - doctor
+
+  YELLOW  config       C:\Users\kunal\.recall present, but config.json not yet written
+  YELLOW  events       no events directory yet � work a little
+  YELLOW  event flow   no event log yet
+  RED     daemon       127.0.0.1:4545 not responding (timed out)
+  YELLOW  extension    no event log yet
+  GREEN   launcher     instance lock present
+  GREEN   installer    running from bundle - Recall.exe
+  YELLOW  autostart    autostart off (settings or first-run choice)
+  YELLOW  protocol     recall:// not registered (extension Open won't deep-link)
+  YELLOW  versions     engine 0.1.0; extension manifest not found
+
+  RED above is the first thing to fix. The daemon
+  must be running for anything else to work.
+

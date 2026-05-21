@@ -1,0 +1,50 @@
+{
+  "_comment": "Manual alpha board. user_id is a founder-assigned handle, never PII. A user can ask to be removed; removal is deleting the row and their apps/admin/imported/<cohort>/<user_id>.json.",
+  "users": [
+    {
+      "user_id": "a1-01",
+      "cohort": "alpha-001",
+      "install_date": "2026-05-06",
+      "days_active": 11,
+      "first_recovery": "2026-05-09",
+      "feedback_ids": ["fb-001", "fb-005"],
+      "status": "active"
+    },
+    {
+      "user_id": "a1-02",
+      "cohort": "alpha-001",
+      "install_date": "2026-05-08",
+      "days_active": 9,
+      "first_recovery": "2026-05-11",
+      "feedback_ids": ["fb-002"],
+      "status": "active"
+    },
+    {
+      "user_id": "a1-03",
+      "cohort": "alpha-001",
+      "install_date": "2026-05-09",
+      "days_active": 4,
+      "first_recovery": null,
+      "feedback_ids": [],
+      "status": "lapsed"
+    },
+    {
+      "user_id": "fr-01",
+      "cohort": "friends",
+      "install_date": "2026-05-04",
+      "days_active": 14,
+      "first_recovery": "2026-05-06",
+      "feedback_ids": ["fb-003", "fb-006"],
+      "status": "active"
+    },
+    {
+      "user_id": "fr-02",
+      "cohort": "friends",
+      "install_date": "2026-05-10",
+      "days_active": 7,
+      "first_recovery": "2026-05-12",
+      "feedback_ids": ["fb-004"],
+      "status": "active"
+    }
+  ]
+}

@@ -1,0 +1,621 @@
+Recall build — root: C:\Users\kunal\Desktop\recall.me
+
+[1/2] PyInstaller bundle...
+608 INFO: PyInstaller: 6.20.0, contrib hooks: 2026.5
+608 INFO: Python: 3.14.2
+640 INFO: Platform: Windows-11-10.0.26200-SP0
+640 INFO: Python environment: C:\Python314
+5989 WARNING: Failed to collect submodules for 'chromadb.server.fastapi' because importing 'chromadb.server.fastapi' raised: ModuleNotFoundError: No module named 'opentelemetry.instrumentation'
+76507 WARNING: Timed out while waiting for the child process to exit!
+80588 INFO: Module search paths (PYTHONPATH):
+['C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\Scripts\\pyinstaller.exe',
+ 'C:\\Python314\\python314.zip',
+ 'C:\\Python314\\DLLs',
+ 'C:\\Python314\\Lib',
+ 'C:\\Python314',
+ 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages',
+ 'C:\\Python314\\Lib\\site-packages',
+ 'C:\\Users\\kunal\\Desktop\\recall.me']
+81887 INFO: Appending 'datas' from .spec
+81899 INFO: checking Analysis
+84593 INFO: Building because excludes changed
+84594 INFO: Looking for Python shared library...
+84594 INFO: Using Python shared library: C:\Python314\python314.dll
+84594 INFO: Running Analysis Analysis-00.toc
+84595 INFO: Target bytecode optimization level: 0
+84596 INFO: Initializing module dependency graph...
+84669 INFO: Initializing module graph hook caches...
+85158 INFO: Analyzing modules for base_library.zip ...
+89405 INFO: Processing standard module hook 'hook-encodings.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+90929 INFO: Processing standard module hook 'hook-pickle.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+92094 INFO: Processing standard module hook 'hook-difflib.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+92140 INFO: Processing standard module hook 'hook-heapq.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+101249 INFO: Caching module dependency graph...
+101751 INFO: Analyzing C:\Users\kunal\Desktop\recall.me\recall.py
+102065 INFO: Processing standard module hook 'hook-transformers.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+108591 INFO: Processing pre-safe-import-module hook 'hook-packaging.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+108594 INFO: SetuptoolsInfo: initializing cached setuptools info...
+109548 INFO: Processing pre-safe-import-module hook 'hook-typing_extensions.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+110064 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+110280 INFO: Processing standard module hook 'hook-xml.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+111095 INFO: Processing standard module hook 'hook-sysconfig.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+111116 INFO: Processing standard module hook 'hook-_ctypes.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+112230 INFO: Processing standard module hook 'hook-regex.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+112779 INFO: Processing standard module hook 'hook-numpy.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+116533 INFO: Processing standard module hook 'hook-platform.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+123250 INFO: Processing standard module hook 'hook-charset_normalizer.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+125389 INFO: Processing standard module hook 'hook-certifi.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+126035 INFO: Processing standard module hook 'hook-anyio.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+C:\Users\kunal\AppData\Roaming\Python\Python314\site-packages\anyio\from_thread.py:119: SyntaxWarning: 'return' in a 'finally' block
+  return result
+129616 INFO: Processing standard module hook 'hook-pygments.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+131486 INFO: Processing standard module hook 'hook-rich.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+136519 INFO: Processing standard module hook 'hook-pandas.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+140558 INFO: Processing standard module hook 'hook-zoneinfo.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+141603 INFO: Processing standard module hook 'hook-scipy.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+143325 INFO: Processing standard module hook 'hook-pytest.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+144072 INFO: Processing standard module hook 'hook-py.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+145244 INFO: Processing pre-safe-import-module hook 'hook-tomli.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+145247 INFO: Setuptools: 'tomli' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.tomli'!
+145277 INFO: Processing standard module hook 'hook-setuptools.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+145426 INFO: Processing pre-safe-import-module hook 'hook-distutils.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+145559 INFO: Processing pre-safe-import-module hook 'hook-jaraco.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+145560 INFO: Setuptools: 'jaraco' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco'!
+145590 INFO: Processing pre-safe-import-module hook 'hook-more_itertools.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+145591 INFO: Setuptools: 'more_itertools' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.more_itertools'!
+146888 INFO: Processing standard module hook 'hook-setuptools._vendor.jaraco.text.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+146892 INFO: Processing pre-safe-import-module hook 'hook-importlib_resources.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+146911 INFO: Processing standard module hook 'hook-importlib_resources.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+147040 INFO: Processing pre-safe-import-module hook 'hook-zipp.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+147185 INFO: Processing pre-safe-import-module hook 'hook-backports.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+147186 INFO: Setuptools: 'backports' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.backports'!
+147666 INFO: Processing pre-safe-import-module hook 'hook-importlib_metadata.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+147754 INFO: Processing standard module hook 'hook-importlib_metadata.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+150128 INFO: Processing pre-safe-import-module hook 'hook-wheel.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+150132 INFO: Setuptools: 'wheel' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.wheel'!
+152525 INFO: Processing standard module hook 'hook-pkg_resources.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+153096 INFO: Processing pre-safe-import-module hook 'hook-platformdirs.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+153097 INFO: Setuptools: 'platformdirs' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.platformdirs'!
+154200 INFO: Processing standard module hook 'hook-torch.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+5338 WARNING: Failed to collect submodules for 'torch.utils.tensorboard' because importing 'torch.utils.tensorboard' raised: ModuleNotFoundError: No module named 'tensorboard'
+W0520 17:30:32.450000 7060 torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+C:\Users\kunal\AppData\Roaming\Python\Python314\site-packages\PyInstaller\utils\hooks\__init__.py:665: DeprecationWarning: `torch.distributed._sharding_spec` will be deprecated, use `torch.distributed._shard.sharding_spec` instead
+  __import__(name)
+C:\Users\kunal\AppData\Roaming\Python\Python314\site-packages\PyInstaller\utils\hooks\__init__.py:665: DeprecationWarning: `torch.distributed._sharded_tensor` will be deprecated, use `torch.distributed._shard.sharded_tensor` instead
+  __import__(name)
+C:\Users\kunal\AppData\Roaming\Python\Python314\site-packages\PyInstaller\utils\hooks\__init__.py:665: DeprecationWarning: `torch.distributed._shard.checkpoint` will be deprecated, use `torch.distributed.checkpoint` instead
+  __import__(name)
+188104 INFO: hook-torch: this torch build does not depend on MKL...
+218384 INFO: Processing standard module hook 'hook-scipy.linalg.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+219202 INFO: Processing standard module hook 'hook-scipy.special._ufuncs.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+228677 INFO: Processing standard module hook 'hook-PIL.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+228913 INFO: Processing standard module hook 'hook-PIL.Image.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+229883 INFO: Processing standard module hook 'hook-xml.etree.cElementTree.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+230365 INFO: Processing standard module hook 'hook-PIL.ImageFilter.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+234528 INFO: Processing standard module hook 'hook-imageio.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+236888 INFO: Processing standard module hook 'hook-imageio_ffmpeg.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+243859 INFO: Processing pre-safe-import-module hook 'hook-win32com.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\pre_safe_import_module'
+245394 INFO: Processing standard module hook 'hook-sqlite3.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+271311 INFO: Processing standard module hook 'hook-fsspec.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+276814 INFO: Processing standard module hook 'hook-urllib3.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+300127 INFO: Processing standard module hook 'hook-jinja2.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+314657 INFO: Processing standard module hook 'hook-scipy.special._ellip_harm_2.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+323028 INFO: Processing standard module hook 'hook-scipy.spatial._ckdtree.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+324533 INFO: Processing standard module hook 'hook-scipy.spatial.transform.rotation.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+326878 INFO: Processing standard module hook 'hook-scipy.stats._stats.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+329471 INFO: Processing standard module hook 'hook-scipy.sparse.csgraph.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+341523 INFO: Processing standard module hook 'hook-xml.dom.domreg.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+C:\Users\kunal\AppData\Roaming\Python\Python314\site-packages\sympy\testing\runtests.py:283: SyntaxWarning: 'return' in a 'finally' block
+  return p.returncode
+348937 INFO: Processing standard module hook 'hook-scipy.io.matlab.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+354849 INFO: Processing standard module hook 'hook-onnxruntime.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+355165 INFO: Processing pre-safe-import-module hook 'hook-tensorflow.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\pre_safe_import_module'
+361172 INFO: Processing standard module hook 'hook-pandas.io.formats.style.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+365329 INFO: Processing standard module hook 'hook-pyarrow.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+370764 INFO: Processing standard module hook 'hook-pandas.plotting.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+372493 INFO: Processing standard module hook 'hook-dateutil.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+372876 INFO: Processing pre-safe-import-module hook 'hook-six.moves.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+376441 INFO: Processing standard module hook 'hook-pandas.io.clipboard.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+378771 INFO: Processing standard module hook 'hook-pydantic.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+C:\Users\kunal\AppData\Roaming\Python\Python314\site-packages\PyInstaller\utils\hooks\__init__.py:665: UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
+  __import__(name)
+391775 INFO: Processing standard module hook 'hook-orjson.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+395446 INFO: Processing standard module hook 'hook-sklearn.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+396381 INFO: Processing standard module hook 'hook-sklearn.utils.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+398644 INFO: Processing standard module hook 'hook-sklearn.externals.array_api_compat.numpy.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+398824 INFO: Processing standard module hook 'hook-sklearn.externals.array_api_compat.cupy.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+398889 INFO: Processing standard module hook 'hook-sklearn.externals.array_api_compat.torch.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+399006 INFO: Processing standard module hook 'hook-sklearn.externals.array_api_compat.dask.array.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+400215 INFO: Processing standard module hook 'hook-sklearn.metrics.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+408462 INFO: Processing standard module hook 'hook-sklearn.metrics.cluster.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+408689 INFO: Processing standard module hook 'hook-sklearn.metrics.pairwise.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+409177 INFO: Processing standard module hook 'hook-sklearn.cluster.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+409754 INFO: Processing standard module hook 'hook-sklearn.neighbors.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+410156 INFO: Processing standard module hook 'hook-sklearn.linear_model.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+414694 INFO: Processing standard module hook 'hook-opentelemetry.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+508093 INFO: Processing standard module hook 'hook-jsonschema.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+508703 INFO: Processing standard module hook 'hook-jsonschema_specifications.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+518867 INFO: Processing standard module hook 'hook-websockets.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+551433 INFO: Processing standard module hook 'hook-grpc.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+559788 INFO: Processing standard module hook 'hook-PyQt6.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+561722 INFO: Processing standard module hook 'hook-PyQt6.QtCore.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+579982 INFO: Processing standard module hook 'hook-PyQt6.QtGui.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+642093 INFO: Processing standard module hook 'hook-PyQt6.QtWidgets.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+660294 INFO: Processing standard module hook 'hook-uvicorn.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+663120 INFO: Processing standard module hook 'hook-pynput.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+664484 INFO: Analyzing hidden import 'chromadb.api.async_fastapi'
+664567 INFO: Analyzing hidden import 'chromadb.api.fastapi'
+664640 INFO: Analyzing hidden import 'chromadb.api.rust'
+664702 INFO: Analyzing hidden import 'chromadb.api.segment'
+664919 INFO: Analyzing hidden import 'chromadb.app'
+665227 INFO: Analyzing hidden import 'chromadb.auth.basic_authn'
+665278 INFO: Processing standard module hook 'hook-bcrypt.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+665282 INFO: Analyzing hidden import 'chromadb.auth.simple_rbac_authz'
+665302 INFO: Analyzing hidden import 'chromadb.cli'
+665304 INFO: Analyzing hidden import 'chromadb.cli.cli'
+665319 INFO: Analyzing hidden import 'chromadb.cli.utils'
+665341 INFO: Analyzing hidden import 'chromadb.db.base'
+665913 INFO: Analyzing hidden import 'chromadb.db.impl'
+665915 INFO: Analyzing hidden import 'chromadb.db.impl.sqlite'
+666239 INFO: Analyzing hidden import 'chromadb.migrations'
+666241 INFO: Analyzing hidden import 'chromadb.proto'
+666242 INFO: Analyzing hidden import 'chromadb.proto.convert'
+666295 INFO: Analyzing hidden import 'chromadb.proto.utils'
+666310 INFO: Analyzing hidden import 'chromadb.quota.simple_quota_enforcer'
+666327 INFO: Analyzing hidden import 'chromadb.rate_limit.simple_rate_limit'
+666344 INFO: Analyzing hidden import 'chromadb.segment.distributed'
+666362 INFO: Analyzing hidden import 'chromadb.segment.impl'
+666364 INFO: Analyzing hidden import 'chromadb.segment.impl.manager'
+666366 INFO: Analyzing hidden import 'chromadb.segment.impl.manager.cache'
+666367 INFO: Analyzing hidden import 'chromadb.segment.impl.manager.cache.cache'
+666389 INFO: Analyzing hidden import 'chromadb.segment.impl.manager.distributed'
+666429 INFO: Analyzing hidden import 'chromadb.segment.impl.manager.local'
+666794 INFO: Analyzing hidden import 'chromadb.telemetry.opentelemetry.grpc'
+666871 INFO: Analyzing hidden import 'chromadb.telemetry.product.posthog'
+666882 INFO: Analyzing hidden import 'chromadb.test'
+666885 INFO: Analyzing hidden import 'chromadb.test.client'
+666887 INFO: Analyzing hidden import 'chromadb.test.client.create_http_client_with_basic_auth'
+666909 INFO: Analyzing hidden import 'chromadb.test.client.test_cloud_client'
+666957 INFO: Analyzing hidden import 'chromadb.test.client.test_create_http_client'
+666971 INFO: Analyzing hidden import 'chromadb.test.client.test_database_tenant'
+667102 INFO: Analyzing hidden import 'chromadb.test.client.test_database_tenant_auth'
+667129 INFO: Analyzing hidden import 'chromadb.test.client.test_multiple_clients_concurrency'
+667146 INFO: Analyzing hidden import 'chromadb.test.test_api'
+667408 INFO: Analyzing hidden import 'chromadb.test.test_chroma'
+667427 INFO: Analyzing hidden import 'chromadb.test.test_cli'
+667788 INFO: Analyzing hidden import 'chromadb.test.test_client'
+667822 INFO: Analyzing hidden import 'chromadb.test.test_config'
+667864 INFO: Analyzing hidden import 'chromadb.test.test_multithreaded'
+667891 INFO: Analyzing hidden import 'chromadb.utils.batch_utils'
+667904 INFO: Analyzing hidden import 'chromadb.utils.data_loaders'
+667921 INFO: Analyzing hidden import 'chromadb.utils.delete_file'
+667935 INFO: Analyzing hidden import 'chromadb.utils.messageid'
+667945 INFO: Analyzing hidden import 'chromadb.utils.rendezvous_hash'
+667961 INFO: Analyzing hidden import 'chromadb.utils.results'
+667980 INFO: Analyzing hidden import 'chromadb.utils.statistics'
+668003 INFO: Analyzing hidden import 'sentence_transformers.cross_encoder.evaluation'
+668577 INFO: Analyzing hidden import 'sentence_transformers.cross_encoder.util'
+668588 INFO: Analyzing hidden import 'sentence_transformers.sparse_encoder.evaluation'
+668791 INFO: Analyzing hidden import 'sentence_transformers.sparse_encoder.search_engines'
+668837 INFO: Analyzing hidden import 'transformers.cli'
+668840 INFO: Analyzing hidden import 'transformers.cli.add_new_model_like'
+668887 INFO: Analyzing hidden import 'transformers.cli.chat'
+668945 INFO: Analyzing hidden import 'transformers.cli.download'
+668965 INFO: Analyzing hidden import 'transformers.cli.serve'
+669284 INFO: Analyzing hidden import 'transformers.cli.system'
+669304 INFO: Analyzing hidden import 'transformers.cli.transformers'
+669319 INFO: Analyzing hidden import 'transformers.convert_slow_tokenizers_checkpoints_to_fast'
+669338 INFO: Analyzing hidden import 'transformers.data.metrics.squad_metrics'
+669386 INFO: Analyzing hidden import 'transformers.integrations.mistral'
+669404 INFO: Analyzing hidden import 'transformers.integrations.tiktoken'
+669416 INFO: Analyzing hidden import 'transformers.modeling_attn_mask_utils'
+669446 INFO: Analyzing hidden import 'transformers.models.afmoe.modular_afmoe'
+669482 INFO: Analyzing hidden import 'transformers.models.aimv2.modular_aimv2'
+669522 INFO: Analyzing hidden import 'transformers.models.altclip.modular_altclip'
+669562 INFO: Analyzing hidden import 'transformers.models.apertus.modular_apertus'
+669586 INFO: Analyzing hidden import 'transformers.models.arcee.modular_arcee'
+669608 INFO: Analyzing hidden import 'transformers.models.aria.modular_aria'
+669676 INFO: Analyzing hidden import 'transformers.models.audioflamingo3.modular_audioflamingo3'
+669700 INFO: Analyzing hidden import 'transformers.models.aya_vision.modular_aya_vision'
+669728 INFO: Analyzing hidden import 'transformers.models.bamba.modular_bamba'
+669783 INFO: Analyzing hidden import 'transformers.models.bart.tokenization_bart'
+669787 INFO: Analyzing hidden import 'transformers.models.biogpt.modular_biogpt'
+669830 INFO: Analyzing hidden import 'transformers.models.bitnet.modular_bitnet'
+669849 INFO: Analyzing hidden import 'transformers.models.blt.modular_blt'
+669926 INFO: Analyzing hidden import 'transformers.models.camembert.modular_camembert'
+669967 INFO: Analyzing hidden import 'transformers.models.chinese_clip.image_processing_pil_chinese_clip'
+669972 INFO: Analyzing hidden import 'transformers.models.chinese_clip.modular_chinese_clip'
+670014 INFO: Analyzing hidden import 'transformers.models.chmv2.modular_chmv2'
+670059 INFO: Analyzing hidden import 'transformers.models.clipseg.modular_clipseg'
+670124 INFO: Analyzing hidden import 'transformers.models.cohere.modular_cohere'
+670179 INFO: Analyzing hidden import 'transformers.models.cohere2.modular_cohere2'
+670232 INFO: Analyzing hidden import 'transformers.models.cohere2_vision.modular_cohere2_vision'
+670282 INFO: Analyzing hidden import 'transformers.models.cohere_asr.modular_cohere_asr'
+670334 INFO: Analyzing hidden import 'transformers.models.colmodernvbert.modular_colmodernvbert'
+670379 INFO: Analyzing hidden import 'transformers.models.colpali.modular_colpali'
+670404 INFO: Analyzing hidden import 'transformers.models.colqwen2.modular_colqwen2'
+670442 INFO: Analyzing hidden import 'transformers.models.conditional_detr.modular_conditional_detr'
+670516 INFO: Analyzing hidden import 'transformers.models.cpm.tokenization_cpm_fast'
+670528 INFO: Analyzing hidden import 'transformers.models.csm.modular_csm'
+670587 INFO: Analyzing hidden import 'transformers.models.cwm.modular_cwm'
+670610 INFO: Analyzing hidden import 'transformers.models.d_fine.modular_d_fine'
+670693 INFO: Analyzing hidden import 'transformers.models.data2vec.modular_data2vec_audio'
+670725 INFO: Analyzing hidden import 'transformers.models.data2vec.modular_data2vec_text'
+670774 INFO: Analyzing hidden import 'transformers.models.dbrx.modular_dbrx'
+670825 INFO: Analyzing hidden import 'transformers.models.deepseek_v2.modular_deepseek_v2'
+670868 INFO: Analyzing hidden import 'transformers.models.deepseek_v3.modular_deepseek_v3'
+670911 INFO: Analyzing hidden import 'transformers.models.deepseek_v4.modular_deepseek_v4'
+671019 INFO: Analyzing hidden import 'transformers.models.deepseek_vl.modular_deepseek_vl'
+671052 INFO: Analyzing hidden import 'transformers.models.deepseek_vl_hybrid.modular_deepseek_vl_hybrid'
+671123 INFO: Analyzing hidden import 'transformers.models.deformable_detr.modular_deformable_detr'
+671220 INFO: Analyzing hidden import 'transformers.models.deimv2.modular_deimv2'
+671289 INFO: Analyzing hidden import 'transformers.models.dia.modular_dia'
+671345 INFO: Analyzing hidden import 'transformers.models.diffllama.modular_diffllama'
+671378 INFO: Analyzing hidden import 'transformers.models.dinov2_with_registers.modular_dinov2_with_registers'
+671416 INFO: Analyzing hidden import 'transformers.models.dinov3_vit.modular_dinov3_vit'
+671461 INFO: Analyzing hidden import 'transformers.models.doge.modular_doge'
+671510 INFO: Analyzing hidden import 'transformers.models.dots1.modular_dots1'
+671529 INFO: Analyzing hidden import 'transformers.models.dpt.modular_dpt'
+671552 INFO: Analyzing hidden import 'transformers.models.edgetam.modular_edgetam'
+671573 INFO: Analyzing hidden import 'transformers.models.edgetam_video.modular_edgetam_video'
+671649 INFO: Analyzing hidden import 'transformers.models.efficientloftr.modular_efficientloftr'
+671666 INFO: Analyzing hidden import 'transformers.models.emu3.modular_emu3'
+671746 INFO: Analyzing hidden import 'transformers.models.eomt.modular_eomt'
+671789 INFO: Analyzing hidden import 'transformers.models.eomt_dinov3.modular_eomt_dinov3'
+671822 INFO: Analyzing hidden import 'transformers.models.ernie.modular_ernie'
+671866 INFO: Analyzing hidden import 'transformers.models.ernie4_5.modular_ernie4_5'
+671890 INFO: Analyzing hidden import 'transformers.models.ernie4_5_moe.modular_ernie4_5_moe'
+671925 INFO: Analyzing hidden import 'transformers.models.ernie4_5_vl_moe.modular_ernie4_5_vl_moe'
+672022 INFO: Analyzing hidden import 'transformers.models.eurobert'
+672082 INFO: Analyzing hidden import 'transformers.models.eurobert.modular_eurobert'
+672119 INFO: Analyzing hidden import 'transformers.models.evolla.modular_evolla'
+672175 INFO: Analyzing hidden import 'transformers.models.exaone4.modular_exaone4'
+672209 INFO: Analyzing hidden import 'transformers.models.exaone4_5.modular_exaone4_5'
+672251 INFO: Analyzing hidden import 'transformers.models.exaone_moe.modular_exaone_moe'
+672276 INFO: Analyzing hidden import 'transformers.models.falcon_h1.modular_falcon_h1'
+672334 INFO: Analyzing hidden import 'transformers.models.falcon_mamba.modular_falcon_mamba'
+672371 INFO: Analyzing hidden import 'transformers.models.fast_vlm.modular_fast_vlm'
+672395 INFO: Analyzing hidden import 'transformers.models.flex_olmo.modular_flex_olmo'
+672421 INFO: Analyzing hidden import 'transformers.models.florence2.modular_florence2'
+672536 INFO: Analyzing hidden import 'transformers.models.gemma.modular_gemma'
+672565 INFO: Analyzing hidden import 'transformers.models.gemma2.modular_gemma2'
+672604 INFO: Analyzing hidden import 'transformers.models.gemma3.modular_gemma3'
+672676 INFO: Analyzing hidden import 'transformers.models.gemma3n.modular_gemma3n'
+672826 INFO: Analyzing hidden import 'transformers.models.gemma4.modular_gemma4'
+672971 INFO: Analyzing hidden import 'transformers.models.glm.modular_glm'
+672987 INFO: Analyzing hidden import 'transformers.models.glm4.modular_glm4'
+673004 INFO: Analyzing hidden import 'transformers.models.glm46v.modular_glm46v'
+673030 INFO: Analyzing hidden import 'transformers.models.glm4_moe.modular_glm4_moe'
+673055 INFO: Analyzing hidden import 'transformers.models.glm4_moe_lite.modular_glm4_moe_lite'
+673076 INFO: Analyzing hidden import 'transformers.models.glm4v.modular_glm4v'
+673158 INFO: Analyzing hidden import 'transformers.models.glm4v_moe.modular_glm4v_moe'
+673191 INFO: Analyzing hidden import 'transformers.models.glm_image.modular_glm_image'
+673283 INFO: Analyzing hidden import 'transformers.models.glm_moe_dsa.modular_glm_moe_dsa'
+673325 INFO: Analyzing hidden import 'transformers.models.glm_ocr.modular_glm_ocr'
+673370 INFO: Analyzing hidden import 'transformers.models.glmasr.modular_glmasr'
+673414 INFO: Analyzing hidden import 'transformers.models.got_ocr2.modular_got_ocr2'
+673450 INFO: Analyzing hidden import 'transformers.models.gpt_neox.modular_gpt_neox'
+673496 INFO: Analyzing hidden import 'transformers.models.gpt_oss.modular_gpt_oss'
+673560 INFO: Analyzing hidden import 'transformers.models.granite.modular_granite'
+673580 INFO: Analyzing hidden import 'transformers.models.granite4_vision.modular_granite4_vision'
+673716 INFO: Analyzing hidden import 'transformers.models.granite_speech_plus.modular_granite_speech_plus'
+673778 INFO: Analyzing hidden import 'transformers.models.granitemoe.modular_granitemoe'
+673809 INFO: Analyzing hidden import 'transformers.models.granitemoehybrid.modular_granitemoehybrid'
+673841 INFO: Analyzing hidden import 'transformers.models.granitemoeshared.modular_granitemoeshared'
+673864 INFO: Analyzing hidden import 'transformers.models.grounding_dino.modular_grounding_dino'
+673885 INFO: Analyzing hidden import 'transformers.models.helium.modular_helium'
+673908 INFO: Analyzing hidden import 'transformers.models.hgnet_v2.modular_hgnet_v2'
+673950 INFO: Analyzing hidden import 'transformers.models.higgs_audio_v2.modular_higgs_audio_v2'
+673989 INFO: Analyzing hidden import 'transformers.models.higgs_audio_v2_tokenizer.modular_higgs_audio_v2_tokenizer'
+674010 INFO: Analyzing hidden import 'transformers.models.hubert.modular_hubert'
+674039 INFO: Analyzing hidden import 'transformers.models.hunyuan_v1_dense.modular_hunyuan_v1_dense'
+674064 INFO: Analyzing hidden import 'transformers.models.hunyuan_v1_moe.modular_hunyuan_v1_moe'
+674094 INFO: Analyzing hidden import 'transformers.models.hy_v3.modular_hy_v3'
+674126 INFO: Analyzing hidden import 'transformers.models.ijepa.modular_ijepa'
+674147 INFO: Analyzing hidden import 'transformers.models.informer.modular_informer'
+674201 INFO: Analyzing hidden import 'transformers.models.instructblipvideo.modular_instructblipvideo'
+674233 INFO: Analyzing hidden import 'transformers.models.internvl.modular_internvl'
+674284 INFO: Analyzing hidden import 'transformers.models.jais2.modular_jais2'
+674301 INFO: Analyzing hidden import 'transformers.models.jamba.modular_jamba'
+674351 INFO: Analyzing hidden import 'transformers.models.janus.modular_janus'
+674437 INFO: Analyzing hidden import 'transformers.models.jetmoe.modular_jetmoe'
+674476 INFO: Analyzing hidden import 'transformers.models.jina_embeddings_v3.modular_jina_embeddings_v3'
+674508 INFO: Analyzing hidden import 'transformers.models.kyutai_speech_to_text.modular_kyutai_speech_to_text'
+674544 INFO: Analyzing hidden import 'transformers.models.laguna.modular_laguna'
+674583 INFO: Analyzing hidden import 'transformers.models.lasr.modular_lasr'
+674631 INFO: Analyzing hidden import 'transformers.models.lasr.processing_lasr'
+674637 INFO: Analyzing hidden import 'transformers.models.layoutxlm.modular_layoutxlm'
+674650 INFO: Analyzing hidden import 'transformers.models.lfm2.modular_lfm2'
+674680 INFO: Analyzing hidden import 'transformers.models.lfm2_moe.modular_lfm2_moe'
+674708 INFO: Analyzing hidden import 'transformers.models.lfm2_vl.modular_lfm2_vl'
+674739 INFO: Analyzing hidden import 'transformers.models.lightglue.modular_lightglue'
+674808 INFO: Analyzing hidden import 'transformers.models.lighton_ocr'
+674870 INFO: Analyzing hidden import 'transformers.models.lighton_ocr.modular_lighton_ocr'
+674904 INFO: Analyzing hidden import 'transformers.models.llava_next_video.modular_llava_next_video'
+674949 INFO: Analyzing hidden import 'transformers.models.llava_next_video.video_processing_llava_next_video'
+674952 INFO: Analyzing hidden import 'transformers.models.llava_onevision.modular_llava_onevision'
+675011 INFO: Analyzing hidden import 'transformers.models.longcat_flash.modular_longcat_flash'
+675054 INFO: Analyzing hidden import 'transformers.models.lw_detr.modular_lw_detr'
+675148 INFO: Analyzing hidden import 'transformers.models.markuplm.tokenization_markuplm'
+675193 INFO: Analyzing hidden import 'transformers.models.mask2former.modular_mask2former'
+675227 INFO: Analyzing hidden import 'transformers.models.maskformer.modular_maskformer'
+675328 INFO: Analyzing hidden import 'transformers.models.megatron_gpt2.checkpoint_reshaping_and_interoperability'
+675415 INFO: Analyzing hidden import 'transformers.models.metaclip_2.modular_metaclip_2'
+675491 INFO: Analyzing hidden import 'transformers.models.minicpmv4_6.modular_minicpmv4_6'
+675560 INFO: Analyzing hidden import 'transformers.models.minimax.modular_minimax'
+675621 INFO: Analyzing hidden import 'transformers.models.minimax_m2.modular_minimax_m2'
+675659 INFO: Analyzing hidden import 'transformers.models.ministral.modular_ministral'
+675690 INFO: Analyzing hidden import 'transformers.models.ministral3.modular_ministral3'
+675712 INFO: Analyzing hidden import 'transformers.models.mistral.modular_mistral'
+675744 INFO: Analyzing hidden import 'transformers.models.mistral3.modular_mistral3'
+675779 INFO: Analyzing hidden import 'transformers.models.mistral4.modular_mistral4'
+675811 INFO: Analyzing hidden import 'transformers.models.mixtral.modular_mixtral'
+675854 INFO: Analyzing hidden import 'transformers.models.mlcd.modular_mlcd'
+675899 INFO: Analyzing hidden import 'transformers.models.mm_grounding_dino.modular_mm_grounding_dino'
+675937 INFO: Analyzing hidden import 'transformers.models.mobilenet_v1.image_processing_pil_mobilenet_v1'
+675940 INFO: Analyzing hidden import 'transformers.models.modernbert.modular_modernbert'
+676023 INFO: Analyzing hidden import 'transformers.models.modernbert_decoder.modular_modernbert_decoder'
+676080 INFO: Analyzing hidden import 'transformers.models.modernvbert.modular_modernvbert'
+676126 INFO: Analyzing hidden import 'transformers.models.moonshine.modular_moonshine'
+676189 INFO: Analyzing hidden import 'transformers.models.moonshine_streaming.modular_moonshine_streaming'
+676232 INFO: Analyzing hidden import 'transformers.models.moonshine_streaming.processing_moonshine_streaming'
+676238 INFO: Analyzing hidden import 'transformers.models.musicflamingo.modular_musicflamingo'
+676275 INFO: Analyzing hidden import 'transformers.models.musicgen_melody.feature_extraction_musicgen_melody'
+676296 INFO: Analyzing hidden import 'transformers.models.musicgen_melody.processing_musicgen_melody'
+676302 INFO: Analyzing hidden import 'transformers.models.nanochat.modular_nanochat'
+676334 INFO: Analyzing hidden import 'transformers.models.nemotron_h.modular_nemotron_h'
+676379 INFO: Analyzing hidden import 'transformers.models.nomic_bert.modular_nomic_bert'
+676411 INFO: Analyzing hidden import 'transformers.models.nougat.configuration_nougat'
+676416 INFO: Analyzing hidden import 'transformers.models.olmo.modular_olmo'
+676442 INFO: Analyzing hidden import 'transformers.models.olmo2.modular_olmo2'
+676471 INFO: Analyzing hidden import 'transformers.models.olmo3.modular_olmo3'
+676500 INFO: Analyzing hidden import 'transformers.models.olmo_hybrid.modular_olmo_hybrid'
+676560 INFO: Analyzing hidden import 'transformers.models.olmoe.modular_olmoe'
+676589 INFO: Analyzing hidden import 'transformers.models.openai_privacy_filter.modular_openai_privacy_filter'
+676626 INFO: Analyzing hidden import 'transformers.models.ovis2.modular_ovis2'
+676664 INFO: Analyzing hidden import 'transformers.models.owlv2.modular_owlv2'
+676696 INFO: Analyzing hidden import 'transformers.models.paddleocr_vl.modular_paddleocr_vl'
+676772 INFO: Analyzing hidden import 'transformers.models.parakeet.modular_parakeet'
+676826 INFO: Analyzing hidden import 'transformers.models.parakeet.tokenization_parakeet'
+676829 INFO: Analyzing hidden import 'transformers.models.pe_audio.modular_pe_audio'
+676862 INFO: Analyzing hidden import 'transformers.models.pe_audio_video.modular_pe_audio_video'
+676918 INFO: Analyzing hidden import 'transformers.models.pe_video.modular_pe_video'
+676950 INFO: Analyzing hidden import 'transformers.models.perception_lm.modular_perception_lm'
+676983 INFO: Analyzing hidden import 'transformers.models.perception_lm.video_processing_perception_lm'
+676986 INFO: Analyzing hidden import 'transformers.models.phi.modular_phi'
+677017 INFO: Analyzing hidden import 'transformers.models.phi3.modular_phi3'
+677044 INFO: Analyzing hidden import 'transformers.models.phi4_multimodal.modular_phi4_multimodal'
+677175 INFO: Analyzing hidden import 'transformers.models.phimoe.modular_phimoe'
+677215 INFO: Analyzing hidden import 'transformers.models.pi0.modular_pi0'
+677276 INFO: Analyzing hidden import 'transformers.models.pi0.processing_pi0'
+677290 INFO: Analyzing hidden import 'transformers.models.pixio.modular_pixio'
+677326 INFO: Analyzing hidden import 'transformers.models.plbart.modular_plbart'
+677359 INFO: Analyzing hidden import 'transformers.models.pop2piano.feature_extraction_pop2piano'
+677379 INFO: Analyzing hidden import 'transformers.models.pop2piano.processing_pop2piano'
+677386 INFO: Analyzing hidden import 'transformers.models.pop2piano.tokenization_pop2piano'
+677422 INFO: Analyzing hidden import 'transformers.models.pp_chart2table.modular_pp_chart2table'
+677448 INFO: Analyzing hidden import 'transformers.models.pp_doclayout_v2.modular_pp_doclayout_v2'
+677536 INFO: Analyzing hidden import 'transformers.models.pp_doclayout_v3.modular_pp_doclayout_v3'
+677632 INFO: Analyzing hidden import 'transformers.models.pp_formulanet'
+677760 INFO: Analyzing hidden import 'transformers.models.pp_formulanet.modular_pp_formulanet'
+677821 INFO: Analyzing hidden import 'transformers.models.pp_formulanet.processing_pp_formulanet'
+677832 INFO: Analyzing hidden import 'transformers.models.pp_lcnet.modular_pp_lcnet'
+677878 INFO: Analyzing hidden import 'transformers.models.pp_lcnet_v3.modular_pp_lcnet_v3'
+677910 INFO: Analyzing hidden import 'transformers.models.pp_ocrv5_mobile_det.modular_pp_ocrv5_mobile_det'
+677942 INFO: Analyzing hidden import 'transformers.models.pp_ocrv5_mobile_rec'
+677996 INFO: Analyzing hidden import 'transformers.models.pp_ocrv5_mobile_rec.modular_pp_ocrv5_mobile_rec'
+678088 INFO: Analyzing hidden import 'transformers.models.pp_ocrv5_server_det.modular_pp_ocrv5_server_det'
+678196 INFO: Analyzing hidden import 'transformers.models.pp_ocrv5_server_rec.modular_pp_ocrv5_server_rec'
+678246 INFO: Analyzing hidden import 'transformers.models.prompt_depth_anything.modular_prompt_depth_anything'
+678292 INFO: Analyzing hidden import 'transformers.models.qianfan_ocr.modular_qianfan_ocr'
+678337 INFO: Analyzing hidden import 'transformers.models.qwen2.modular_qwen2'
+678371 INFO: Analyzing hidden import 'transformers.models.qwen2_5_omni.modular_qwen2_5_omni'
+678708 INFO: Analyzing hidden import 'transformers.models.qwen2_5_vl.modular_qwen2_5_vl'
+678804 INFO: Analyzing hidden import 'transformers.models.qwen2_moe.modular_qwen2_moe'
+678846 INFO: Analyzing hidden import 'transformers.models.qwen2_vl.video_processing_qwen2_vl'
+678898 INFO: Analyzing hidden import 'transformers.models.qwen3.modular_qwen3'
+678924 INFO: Analyzing hidden import 'transformers.models.qwen3_5.modular_qwen3_5'
+679059 INFO: Analyzing hidden import 'transformers.models.qwen3_5_moe.modular_qwen3_5_moe'
+679091 INFO: Analyzing hidden import 'transformers.models.qwen3_moe.modular_qwen3_moe'
+679115 INFO: Analyzing hidden import 'transformers.models.qwen3_next.modular_qwen3_next'
+679196 INFO: Analyzing hidden import 'transformers.models.qwen3_omni_moe.modular_qwen3_omni_moe'
+679409 INFO: Analyzing hidden import 'transformers.models.qwen3_vl.modular_qwen3_vl'
+679532 INFO: Analyzing hidden import 'transformers.models.qwen3_vl_moe.modular_qwen3_vl_moe'
+679571 INFO: Analyzing hidden import 'transformers.models.roberta.modular_roberta'
+679622 INFO: Analyzing hidden import 'transformers.models.roberta.tokenization_roberta_old'
+679635 INFO: Analyzing hidden import 'transformers.models.rt_detr.modular_rt_detr'
+679809 INFO: Analyzing hidden import 'transformers.models.rt_detr_v2.modular_rt_detr_v2'
+679862 INFO: Analyzing hidden import 'transformers.models.sam2.modular_sam2'
+679976 INFO: Analyzing hidden import 'transformers.models.sam2_video.modular_sam2_video'
+680175 INFO: Analyzing hidden import 'transformers.models.sam3.modular_sam3'
+680210 INFO: Analyzing hidden import 'transformers.models.sam3_lite_text.modular_sam3_lite_text'
+680282 INFO: Analyzing hidden import 'transformers.models.sam3_tracker.modular_sam3_tracker'
+680321 INFO: Analyzing hidden import 'transformers.models.sam3_tracker_video.modular_sam3_tracker_video'
+680393 INFO: Analyzing hidden import 'transformers.models.sam_hq.modular_sam_hq'
+680444 INFO: Analyzing hidden import 'transformers.models.seed_oss.modular_seed_oss'
+680480 INFO: Analyzing hidden import 'transformers.models.segformer.modular_segformer'
+680530 INFO: Analyzing hidden import 'transformers.models.sew.modular_sew'
+680659 INFO: Analyzing hidden import 'transformers.models.siglip2.modular_siglip2'
+680769 INFO: Analyzing hidden import 'transformers.models.slanet.modular_slanet'
+680816 INFO: Analyzing hidden import 'transformers.models.slanext.modular_slanext'
+680915 INFO: Analyzing hidden import 'transformers.models.smollm3.modular_smollm3'
+680956 INFO: Analyzing hidden import 'transformers.models.smolvlm.modular_smolvlm'
+680999 INFO: Analyzing hidden import 'transformers.models.smolvlm.video_processing_smolvlm'
+681029 INFO: Analyzing hidden import 'transformers.models.solar_open.modular_solar_open'
+681060 INFO: Analyzing hidden import 'transformers.models.starcoder2.modular_starcoder2'
+681107 INFO: Analyzing hidden import 'transformers.models.switch_transformers.modular_switch_transformers'
+681200 INFO: Analyzing hidden import 'transformers.models.t5gemma.modular_t5gemma'
+681323 INFO: Analyzing hidden import 'transformers.models.t5gemma2.modular_t5gemma2'
+681465 INFO: Analyzing hidden import 'transformers.models.timesfm.modular_timesfm'
+681647 INFO: Analyzing hidden import 'transformers.models.timesfm2_5.modular_timesfm2_5'
+682346 INFO: Analyzing hidden import 'transformers.models.unispeech.modular_unispeech'
+682479 INFO: Analyzing hidden import 'transformers.models.unispeech_sat.modular_unispeech_sat'
+682547 INFO: Analyzing hidden import 'transformers.models.uvdoc.modular_uvdoc'
+682627 INFO: Analyzing hidden import 'transformers.models.vaultgemma.modular_vaultgemma'
+682657 INFO: Analyzing hidden import 'transformers.models.vibevoice_acoustic_tokenizer'
+682786 INFO: Analyzing hidden import 'transformers.models.vibevoice_acoustic_tokenizer.modular_vibevoice_acoustic_tokenizer'
+682872 INFO: Analyzing hidden import 'transformers.models.vibevoice_asr.modular_vibevoice_asr'
+683034 INFO: Analyzing hidden import 'transformers.models.video_llama_3.modular_video_llama_3'
+683511 INFO: Analyzing hidden import 'transformers.models.video_llava.video_processing_video_llava'
+683517 INFO: Analyzing hidden import 'transformers.models.videomt.modular_videomt'
+683570 INFO: Analyzing hidden import 'transformers.models.vipllava.modular_vipllava'
+683622 INFO: Analyzing hidden import 'transformers.models.voxtral.modular_voxtral'
+683677 INFO: Analyzing hidden import 'transformers.models.voxtral_realtime.feature_extraction_voxtral_realtime'
+683695 INFO: Analyzing hidden import 'transformers.models.voxtral_realtime.modular_voxtral_realtime'
+683861 INFO: Analyzing hidden import 'transformers.models.wav2vec2_bert.modular_wav2vec2_bert'
+684198 INFO: Analyzing hidden import 'transformers.models.wav2vec2_conformer.modular_wav2vec2_conformer'
+684574 INFO: Analyzing hidden import 'transformers.models.wavlm.modular_wavlm'
+684654 INFO: Analyzing hidden import 'transformers.models.x_clip.modular_x_clip'
+684789 INFO: Analyzing hidden import 'transformers.models.xlm_roberta.modular_xlm_roberta'
+684834 INFO: Analyzing hidden import 'transformers.models.xlm_roberta_xl.modular_xlm_roberta_xl'
+684900 INFO: Analyzing hidden import 'transformers.models.xlstm.configuration_xlstm'
+684915 INFO: Analyzing hidden import 'transformers.models.xlstm.modeling_xlstm'
+685056 INFO: Analyzing hidden import 'transformers.models.yolos.modular_yolos'
+685092 INFO: Analyzing hidden import 'transformers.models.youtu.modular_youtu'
+685119 INFO: Analyzing hidden import 'transformers.models.zamba2.modular_zamba2'
+685228 INFO: Analyzing hidden import 'transformers.testing_utils'
+685594 INFO: Analyzing hidden import 'transformers.utils.attention_visualizer'
+685639 INFO: Analyzing hidden import 'transformers.utils.backbone_utils'
+685650 INFO: Analyzing hidden import 'transformers.utils.dummy_detectron2_objects'
+685666 INFO: Analyzing hidden import 'transformers.utils.dummy_essentia_and_librosa_and_pretty_midi_and_scipy_and_torch_objects'
+685684 INFO: Analyzing hidden import 'transformers.utils.dummy_music_objects'
+685697 INFO: Analyzing hidden import 'transformers.utils.dummy_speech_objects'
+685708 INFO: Analyzing hidden import 'transformers.utils.dummy_timm_and_torchvision_objects'
+685724 INFO: Analyzing hidden import 'transformers.utils.dummy_torchaudio_objects'
+685739 INFO: Analyzing hidden import 'transformers.utils.hp_naming'
+685815 INFO: Analyzing hidden import 'transformers.utils.network_logging'
+685964 INFO: Analyzing hidden import 'transformers.utils.pytest_helpers'
+686015 INFO: Analyzing hidden import 'tokenizers.tools'
+686138 INFO: Analyzing hidden import 'pynput._info'
+686154 INFO: Analyzing hidden import 'pynput._util.darwin'
+686198 INFO: Analyzing hidden import 'pynput._util.darwin_vks'
+686221 INFO: Analyzing hidden import 'pynput._util.uinput'
+686245 INFO: Analyzing hidden import 'pynput._util.win32'
+686354 INFO: Analyzing hidden import 'pynput._util.xorg'
+686552 INFO: Analyzing hidden import 'pynput.keyboard._base'
+686629 INFO: Analyzing hidden import 'pynput.keyboard._darwin'
+686665 INFO: Analyzing hidden import 'pynput.keyboard._dummy'
+686681 INFO: Analyzing hidden import 'pynput.keyboard._uinput'
+686725 INFO: Analyzing hidden import 'pynput.keyboard._win32'
+686766 INFO: Analyzing hidden import 'pynput.keyboard._xorg'
+686825 INFO: Analyzing hidden import 'pynput.mouse._base'
+686879 INFO: Analyzing hidden import 'pynput.mouse._darwin'
+686907 INFO: Analyzing hidden import 'pynput.mouse._dummy'
+686921 INFO: Analyzing hidden import 'pynput.mouse._win32'
+686954 INFO: Analyzing hidden import 'pynput.mouse._xorg'
+686988 INFO: Analyzing hidden import 'watchdog.observers.fsevents2'
+687024 INFO: Analyzing hidden import 'watchdog.version'
+687041 INFO: Analyzing hidden import 'watchdog.watchmedo'
+687139 INFO: Processing module hooks (post-graph stage)...
+687691 WARNING: Hidden import "_cffi_backend" not found!
+694222 INFO: Processing standard module hook 'hook-sklearn.tree.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+727021 WARNING: Hidden import "importlib_resources.trees" not found!
+728246 INFO: Processing standard module hook 'hook-PIL.SpiderImagePlugin.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+739474 WARNING: Hidden import "scipy.special._cdflib" not found!
+739646 INFO: Processing standard module hook 'hook-tzdata.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+740469 INFO: Performing binary vs. data reclassification (1989 entries)
+765356 INFO: Looking for ctypes DLLs
+765680 WARNING: Library nvcuda.dll required via ctypes not found
+765964 WARNING: Ignoring /usr/lib64/libgomp.so.1 imported from C:\Users\kunal\AppData\Roaming\Python\Python314\site-packages\torch\_inductor\codecache.py - only basenames are supported with ctypes imports!
+767313 INFO: Analyzing run-time hooks ...
+767407 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\rthooks'
+767427 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\rthooks'
+767442 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\rthooks'
+767465 INFO: Including run-time hook 'pyi_rth_setuptools.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\rthooks'
+767482 INFO: Including run-time hook 'pyi_rth_pkgres.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\rthooks'
+767515 INFO: Including run-time hook 'pyi_rth_pyqt6.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\rthooks'
+767539 INFO: Processing pre-find-module-path hook 'hook-_pyi_rth_utils.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks\\pre_find_module_path'
+767554 INFO: Processing standard module hook 'hook-_pyi_rth_utils.py' from 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyInstaller\\hooks'
+767976 INFO: Creating base_library.zip...
+768085 INFO: Looking for dynamic libraries
+C:\Users\kunal\AppData\Roaming\Python\Python314\site-packages\PyInstaller\building\build_main.py:227: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__(package)
+W0520 17:40:42.022000 4248 torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+C:\Users\kunal\AppData\Roaming\Python\Python314\site-packages\PyInstaller\building\build_main.py:227: DeprecationWarning: `torch.distributed._sharding_spec` will be deprecated, use `torch.distributed._shard.sharding_spec` instead
+  __import__(package)
+C:\Users\kunal\AppData\Roaming\Python\Python314\site-packages\PyInstaller\building\build_main.py:227: DeprecationWarning: `torch.distributed._sharded_tensor` will be deprecated, use `torch.distributed._shard.sharded_tensor` instead
+  __import__(package)
+C:\Users\kunal\AppData\Roaming\Python\Python314\site-packages\PyInstaller\building\build_main.py:227: DeprecationWarning: `torch.distributed._shard.checkpoint` will be deprecated, use `torch.distributed.checkpoint` instead
+  __import__(package)
+C:\Users\kunal\AppData\Roaming\Python\Python314\site-packages\PyInstaller\building\build_main.py:227: UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
+  __import__(package)
+C:\Users\kunal\AppData\Roaming\Python\Python314\site-packages\websockets\legacy\__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions
+  warnings.warn(  # deprecated in 14.0 - 2024-11-09
+C:\Users\kunal\AppData\Roaming\Python\Python314\site-packages\chromadb\telemetry\opentelemetry\__init__.py:128: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+  if asyncio.iscoroutinefunction(f):
+C:\Users\kunal\AppData\Roaming\Python\Python314\site-packages\chromadb\telemetry\opentelemetry\__init__.py:128: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+  if asyncio.iscoroutinefunction(f):
+813005 INFO: Extra DLL search directories (AddDllDirectory): ['C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyQt6\\Qt6\\bin', 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\lib', 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\numpy.libs', 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\scipy.libs', 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas.libs', 'C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\pyarrow.libs']
+813010 INFO: Extra DLL search directories (PATH): ['C:\\Users\\kunal\\AppData\\Roaming\\Python\\Python314\\site-packages\\PyQt6\\Qt6\\bin']
+823223 INFO: Warnings written to C:\Users\kunal\Desktop\recall.me\build\recall\warn-recall.txt
+825601 INFO: Graph cross-reference written to C:\Users\kunal\Desktop\recall.me\build\recall\xref-recall.html
+826403 INFO: checking PYZ
+826831 INFO: Building because toc changed
+826831 INFO: Building PYZ (ZlibArchive) C:\Users\kunal\Desktop\recall.me\build\recall\PYZ-00.pyz
+840589 INFO: Building PYZ (ZlibArchive) C:\Users\kunal\Desktop\recall.me\build\recall\PYZ-00.pyz completed successfully.
+841045 INFO: checking PKG
+841066 INFO: Building because C:\Users\kunal\Desktop\recall.me\build\recall\PYZ-00.pyz changed
+841067 INFO: Building PKG (CArchive) Recall.pkg
+841275 INFO: Building PKG (CArchive) Recall.pkg completed successfully.
+841277 INFO: Bootloader C:\Users\kunal\AppData\Roaming\Python\Python314\site-packages\PyInstaller\bootloader\Windows-64bit-intel\runw.exe
+841277 INFO: checking EXE
+841302 INFO: Rebuilding EXE-00.toc because pkg is more recent
+841304 INFO: Building EXE from EXE-00.toc
+841306 INFO: Copying bootloader EXE to C:\Users\kunal\Desktop\recall.me\build\recall\Recall.exe
+842433 INFO: Copying icon to EXE
+842788 INFO: Copying 0 resources to EXE
+842788 INFO: Embedding manifest in EXE
+843427 INFO: Appending PKG archive to EXE
+843767 INFO: Fixing EXE headers
+852164 INFO: Building EXE from EXE-00.toc completed successfully.
+852242 INFO: checking COLLECT
+852444 INFO: Building COLLECT COLLECT-00.toc
+893490 INFO: Building COLLECT COLLECT-00.toc completed successfully.
+894000 INFO: Build complete! The results are available in: C:\Users\kunal\Desktop\recall.me\dist
+  bundle ready: dist\Recall\Recall.exe
+
+[2/2] Inno Setup installer...
+  iscc: C:\Users\kunal\AppData\Local\Programs\Inno Setup 6\ISCC.exe
+Inno Setup 6 Command-Line Compiler
+Copyright (C) 1997-2026 Jordan Russell. All rights reserved.
+Portions Copyright (C) 2000-2026 Martijn Laan. All rights reserved.
+Portions Copyright (C) 2001-2004 Alex Yackimoff. All rights reserved.
+https://www.innosetup.com
+
+Compiler engine version: Inno Setup 6.7.2
+Non-commercial use only
+
+Preprocessing
+   Reading file: C:\Users\kunal\AppData\Local\Programs\Inno Setup 6\ISPPBuiltins.iss
+Parsing [Setup] section, line 18
+Parsing [Setup] section, line 19
+Parsing [Setup] section, line 20
+Parsing [Setup] section, line 21
+Parsing [Setup] section, line 24
+Parsing [Setup] section, line 25
+Parsing [Setup] section, line 26
+Parsing [Setup] section, line 27
+Parsing [Setup] section, line 28
+Parsing [Setup] section, line 29
+Parsing [Setup] section, line 30
+Parsing [Setup] section, line 31
+Parsing [Setup] section, line 32
+Parsing [Setup] section, line 33
+Parsing [Setup] section, line 35
+Parsing [Setup] section, line 36
+Parsing [Setup] section, line 37
+Parsing [Setup] section, line 40
+Parsing [Setup] section, line 41
+Parsing [Setup] section, line 42
+Creating output directory: C:\Users\kunal\Desktop\recall.me\dist\installer
+Reading file (WizardImageFile)
+   Reading file: C:\Users\kunal\Desktop\recall.me\infra\packaging\windows\..\assets\windows-banner.bmp
+Error on line 36 in C:\Users\kunal\Desktop\recall.me\infra\packaging\windows\recall.iss: Could not read "C:\Users\kunal\Desktop\recall.me\infra\packaging\windows\..\assets\windows-banner.bmp".
+
+Error: The system cannot find the path specified.
+Compile aborted.
+Exception: C:\Users\kunal\Desktop\recall.me\infra\packaging\windows\build.ps1:54
+Line |
+  54 |  if (-not (Test-Path $out)) { throw "Installer not produced: $out" }
+     |                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Installer not produced: dist\installer\Recall-Setup.exe

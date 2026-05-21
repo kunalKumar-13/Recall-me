@@ -9,12 +9,9 @@ durability + format guarantees live in exactly one place.
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, timezone
-from typing import Iterable, Iterator, List, Optional
+from typing import Iterator, List, Optional
 
 from app.core.events import Event, EventLogger, EventStore
-
-from ..logging_config import log_with
 
 log = logging.getLogger("recall.api.storage")
 

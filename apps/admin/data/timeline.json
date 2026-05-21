@@ -1,0 +1,146 @@
+[
+  {
+    "name": "1A-3C",
+    "label": "Engine",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "4A",
+    "label": "Productize",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "4B",
+    "label": "Public-ready",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "4C",
+    "label": "Stability",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "4D",
+    "label": "First users",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "4E",
+    "label": "Behavioural",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "4F",
+    "label": "Trust + perf",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "4G",
+    "label": "Trust calibration",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "4H",
+    "label": "Continuity",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "4I",
+    "label": "Launcher",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "4J",
+    "label": "Surface coherence",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "4K",
+    "label": "Launcher cards",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "4L",
+    "label": "Screenshots",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "5A",
+    "label": "Zero friction",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "5A.1",
+    "label": "Install validation",
+    "done_pct": 70,
+    "state": "partial"
+  },
+  {
+    "name": "5E",
+    "label": "Control room (data)",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "5E.1",
+    "label": "Local observability",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "5B",
+    "label": "Daily indispensability",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "5C",
+    "label": "Alpha readiness",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "5D",
+    "label": "Hygiene",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "5D.1",
+    "label": "Doc consolidation",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "5E.2",
+    "label": "Control room (UI)",
+    "done_pct": 100,
+    "state": "done"
+  },
+  {
+    "name": "5E.3",
+    "label": "Founder automation",
+    "done_pct": 85,
+    "state": "now"
+  },
+  {
+    "name": "5F",
+    "label": "Public alpha tag",
+    "done_pct": 0,
+    "state": "next"
+  }
+]

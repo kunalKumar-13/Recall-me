@@ -18,7 +18,7 @@ from __future__ import annotations
 import logging
 import time
 from collections import defaultdict
-from typing import Iterable, List, Optional, Tuple
+from typing import List, Optional
 
 from app.core.episodic import EpisodicRetriever
 from app.core.events import Event, EventStore

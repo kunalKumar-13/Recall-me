@@ -1,0 +1,4 @@
+{
+  "generated_at": "2026-05-21",
+  "source_note": "Baked from aggregate.json, alpha/feedback.json, alpha/notes.json, cohorts.json, release_state.json, timeline_input.json, traction_history.json. Re-run `python apps/admin/scripts/bake_data.py` to refresh."
+}

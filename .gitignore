@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.py[cod]
+*.pyd
 *$py.class
 *.so
 .Python
@@ -11,9 +12,16 @@ env/
 dist/
 build/
 
-# Local DB & cache (never commit user index)
+# Local DB & cache (never commit user index or transient daemon state)
 app/db/chroma_store/
 .recall/
+.recall.dev-backup/
+
+# Node / extension build artifacts
+node_modules/
+apps/extension/ui/node_modules/
+apps/admin/web/node_modules/
+apps/admin/web/.next/
 
 # IDE
 .idea/
@@ -22,7 +30,12 @@ app/db/chroma_store/
 .DS_Store
 Thumbs.db
 
-# Demo media
+# Demo media — large; produced artifacts live in releases/ or CDN
 demo/*.mp4
 demo/*.mov
 demo/*.gif
+
+# Logs (transient runtime; build_logs/ keeps named evidence files
+# that ARE tracked - see docs/trust/INSTALL_PROOF_WINDOWS.md)
+*.log.tmp
+*.runtime.log

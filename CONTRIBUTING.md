@@ -16,7 +16,7 @@ narrow scope; the rules below exist to keep it that way.
   what not to add. PRs that broaden scope (LLM chat, cloud sync,
   multi-user, online indexing) will be declined.
 
-The [audit report](AUDIT_REPORT.md) and the
+The [audit report](docs/engineering/AUDIT_REPORT.md) and the
 [roadmap](README.md#roadmap) are the right places to find work that's
 in scope.
 

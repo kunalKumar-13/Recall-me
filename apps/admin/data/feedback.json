@@ -1,0 +1,50 @@
+[
+  {
+    "id": "fb-001",
+    "date": "2026-05-19",
+    "cohort": "alpha-001",
+    "tag": "trust",
+    "quote": "Wait - did it actually remember the SO tab I closed two days ago?",
+    "note": "First-recovery moment landed. The card named the work back at them."
+  },
+  {
+    "id": "fb-002",
+    "date": "2026-05-18",
+    "cohort": "alpha-001",
+    "tag": "confusion",
+    "quote": "I installed it and the launcher was empty. Was it working?",
+    "note": "First-week silence. Phase 4D empty-state copy addresses it; verify it landed for this user."
+  },
+  {
+    "id": "fb-003",
+    "date": "2026-05-17",
+    "cohort": "friends",
+    "tag": "pain",
+    "quote": "I had to load the extension by hand. Two clicks felt like ten.",
+    "note": "Extension pairing is still manual-unpacked until the Web Store listing happens."
+  },
+  {
+    "id": "fb-004",
+    "date": "2026-05-15",
+    "cohort": "friends",
+    "tag": "feature",
+    "quote": "Could it remember the conversation I had in ChatGPT yesterday?",
+    "note": "Already does (chat_session capture). Trust-message issue, not a feature gap."
+  },
+  {
+    "id": "fb-005",
+    "date": "2026-05-12",
+    "cohort": "alpha-001",
+    "tag": "bug",
+    "quote": "Resume tried to open a file that had moved. Quietly skipped.",
+    "note": "Phase 3C 'file no longer exists' branch firing correctly. Footer read 'Restored 3 of 4 - 1 missing'."
+  },
+  {
+    "id": "fb-006",
+    "date": "2026-05-08",
+    "cohort": "friends",
+    "tag": "pain",
+    "quote": "Windows SmartScreen warned on first run. Mildly scary.",
+    "note": "Unsigned installer; gate-7 blocker in GO_NO_GO."
+  }
+]

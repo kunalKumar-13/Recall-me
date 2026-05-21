@@ -1,0 +1,19 @@
+{
+  "_comment_schema": "alpha-001 recovery journal. Hand-edited by the founder per tester report. Each entry is one Resume click (right OR wrong). Empty array until cohort starts. Never imported from telemetry - no telemetry exists. See alpha/ALPHA_001_RUNBOOK.md for the cadence.",
+  "_field_spec": {
+    "date": "YYYY-MM-DD - the local date the tester clicked Resume",
+    "tester": "founder-assigned handle (never PII)",
+    "cohort": "alpha-001 | friends | writers | ...",
+    "investigation": "the title the launcher rendered on the recovery card (verbatim, the tester quotes it)",
+    "recovered": "what was on the card: 'N tabs, M files, K-day gap'",
+    "accepted": "true | false - did the tester click Resume?",
+    "wrong": "true | false | null - did the reopened work match what they actually wanted? null = didn't click Resume",
+    "notes": "one short sentence: what was useful, what was off, any quote"
+  },
+  "_invariants": [
+    "Never store URLs, filenames, queries, or chat content. The 'investigation' field is the launcher title only.",
+    "A single row with wrong=true caps the trust dimension in readiness_score.compute() at 0.2.",
+    "If a tester reports a Resume that was right - log it. If they report nothing - leave them off; absence is not signal."
+  ],
+  "entries": []
+}

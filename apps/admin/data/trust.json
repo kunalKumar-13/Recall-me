@@ -1,0 +1,44 @@
+[
+  {
+    "id": "recoveries_shown",
+    "label": "Recoveries shown",
+    "count": 52,
+    "detail": "across all cohort exports",
+    "state": "green"
+  },
+  {
+    "id": "recoveries_accepted",
+    "label": "Recoveries accepted",
+    "count": 41,
+    "detail": "78% accept rate",
+    "state": "green"
+  },
+  {
+    "id": "correct_silence",
+    "label": "Correct silence",
+    "count": "high",
+    "detail": "1 trust-tagged feedback",
+    "state": "yellow"
+  },
+  {
+    "id": "bad_recoveries",
+    "label": "Bad recoveries",
+    "count": 1,
+    "detail": "review trust-tagged feedback",
+    "state": "red"
+  },
+  {
+    "id": "extension_offline",
+    "label": "Extension offline incidents",
+    "count": 1,
+    "detail": "approximated from confusion-tagged feedback",
+    "state": "green"
+  },
+  {
+    "id": "doctor_failures",
+    "label": "`recall doctor` reds",
+    "count": "\u2014",
+    "detail": "manual \u2014 from cohort check-ins",
+    "state": "yellow"
+  }
+]

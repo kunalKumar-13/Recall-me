@@ -52,7 +52,7 @@ from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from .config import CONFIG_DIR
 from .episodic import _SYNONYMS, _content_tokens
@@ -85,6 +85,25 @@ _SEEDING_KINDS: frozenset[str] = frozenset({
     "browser_visit",
     "browser_search",
     "chat_session",
+    "open",
+    "reveal",
+})
+
+# Phase 4H — investigation coherence. A browser visit, a search, or
+# a chat session carries a *topic* in its title/query text; a bare
+# file open does not. These "anchor" kinds let a whole session be
+# tagged with the topic it was about, so a file opened inside that
+# session can bridge into the investigation it belongs to instead
+# of each filename becoming its own disconnected thread.
+_ANCHOR_KINDS: frozenset[str] = frozenset({
+    "browser_visit",
+    "browser_search",
+    "chat_session",
+})
+
+# File-artifact kinds. These are the events that bridge into a
+# session's anchor topic (see `_bucket_events`).
+_FILE_KINDS: frozenset[str] = frozenset({
     "open",
     "reveal",
 })
@@ -408,6 +427,13 @@ class ThreadBuilder:
     ) -> None:
         self.event_store = event_store
         self.store = store or ThreadStore()
+        # Phase 4H — one-entry `now`-keyed memo of the bucketing
+        # pass. `recover_recent` calls `rebuild()` and then, per
+        # candidate, `events_for_topic()` — all with the same `now`.
+        # Memoizing keeps that to a single bucketing walk.
+        self._bucket_cache: Optional[
+            Tuple[float, Dict[str, List[Event]]]
+        ] = None
 
     # -- public ----------------------------------------------------------
 
@@ -449,6 +475,24 @@ class ThreadBuilder:
         candidates.sort(key=lambda t: t.confidence, reverse=True)
         return [t for t in candidates if t.confidence >= _MIN_CONFIDENCE]
 
+    def events_for_topic(
+        self, topic_key: str, now: Optional[float] = None
+    ) -> List[Event]:
+        """Every event the rebuild groups under `topic_key`, using
+        the *same* session-anchored bucketing as `rebuild()`.
+
+        Consumers that need a thread's members (recovery, in
+        particular) must read membership from here — not by
+        re-deriving it per event with `_thread_key`. Phase 4H made
+        file artifacts bridge into their investigation's session
+        anchor; a consumer that re-derived per-event would key
+        `backoff.py` back to its filename and miss it, recovering
+        objects instead of the whole room.
+        """
+        if now is None:
+            now = time.time()
+        return list(self._bucket_events(now).get(topic_key, []))
+
     def forget_thread(self, thread_id: str) -> bool:
         """Forward to the store. Exposed so the service layer doesn't
         have to know about the store implementation detail."""
@@ -463,21 +507,69 @@ class ThreadBuilder:
     # -- bucketing -------------------------------------------------------
 
     def _bucket_events(self, now: float) -> Dict[str, List[Event]]:
-        """One pass over the lookback window. Per-event work is two
-        dict lookups + one canonical-token translate; everything
-        substantive (parse, tokenize, lowercase) is already cached on
-        the EventStore + Event."""
+        """Two-pass bucketing (Phase 4H — investigation coherence).
+
+        Pass 1 — *anchor* each session. Browser visits, searches,
+        and chat sessions name a topic in their text; bucketing
+        those by topic gives every session a dominant topic_key.
+
+        Pass 2 — bucket every event. A file open/reveal bridges
+        into its session's anchor topic when one exists, so
+        `backoff.py` opened inside the WebSocket-debugging session
+        joins the WebSocket investigation rather than forming its
+        own filename-keyed thread. A file opened in a session with
+        no anchor (a pure coding session, no browser activity)
+        keeps its filename-derived key — a standalone coding arc is
+        genuinely its own thread until it connects to something.
+
+        Per-event work stays cheap — two dict lookups and a cached
+        canonical translate — so the <50 ms rebuild budget holds.
+        """
+        cached = self._bucket_cache
+        if cached is not None and cached[0] == now:
+            return cached[1]
+
         cutoff = now - _LOOKBACK_DAYS * 86400
-        buckets: Dict[str, list[Event]] = defaultdict(list)
+        # Tokenize once. `_thread_key` runs `_content_tokens`, the
+        # one genuinely expensive per-event call — compute it
+        # exactly once per event, then both passes below are just
+        # cheap dict work. (A naive two-pass version that re-keyed
+        # anchor events doubled the tokenization cost and blew the
+        # rebuild budget.)
+        keyed: list[Tuple[Event, str]] = []
         for ev in self.event_store.iter_events(days=_LOOKBACK_DAYS):
             if ev.kind not in _THREAD_KINDS:
                 continue
             if ev.ts_epoch() < cutoff:
                 continue
-            key = self._thread_key(ev)
-            if not key:
+            keyed.append((ev, self._thread_key(ev)))
+
+        # Pass 1 — per-session anchor topic, from anchor surfaces.
+        anchor_votes: Dict[str, Counter] = defaultdict(Counter)
+        for ev, key in keyed:
+            if key and ev.session_id and ev.kind in _ANCHOR_KINDS:
+                anchor_votes[ev.session_id][key] += 1
+        session_anchor: Dict[str, str] = {}
+        for sid, votes in anchor_votes.items():
+            # Deterministic: highest vote count, ties broken by the
+            # lexicographically-smallest key.
+            session_anchor[sid] = min(
+                votes.items(), key=lambda kv: (-kv[1], kv[0])
+            )[0]
+
+        # Pass 2 — bucket, bridging file artifacts into their
+        # session's investigation.
+        buckets: Dict[str, list[Event]] = defaultdict(list)
+        for ev, key in keyed:
+            if ev.kind in _FILE_KINDS:
+                bucket_key = session_anchor.get(ev.session_id or "") or key
+            else:
+                bucket_key = key
+            if not bucket_key:
                 continue
-            buckets[key].append(ev)
+            buckets[bucket_key].append(ev)
+
+        self._bucket_cache = (now, buckets)
         return buckets
 
     @staticmethod

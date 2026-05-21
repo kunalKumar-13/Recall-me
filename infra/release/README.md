@@ -2,12 +2,12 @@
 
 Release pipeline assets — the channel manifests, update-feed
 schemas, and signing infrastructure described in
-[`RELEASE.md`](../../RELEASE.md) § *Auto-update architecture*.
+[`RELEASE.md`](../../docs/release/RELEASE.md) § *Auto-update architecture*.
 
 ## Status
 
 Currently empty. The architecture is documented in
-[`RELEASE.md`](../../RELEASE.md); the implementation is gated
+[`RELEASE.md`](../../docs/release/RELEASE.md); the implementation is gated
 on procuring a code-signing certificate.
 
 ## What will land here
@@ -29,5 +29,5 @@ infra/release/
 The manifests are the signed JSON files that
 `apps/desktop/app/core/updater.py` (to-be-built) reads to
 decide whether an update is available. See
-[`RELEASE.md`](../../RELEASE.md) § *Auto-update architecture
+[`RELEASE.md`](../../docs/release/RELEASE.md) § *Auto-update architecture
 (planned)* for the manifest schema.

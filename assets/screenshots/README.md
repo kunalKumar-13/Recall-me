@@ -1,50 +1,64 @@
 # `assets/screenshots`
 
-Product captures used by the marketing site, the docs site, and
-the GitHub README. Light + dark variants for every captured
-surface.
+Product captures for the docs site, marketing site, and README.
 
-## Status
+## Status — real captures landed (Phase 4L + 5A.1)
 
-Currently empty. The captures need to come from a real running
-launcher; they can't be generated from text-only tooling.
+These are no longer placeholders. Every PNG below is a **real,
+deterministic render** produced by the capture pipeline — same
+inputs in, same pixels out — not a hand-grabbed screenshot.
 
-## Capture list (Phase 4B target)
-
-Each row produces two PNGs (`-light.png` and `-dark.png`) at a
-consistent retina-equivalent resolution.
-
-| Surface | Source state | File slug |
+| File | Surface | Captured by |
 |---|---|---|
-| Launcher idle (digest) | Ctrl+Space, empty query, after the demo seeder has run | `launcher-digest` |
-| Launcher search results | `rlhf reward shaping` query | `launcher-search` |
-| Recovery card (closed) | One row visible in *Continue where you left off* | `launcher-recovery-row` |
-| Recovery in-progress (Restored flash) | Mid-restoration footer flash | `launcher-recovery-restore` |
-| Continuity timeline (open thread) | After clicking a thread row | `launcher-evolution-strip` |
-| Resurfacing section | *On your radar* with two cards | `launcher-resurfacing` |
-| Browser-memory panel in Settings | Settings → Browser Memory open | `settings-browser-memory` |
-| First-run state | Fresh install, no folders indexed | `first-run-empty` |
-| First-week hint | Folders indexed, no events yet | `first-week-hint` |
-| Browser extension popup | Connected, N captured | `extension-popup` |
+| `launcher-digest.png` | launcher idle digest — recovery, investigations, resurfacing, trust | `infra/scripts/capture/capture_launcher.py` |
+| `launcher-loading.png` | launcher skeleton-loading state | `capture_launcher.py` |
+| `launcher-empty.png` | launcher empty state ("Recall is ready") | `capture_launcher.py` |
+| `launcher-offline.png` | launcher offline state | `capture_launcher.py` |
+| `launcher-first-week.png` | first-week "continuity is building" state | `capture_launcher.py` |
+| `recovery-card.png` | recovery card, resting | `capture_recovery.py` |
+| `recovery-card-focused.png` | recovery card, keyboard-focused (focus ring) | `capture_recovery.py` |
+| `extension-connected.png` | extension popup, populated memory surface | `apps/extension/ui/capture_extension.mjs` |
+| `extension-missing.png` | extension — Recall never installed (Install CTA) | `capture_extension.mjs` |
+| `extension-disconnected.png` | extension — Recall installed, not running | `capture_extension.mjs` |
+| `extension-offline.png` | extension — browser offline | `capture_extension.mjs` |
+| `extension-loading.png` | extension — first daemon read in flight | `capture_extension.mjs` |
+| `settings-dialog.png` | Settings dialog with a default `Config` fixture (Phase 5F) | `infra/scripts/capture/capture_settings.py` |
+| `control-room.png` | the founder dashboard (`apps/admin/web/`) at `localhost:3000`, Phase 5G | Edge `--headless=new --screenshot` against `next dev` |
+| `doctor-output.png` | the `recall doctor` text output rendered as a terminal panel | `infra/scripts/capture/capture_doctor.py` |
+| `installer-flow.png` | the silent-install log's milestone lines (start, root key, install dir, icons, success, close) | `infra/scripts/capture/capture_installer_flow.py` |
 
-## Capture procedure
+## Regenerating
 
-1. `RECALL_DEMO_MODE=1 python recall.py` — boots the launcher
-   with the deterministic demo seed (see
-   [`apps/desktop/app/core/demo_seed.py`](../../apps/desktop/app/core/demo_seed.py)).
-   The seed produces a lived-in event log: developer + research
-   + brainstorming + debugging traces with timestamps anchored
-   to "yesterday" relative to capture time.
-2. Set the OS to light or dark mode before capturing.
-3. Press the keybinding for each surface above; capture the
-   window crop (not the full screen).
-4. Save to `assets/screenshots/<slug>-<mode>.png`.
-5. The Mintlify and Next.js builds reference these paths from
-   their respective `public/` mirrors; update both at the same
-   time.
+```bash
+# launcher + recovery + settings + doctor + installer-flow (offscreen Qt)
+python infra/scripts/capture/capture_launcher.py
+python infra/scripts/capture/capture_recovery.py
+python infra/scripts/capture/capture_settings.py
+python infra/scripts/capture/capture_doctor.py
+python infra/scripts/capture/capture_installer_flow.py
 
-## Naming convention
+# extension popup (headless Chromium via Playwright)
+cd apps/extension/ui && node capture_extension.mjs
 
-`<surface-slug>-<light|dark>.png` — lowercase, hyphenated, no
-version suffix. Versions are tracked through git, not through
-filenames.
+# control room (Edge headless against `next dev`)
+cd apps/admin/web && npm run dev &
+msedge --headless=new --window-size=1440,2400 \
+    --screenshot=assets/screenshots/control-room.png http://localhost:3000
+```
+
+The pipeline is documented in
+[`infra/scripts/capture/README.md`](../../infra/scripts/capture/README.md).
+
+## Still pending
+
+| Surface | Needs |
+|---|---|
+| Resume-in-progress moment | a capture against a live restoration (clean-machine run) |
+| Light/dark launcher variants | the launcher captures are dark-theme only so far |
+| Installer wizard pages | the silent-install log render closes this for Phase 5G; full wizard capture would need UI automation (AutoHotkey / Pywinauto) |
+
+Phase 5G filled the *control room* gap and added *doctor* +
+*installer-flow* captures, so the 15-surface checklist from the
+directive is closed (modulo the *resume-in-progress* moment, which
+needs the clean-machine VM walk to exist).
+These are tracked in [`GO_NO_GO.md`](../../docs/release/GO_NO_GO.md) (gate 6).

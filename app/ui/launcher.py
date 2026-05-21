@@ -64,21 +64,50 @@ from PyQt6.QtWidgets import (
 
 from ..core.api_client import APIClient, SearchResponse
 from ..core.demo_data import DemoSearchEngine
-from ..core.episodic import EpisodicResult, EpisodicRetriever
+from ..core.episodic import EpisodicResult
 from ..core.events import EventLogger, EventStore, humanize_age
 from ..core.evolution import ThreadEvolution
-from ..core.microcontexts import MicroContext, MicroContextReconstructor
-from ..core.recovery import (
-    RecoveryCandidate,
-    RestorationPlan,
-    RestorationResult,
-    RestorationStep,
-)
+from ..core.microcontexts import MicroContext
+from ..core.recovery import RecoveryCandidate, RestorationResult
 from ..core.resurfacing import ResurfacedContext
 from ..core.search import SearchEngine, SearchResult
-from ..core.sessions import Session, SessionReconstructor
+from ..core.sessions import Session
 from ..core.threads import Thread
 from .styles import LAUNCHER_QSS, TEXT_DIM
+from ..core.ceremonies import Ceremonies
+from ..core.stats import StatsCounters
+
+# Phase 5B — the digest's section labels follow the time of day so
+# the surface answers a slightly different question depending on
+# *when* a user reopened the launcher.
+def _digest_labels() -> dict[str, str]:
+    """Recovery + threads header text by time of day. Calm shifts
+    only — never a notification, never a streak. Morning leads with
+    "Continue today" (offer the next step); evening with
+    "You paused here" (the things to come back to); midday keeps
+    "Still active" on the threads section."""
+    from datetime import datetime as _dt
+    hour = _dt.now().hour
+    if hour < 12:
+        return {
+            "recovery": "Continue today",
+            "threads": "Active investigations",
+        }
+    if hour >= 18:
+        return {
+            "recovery": "You paused here",
+            "threads": "Still active",
+        }
+    return {
+        "recovery": "Continue where you left off",
+        "threads": "Still active",
+    }
+from .cards import (
+    CARD_HEIGHT,
+    InvestigationCard,
+    RecoveryCard,
+    ResurfaceCard,
+)
 from .widgets import (
     BrowserActivityRow,
     ContextCard,
@@ -88,12 +117,8 @@ from .widgets import (
     MemoryGroup,
     PreviewPane,
     QueryRow,
-    RecoveryRow,
     ResultItemWidget,
-    ResurfacedRow,
     SessionCard,
-    SessionTimelineCard,
-    ThreadRow,
     _activity_display,
     cluster_results,
     derive_memory_title,
@@ -369,7 +394,7 @@ class Launcher(QWidget):
         # is still kept as a fallback the digest reads use directly
         # when the API client returns nothing.
         self.api_client = APIClient(
-            base_url=f"http://127.0.0.1:4545",
+            base_url="http://127.0.0.1:4545",
         )
         self._latest_query = ""
         self._index_was_empty: bool | None = None
@@ -481,9 +506,9 @@ class Launcher(QWidget):
         empty_title.setObjectName("empty_title")
         empty_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         empty_body = QLabel(
-            "Press Ctrl + , to open Settings and pick a folder to index. "
-            "Captured activity from the browser extension will flow in "
-            "automatically — nothing leaves your machine."
+            "Work a little, then come back later — the launcher fills "
+            "with the threads and files you can step back into.  "
+            "Press Ctrl + , to choose folders to remember."
         )
         empty_body.setObjectName("empty_body")
         empty_body.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -533,7 +558,10 @@ class Launcher(QWidget):
         # threads describe ongoing context; recovery describes
         # *resumable* context. The two are related but recovery
         # earns the top slot.
-        self.threads_header = QLabel("Active memory threads")
+        # Phase 4J — canonical user-facing word is "investigation"
+        # (CONTINUITY_LANGUAGE.md). The extension already says this;
+        # the launcher now matches. "thread" stays the engine term.
+        self.threads_header = QLabel("Active investigations")
         self.threads_header.setObjectName("digest_section")
 
         self.threads_list = QListWidget()
@@ -1303,17 +1331,20 @@ class Launcher(QWidget):
             target = ""
             if ctx.openable_targets:
                 target_kind, target = ctx.openable_targets[0]
-            row = ResurfacedRow(
+            row = ResurfaceCard(
                 label=ctx.label,
+                evidence="",
                 time_label=ctx.time_label,
                 kind=target_kind,
                 target=target,
-                why_lines=ctx.why,
-                debug_hover=_RESURFACING_DEBUG,
             )
-            row.clicked.connect(self._on_resurface_clicked)
+            if _RESURFACING_DEBUG and ctx.why:
+                row.setToolTip(
+                    "Why am I seeing this?\n  · " + "\n  · ".join(ctx.why)
+                )
+            row.open_target.connect(self._on_resurface_clicked)
             li = QListWidgetItem()
-            li.setSizeHint(QSize(0, ResurfacedRow.RESURFACED_ROW_HEIGHT))
+            li.setSizeHint(QSize(0, CARD_HEIGHT))
             # Store the target on the item so the QListWidget itemClicked
             # path also works (defense-in-depth: the row's own click
             # signal is the primary path).
@@ -1321,10 +1352,10 @@ class Launcher(QWidget):
             self.resurface_list.addItem(li)
             self.resurface_list.setItemWidget(li, row)
         n = max(1, len(contexts))
-        h = n * ResurfacedRow.RESURFACED_ROW_HEIGHT + 6
+        h = n * CARD_HEIGHT + 6
         self.resurface_list.setMaximumHeight(h)
         self.resurface_list.setMinimumHeight(
-            min(h, ResurfacedRow.RESURFACED_ROW_HEIGHT + 6)
+            min(h, CARD_HEIGHT + 6)
         )
         self.resurface_list.setSizePolicy(
             QSizePolicy.Policy.Expanding,
@@ -1345,6 +1376,7 @@ class Launcher(QWidget):
         reveal still works."""
         if not target:
             return
+        StatsCounters().bump("resurface_opened")  # Phase 5E.1
         if kind == "path":
             self._open_path_and_hide(target)
             return
@@ -1361,19 +1393,25 @@ class Launcher(QWidget):
         That's the open-thread flow: chronological reconstruction
         through the sessions + micro-contexts the search endpoint
         already returns."""
+        self.threads_header.setText(_digest_labels()["threads"])
         self.threads_list.clear()
         for t in threads:
-            row = ThreadRow(
+            row = InvestigationCard(
                 thread_id=t.id,
                 topic_key=t.topic_key,
                 title=t.title,
-                timeline_summary=t.timeline_summary,
-                why_lines=t.why,
-                debug_hover=_RESURFACING_DEBUG,
+                evidence=t.timeline_summary,
+                time_label=(
+                    humanize_age(t.updated_at) if t.updated_at else ""
+                ),
             )
-            row.clicked.connect(self._on_thread_clicked)
+            if _RESURFACING_DEBUG and t.why:
+                row.setToolTip(
+                    "Why am I seeing this?\n  · " + "\n  · ".join(t.why)
+                )
+            row.open_thread.connect(self._on_thread_clicked)
             li = QListWidgetItem()
-            li.setSizeHint(QSize(0, ThreadRow.THREAD_ROW_HEIGHT))
+            li.setSizeHint(QSize(0, CARD_HEIGHT))
             # Hold both id + topic so the QListWidget itemClicked
             # path can also fire (defense-in-depth: the row's own
             # signal is the primary path).
@@ -1381,10 +1419,10 @@ class Launcher(QWidget):
             self.threads_list.addItem(li)
             self.threads_list.setItemWidget(li, row)
         n = max(1, len(threads))
-        h = n * ThreadRow.THREAD_ROW_HEIGHT + 6
+        h = n * CARD_HEIGHT + 6
         self.threads_list.setMaximumHeight(h)
         self.threads_list.setMinimumHeight(
-            min(h, ThreadRow.THREAD_ROW_HEIGHT + 6)
+            min(h, CARD_HEIGHT + 6)
         )
         self.threads_list.setSizePolicy(
             QSizePolicy.Policy.Expanding,
@@ -1407,6 +1445,8 @@ class Launcher(QWidget):
         row is a two-line `RecoveryRow` (title + time + target-count
         strip). Clicking a row triggers one-click restoration: every
         suggested target opens via the OS in sequence."""
+        # Phase 5B — section header follows the time of day.
+        self.recovery_header.setText(_digest_labels()["recovery"])
         self.recovery_list.clear()
         for cand in candidates:
             # Bucket targets by surface kind so the row can render a
@@ -1436,46 +1476,60 @@ class Launcher(QWidget):
                 counts.append((
                     "chat" if n_chats == 1 else "chats", n_chats
                 ))
-            # Phase 3C: prefer the engine's deterministic
-            # preview caption when present (it's already
-            # composed: "3 tabs · 2 files · last active during
-            # implementation"). Fall back to the bare time +
-            # counts when an older API server is in play.
-            if cand.preview_caption:
-                time_label = cand.preview_caption
-            else:
-                time_label = (
-                    f"Last active {humanize_age(cand.last_active_at)}"
-                    if cand.last_active_at
-                    else ""
-                )
             # Debug-only hover combines `why` lines + unresolved
             # signal explanations from the engine.
             tip_lines = list(cand.why) + list(cand.unresolved_signals)
-            row = RecoveryRow(
+            # Evidence is the engine's deterministic preview caption
+            # when present (already composed: "3 tabs · 2 files ·
+            # last active during implementation"); otherwise we fall
+            # back to a manual count list.
+            evidence = cand.preview_caption or "  ·  ".join(
+                f"{c} {lbl}" for lbl, c in counts
+            )
+            row = RecoveryCard(
                 candidate_id=cand.id,
                 title=cand.title,
-                time_label=time_label,
-                target_counts=counts,
-                why_lines=tip_lines,
-                debug_hover=_RESURFACING_DEBUG,
-                n_targets_total=len(cand.suggested_targets),
+                evidence=evidence,
+                time_label=(
+                    humanize_age(cand.last_active_at)
+                    if cand.last_active_at else ""
+                ),
+                high_trust=True,
+                n_targets=len(cand.suggested_targets),
             )
+            if _RESURFACING_DEBUG and tip_lines:
+                row.setToolTip(
+                    "Why this surface?\n  · " + "\n  · ".join(tip_lines)
+                )
             row.restore.connect(self._on_recovery_restore)
             li = QListWidgetItem()
-            li.setSizeHint(QSize(0, RecoveryRow.RECOVERY_ROW_HEIGHT))
+            # RecoveryCard is taller than the default digest card -
+            # use its own height so the row paints without clipping.
+            li.setSizeHint(QSize(0, RecoveryCard.RECOVERY_HEIGHT))
             li.setData(
                 Qt.ItemDataRole.UserRole,
                 (cand.id, cand.title, len(cand.suggested_targets)),
             )
             self.recovery_list.addItem(li)
             self.recovery_list.setItemWidget(li, row)
+        # Phase 5E.1 — local, counts-only observability.
+        if candidates:
+            StatsCounters().bump("recovery_shown", len(candidates))
+            # Phase 5C — first-recovery ceremony. One small,
+            # one-time acknowledgement that Recall noticed; never
+            # repeats, never animates, never says "AI".
+            ceremonies = Ceremonies()
+            if not ceremonies.has("first_recovery"):
+                ceremonies.mark("first_recovery")
+                self._flash_footer(
+                    "Recall noticed unfinished work.  Pick a card to resume."
+                )
         n = max(1, len(candidates))
-        h = n * RecoveryRow.RECOVERY_ROW_HEIGHT + 6
+        # Recovery rows use RECOVERY_HEIGHT (Phase 5I bump).
+        row_h = RecoveryCard.RECOVERY_HEIGHT
+        h = n * row_h + 6
         self.recovery_list.setMaximumHeight(h)
-        self.recovery_list.setMinimumHeight(
-            min(h, RecoveryRow.RECOVERY_ROW_HEIGHT + 6)
-        )
+        self.recovery_list.setMinimumHeight(min(h, row_h + 6))
         self.recovery_list.setSizePolicy(
             QSizePolicy.Policy.Expanding,
             QSizePolicy.Policy.Maximum,
@@ -1512,6 +1566,9 @@ class Launcher(QWidget):
         if not candidate_id:
             return
 
+        # The user accepted a recovery (Phase 5E.1 — local counts).
+        StatsCounters().bump("recovery_accepted")
+
         # Resolve the orchestrated plan. The engine has no
         # on-disk cache, so the plan reflects current state.
         try:
@@ -1525,6 +1582,7 @@ class Launcher(QWidget):
             self._flash_footer(
                 f"Nothing to restore  ·  {title[:50]}"
             )
+            StatsCounters().bump("resume_fail")
             return
 
         n_steps = len(plan.steps)
@@ -1587,6 +1645,9 @@ class Launcher(QWidget):
                 )
                 continue
         result.elapsed_ms = round((time.perf_counter() - t0) * 1000, 2)
+        StatsCounters().bump(
+            "resume_ok" if result.restored else "resume_fail"
+        )
 
         # Second acknowledgement — the completion summary. When
         # `RECALL_EXPLAIN_RECOVERY=1` is set, the skip list is
@@ -2398,7 +2459,7 @@ class Launcher(QWidget):
             QTimer.singleShot(220, self.hide)
         else:
             self._flash_footer(
-                f"Couldn't reopen  ·  paths may have moved"
+                "Couldn't reopen  ·  paths may have moved"
             )
 
     def _move_selection(self, delta: int) -> None:

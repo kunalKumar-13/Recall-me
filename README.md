@@ -4,13 +4,16 @@
 
 **A local-first continuity operating system.**
 
-Open Ctrl + Space, type a half-thought, get back the tabs, files, and
-chats you were working with — in a coherent sequence. Everything stays
-on disk. No accounts, no cloud, no telemetry.
+Get interrupted, and the climb back costs more than the interruption
+did — scattered tabs, the wrong files, a lost train of thought. Recall
+restores the whole working state in one keystroke: Ctrl + Space, a
+half-thought, and the tabs, files, and chats come back in a coherent
+sequence. Everything stays on disk. No accounts, no cloud, no
+telemetry.
 
 [Install](#installation) · [Architecture](#architecture) · [API](#http-api) ·
 [Docs](https://docs.recall.computer) ·
-[Stability](STABILITY.md) ·
+[Stability](docs/engineering/STABILITY.md) ·
 [Troubleshooting](apps/docs/troubleshooting.mdx) · [Roadmap](#roadmap)
 
 </div>
@@ -50,8 +53,8 @@ Three honest claims:
 
 - **You'll re-enter unfinished work in one keystroke.** Open the
   launcher with an empty query — a *Continue where you left off* card
-  appears with three or fewer resumable threads. Click one; the
-  files, chats, and browser tabs you were using come back in the
+  appears with three or fewer resumable investigations. Click one;
+  the files, chats, and browser tabs you were using come back in the
   order that re-grounds the work.
 - **The product runs entirely on your machine.** No cloud, no
   telemetry, no LLM in the production path. Everything Recall knows
@@ -59,10 +62,29 @@ Three honest claims:
   with `cat`, deletable with `rm`.
 - **Same events in → same outputs out.** Every layer of the engine
   is deterministic. No probabilistic ranking, no surprise. The
-  31-section smoke test enforces the contract.
+  35-section smoke test enforces the contract.
 
 If that's interesting, the [three-minute install](apps/docs/install-3min.mdx)
 gets you a working launcher in five commands.
+
+### The flow it's built around
+
+1. **Interrupt.** You're mid-task — a websocket bug, a research
+   dive — and the day pulls you away.
+2. **Leave.** Close the laptop. Recall raises no notification and
+   keeps no nagging count.
+3. **Return.** A day later, open the launcher on an empty query.
+4. **Resume.** *Continue where you left off* offers the one
+   investigation worth re-entering. One click reopens its files,
+   tabs, and chats in order — you step back in, you don't rebuild.
+
+**Why not an AI chatbot?** A chatbot answers *questions*; it does
+not restore *state*. Recall never summarizes your work or talks to
+you — it reopens the exact artifacts you had, deterministically,
+with no model in the production path. You don't want a conversation
+about your work. You want to be back inside it. That is also why
+it's **local**: a continuity layer for your own thinking is only
+worth trusting if it never leaves your machine.
 
 ---
 
@@ -490,7 +512,7 @@ thread's title into the input, firing the existing retrieval pipeline
 — that's the open-thread flow: chronological reconstruction through
 the sessions and micro-contexts the search endpoint already returns.
 
-See [`docs/architecture/threading.mdx`](docs/architecture/threading.mdx)
+See [`docs/architecture/threading.mdx`](apps/docs/architecture/threading.mdx)
 for the full lifecycle, signal table, and decay model.
 
 ## Thread evolution
@@ -513,7 +535,7 @@ No dashboard, no chart axes, no badges — the hairline dividers
 between pills colour-code the transition, and that's the only
 visual encoding.
 
-See [`docs/architecture/evolution.mdx`](docs/architecture/evolution.mdx)
+See [`docs/architecture/evolution.mdx`](apps/docs/architecture/evolution.mdx)
 for the full segmentation algorithm and signal table.
 
 ## Continuity recovery
@@ -558,7 +580,7 @@ out, byte for byte.
 Set `RECALL_EXPLAIN_RECOVERY=1` to see per-step reasons and skip
 explanations in the launcher's restore acknowledgement.
 
-See [`docs/architecture/recovery.mdx`](docs/architecture/recovery.mdx)
+See [`docs/architecture/recovery.mdx`](apps/docs/architecture/recovery.mdx)
 for the full signal table, suppression rules, and orchestration
 choreography.
 
@@ -690,7 +712,7 @@ review process. Security disclosures: [SECURITY.md](SECURITY.md).
 Community expectations: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 Issues, ideas, and pull requests are welcome. The audit at
-[AUDIT_REPORT.md](AUDIT_REPORT.md) lists the current consistency gaps
+[AUDIT_REPORT.md](docs/engineering/AUDIT_REPORT.md) lists the current consistency gaps
 and good first issues.
 
 ---

@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 import threading
-from datetime import datetime, timezone
 from typing import Iterable, Optional, Tuple
 from urllib.parse import urlparse
 

@@ -29,11 +29,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.events import Event, EventLogger, EventStore
 from app.core.episodic import EpisodicResult, EpisodicRetriever
-from app.core.evolution import (
-    EvolutionBuilder,
-    EvolutionPhase,
-    ThreadEvolution,
-)
+from app.core.evolution import EvolutionBuilder, EvolutionPhase
 from app.core.microcontexts import MicroContext, MicroContextReconstructor
 from app.core.recovery import RecoveryCandidate, RecoveryEngine
 from app.core.resurfacing import ResurfacedContext, ResurfacingEngine

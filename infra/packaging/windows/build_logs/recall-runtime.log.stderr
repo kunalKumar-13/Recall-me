@@ -1,0 +1,60 @@
+[boot] recall.py starting (python 3.14.2 on win32)
+[boot] >> importing app.main
+[boot] [OK] app.main imported (452ms)
+[boot] ============================================================
+[boot] Recall startup — pid=7564, platform=win32
+[boot] python=3.14.2, cwd=C:\Users\kunal\Desktop\recall.me
+[boot] config dir: C:\Users\kunal\.recall
+[boot] ============================================================
+[boot] >> acquire single-instance lock
+[boot] [OK] acquire single-instance lock (2ms)
+[boot] >> create QApplication
+[boot] [OK] create QApplication (29ms)
+[boot] >> check QSystemTrayIcon availability
+[boot]    isSystemTrayAvailable() = True
+[boot] [OK] check QSystemTrayIcon availability (0ms)
+[boot] >> load Config
+[boot]    indexed_folders=0, model='all-MiniLM-L6-v2'
+[boot] [OK] load Config (0ms)
+[boot] >> initialize VectorStore
+[boot]    chroma path: C:\Users\kunal\.recall\chroma
+[boot]    index size: 0 chunks
+[boot] [OK] initialize VectorStore (884ms)
+[boot] >> construct EmbeddingModel wrapper
+[boot] [OK] construct EmbeddingModel wrapper (0ms)
+[boot] >> construct Indexer + SearchEngine
+[boot] [OK] construct Indexer + SearchEngine (0ms)
+[boot] >> construct EventLogger (episodic memory)
+[boot]    episodic_enabled=True
+[boot] [OK] construct EventLogger (episodic memory) (0ms)
+[boot] >> construct Launcher widget
+[boot] [OK] construct Launcher widget (176ms)
+[boot] >> construct QSystemTrayIcon
+[boot] [OK] construct QSystemTrayIcon (13ms)
+[boot] >> RecallApp wiring
+[boot] [OK] RecallApp wiring (1ms)
+[boot] >> show tray icon
+[boot]    tray.isVisible() = True
+[boot] [OK] show tray icon (2ms)
+[boot] >> start embedding model warm-up thread
+[boot] [OK] start embedding model warm-up thread (0ms)
+[boot] >> register global hotkey (Ctrl+Space)
+[boot]    hotkey registered: True
+[boot] [OK] register global hotkey (Ctrl+Space) (42ms)
+[boot] >> start background filesystem watcher
+[boot] [OK] start background filesystem watcher (0ms)
+[boot] >> start local memory API (Phase 2A)
+2026-05-20 18:09:59,827 INFO  recall.api.app  api.service.start
+[boot]    api service: running on 127.0.0.1:4545 (docs at /docs-api)
+[boot] [OK] start local memory API (Phase 2A) (100ms)
+[boot] >> sync launch-on-login from config
+[boot] [OK] sync launch-on-login from config (0ms)
+[boot] >> connect aboutToQuit cleanup
+[boot] [OK] connect aboutToQuit cleanup (0ms)
+[boot] >> schedule first-run check
+[boot] [OK] schedule first-run check (3ms)
+[boot] ============================================================
+[boot] ALL BOOT STAGES OK — entering Qt event loop.
+[boot] ============================================================
+[boot] first run → showing onboarding
+[boot] warm-up: model ready

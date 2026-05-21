@@ -214,8 +214,9 @@ class OnboardingDialog(QDialog):
         title.setObjectName("title")
 
         subtitle = QLabel(
-            "A local-first continuity layer.  Press Ctrl + Space anytime "
-            "to find the tabs, files, and chats you were working with."
+            "A local-first continuity layer.  When work gets interrupted, "
+            "press Ctrl + Space to bring back the tabs, files, and chats "
+            "you were in the middle of — no climbing back from scratch."
         )
         subtitle.setObjectName("subtitle")
         subtitle.setWordWrap(True)

@@ -309,7 +309,6 @@ class DemoSearchEngine:
             return []
 
         floor = 0.10 if min_score is None else float(min_score)
-        now = time.time()
 
         scored: List[tuple[float, _DemoMemory]] = []
         for mem in self._memories:

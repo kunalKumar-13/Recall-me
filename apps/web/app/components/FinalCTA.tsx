@@ -47,9 +47,9 @@ export function FinalCTA() {
             text-ink-bright
           "
         >
-          A continuity layer
+          Ready to pick up
           <br />
-          <span className="italic">that stays yours.</span>
+          <span className="italic">where you left off?</span>
         </motion.h2>
 
         <motion.div
@@ -85,7 +85,7 @@ export function FinalCTA() {
           transition={{ duration: 0.7, ease, delay: 0.18 }}
           className="mt-6 text-[12.5px] text-ink-dim"
         >
-          MIT-licensed. Loopback-only. State in ~/.recall.
+          It&apos;s free. It&apos;s private. It&apos;s yours.
         </motion.p>
       </div>
     </section>

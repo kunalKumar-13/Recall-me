@@ -21,6 +21,33 @@ ACCENT = "#8b9bff"
 ACCENT_DIM = "#3b4566"
 
 
+# ── Phase 5I visual tokens ──────────────────────────────────────────
+# Single source for the launcher's surface / border / shadow / motion
+# vocabulary. Components reach for these names instead of magic
+# numbers. The extension popup mirrors them in `styles.css` so the
+# two surfaces share the same elevation + timing grammar.
+
+# Surface elevations (three tiers).
+SURFACE_0 = BG          # the launcher backdrop
+SURFACE_1 = BG_RAISED   # cards
+SURFACE_2 = BG_HOVER    # hover / elevated state
+
+# Border weights (two).
+BORDER_SOFT = BORDER
+BORDER_STRONG = "#3a4055"
+
+# Shadow recipes — used as drawShadow alpha in the painter, since Qt
+# doesn't apply CSS box-shadow to QWidget. Tuple shape:
+#   (offset_y_px, blur_px, alpha_0_255)
+SHADOW_SOFT = (2, 10, 26)
+SHADOW_ELEVATED = (4, 18, 48)
+
+# Motion — milliseconds. Mirrors styles.css `--motion-*`.
+MOTION_FAST_MS = 120     # hover, fade
+MOTION_NORMAL_MS = 180   # expand, slide
+MOTION_SLOW_MS = 220     # recovery open
+
+
 # rgba colors used in the launcher QSS — tuned for translucency.
 # A system-font stack means the launcher inherits the host OS's native
 # UI font (Segoe UI on Windows, San Francisco on macOS, Inter / Cantarell
@@ -164,15 +191,21 @@ QListWidget#digest::item:selected {{
     background: rgba(50, 56, 78, 120);
 }}
 QListWidget#digest::item:hover {{
-    background: rgba(36, 42, 56, 90);
+    /* Phase 4I calmness — a hover should whisper, not light up.
+       Softened so passing the cursor over the digest does not
+       make the surface flicker with energy. */
+    background: rgba(36, 42, 56, 55);
 }}
 QLabel#digest_section {{
     color: {TEXT_DIMMER};
-    font-size: 9.5px;
+    font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0.6px;
+    letter-spacing: 0.9px;
     text-transform: uppercase;
-    padding: 8px 18px 4px 18px;
+    /* Phase 4I — vertical rhythm. Generous top padding gives each
+       digest tier real breathing room so the surface reads as a
+       few calm zones rather than one dense list. */
+    padding: 18px 20px 6px 20px;
 }}
 QLabel#preview_related_row {{
     color: {TEXT_DIM};

@@ -16,7 +16,6 @@ Encapsulates two concerns:
 from __future__ import annotations
 
 import sys
-from typing import Optional
 
 from PyQt6.QtCore import QObject, pyqtSignal
 

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Launch agent — the macOS "start when I sign in" option.
+
+  Installed to  ~/Library/LaunchAgents/computer.recall.agent.plist
+  and loaded with  launchctl load <path>.  The first-launch flow
+  writes it when the user enables autostart, and removes it when
+  they disable it (the macOS arm of app/core/autostart.py).
+
+  Per-user (LaunchAgent, not LaunchDaemon) — no root, no admin.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>computer.recall.agent</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <!-- Rewritten to the real install path by autostart.py /
+         build.sh; /Applications is the default. -->
+    <string>/Applications/Recall.app/Contents/MacOS/Recall</string>
+  </array>
+
+  <!-- Start at login; do not respawn on a clean quit. Recall is a
+       calm background presence, not a service that fights the user
+       when they deliberately close it. -->
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <false/>
+
+  <key>ProcessType</key>
+  <string>Interactive</string>
+</dict>
+</plist>

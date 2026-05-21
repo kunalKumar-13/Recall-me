@@ -1,0 +1,82 @@
+                    ┌────────────────────────────┐
+                    │   one week with Recall     │
+                    └────────────────────────────┘
+
+DAY 0  install
+-------------
+   Right-click install.ps1 -> "Run with PowerShell".
+   ~30-60 seconds. No terminal, no admin password.
+   The desktop shortcut + tray icon are how you know it worked.
+
+   Open it once (desktop shortcut or Ctrl + Space). Pick the
+   folders you want Recall to remember. Click Done.
+
+   Close the launcher. Forget Recall exists.
+
+
+DAY 1  work normally
+--------------------
+   Edit files, open browser tabs, search, use AI chats.
+   Recall is recording locally. The popup may say "watching"
+   or show a Recent activity list. That is the right state.
+
+   What you should NOT see:
+     - any notification
+     - any prompt to "organise" or "tag" anything
+     - any cloud login screen
+
+
+DAY 2-3  the first useful launcher
+----------------------------------
+   Press Ctrl + Space. The launcher may show:
+
+     Continue where you left off  <- a recovery card
+     Active investigations        <- topics you returned to
+     On your radar                <- things noticed across days
+
+   Click Resume on a recovery card. Your files and tabs from
+   that work session reopen. THAT moment is the product.
+
+
+DAY 4-6  the test that matters
+------------------------------
+   Mid-afternoon, switch tasks without bookmarking anything.
+   Next morning, before reaching for the browser history,
+   press Ctrl + Space.
+
+   Two outcomes:
+     - Recall shows the abandoned work. You click Resume.   WIN.
+     - Recall shows something else, or nothing useful.       SIGNAL.
+
+   Either is real. Note which.
+
+
+DAY 7  feedback
+---------------
+   1. Run doctor_check.bat. Screenshot the result.
+   2. Settings -> Export stats. A stats.json file appears.
+   3. Open FEEDBACK.md (in the parent alpha/ folder) and fill
+      it out. The "fifteen-minute version" alone is plenty.
+   4. Send the three artifacts (FEEDBACK.md, stats.json,
+      doctor screenshot) per feedback_link.txt.
+
+
+WHAT RECALL IS NEVER DOING
+==========================
+  - sending data anywhere (not once)
+  - showing notifications
+  - asking you to rate or organise anything
+  - recommending things to read
+  - auto-completing your queries
+
+  If any of these happens, it is a contract violation.
+  Note it in FEEDBACK.md under "trust".
+
+
+HOW TO STOP
+===========
+  - quit Recall:        right-click tray icon -> Quit
+  - uninstall:          Settings -> Apps -> Recall -> Uninstall
+  - full memory wipe:   delete %USERPROFILE%\.recall after uninstall
+
+  Recall is safe to try because it is trivial to remove.

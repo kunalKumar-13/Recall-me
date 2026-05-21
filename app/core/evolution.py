@@ -36,14 +36,12 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import math
 import threading
 import time
-from collections import Counter, defaultdict
+from collections import Counter
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from .config import CONFIG_DIR
 from .episodic import _content_tokens

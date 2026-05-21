@@ -54,48 +54,47 @@ const Glyph = {
 
 const FEATURES: Feature[] = [
   {
-    title: "Continuity search",
+    title: "Resume interrupted work",
     body:
-      "Ask in your own words. Recall returns the moments, sessions, and threads behind a half-thought — not just files that contain the string.",
+      "Open the launcher on an empty query and a Continue card shows the investigations you were mid-flow in — one click re-enters the work.",
     glyph: Glyph.Search,
   },
   {
-    title: "Local by construction",
+    title: "Local & private",
     body:
-      "All capture, scoring, and reconstruction runs on your CPU. State lives in ~/.recall as plain JSON and JSONL — auditable with cat.",
+      "All capture, scoring, and reconstruction runs on your CPU. Nothing leaves the machine. No cloud, no telemetry, no accounts.",
     glyph: Glyph.Lock,
   },
   {
-    title: "Sessions + micro-contexts",
+    title: "End the tab archaeology",
     body:
-      "Events group into 30-minute sessions; sessions split into topic-coherent sub-blocks. The unit a human actually remembers.",
+      "See the excerpt and related work inline. Find the page you half-remember without reopening twenty tabs to hunt for it.",
     glyph: Glyph.Eye,
   },
   {
-    title: "Live capture",
+    title: "Nothing to remember to save",
     body:
-      "A watchdog watches your folders; a 200-line Chrome extension captures browser activity. Both write to the same loopback API.",
+      "A folder watcher and a small browser extension keep your memory current in the background — capture you never have to think about.",
     glyph: Glyph.Layers,
   },
   {
-    title: "Threads + evolution",
+    title: "Pick up a forgotten investigation",
     body:
-      "Topics you keep returning to crystallize into stable threads. Each thread carries a chronology: research → implementation → revisit.",
+      "Topics you keep returning to become stable investigations, each with its own chronology — so a research path you dropped weeks ago is still findable.",
     glyph: Glyph.Network,
   },
   {
-    title: "Deterministic",
+    title: "Across everything you touch",
     body:
-      "Same events in, same outputs out. No embeddings above the file layer. No LLMs. No probabilities you can't reproduce.",
+      "Notes, docs, code, PDFs, spreadsheets, chats, browser tabs — interrupted work is restored from wherever it actually happened.",
     glyph: Glyph.Globe,
   },
 ];
 
 /**
- * Features — 2 × 3 grid of self-contained white cards. Each card has
- * a lavender-tinted icon chip, a tight heading, and a short body.
- * The grid is hairline-separated rather than card-bordered so the
- * surface reads as one unified panel even at large widths.
+ * Features — a 3 × 2 grid of individual white cards, each with a
+ * lavender icon chip, a tight heading, and a short body. Mirrors the
+ * reference layout: bordered standalone cards, not a unified panel.
  */
 export function Features() {
   return (
@@ -108,29 +107,22 @@ export function Features() {
           transition={{ duration: 0.55, ease }}
           className="max-w-2xl"
         >
-          <div className="text-[10.5px] font-semibold tracking-[0.20em] text-lavender-deep uppercase">
-            What it does
+          <div className="text-[10.5px] font-semibold tracking-[0.2em] text-lavender-deep uppercase">
+            Features
           </div>
           <h2 className="font-editorial mt-3 text-[32px] md:text-[44px] font-medium tracking-editorial text-ink-bright leading-[1.05]">
-            A small system,
+            Built for deep thinkers
             <br />
-            <span className="italic">precisely scoped.</span>
+            who hate <span className="italic">forgetting.</span>
           </h2>
           <p className="mt-5 text-ink leading-relaxed text-[15px] max-w-md">
-            Six layers, one local process, no cloud. Every surface
-            below is a real endpoint, with a budget you can verify.
+            Interruptions are unavoidable. Losing your place afterward
+            shouldn&apos;t be — every feature here exists to shorten the
+            climb back into focus.
           </p>
         </motion.div>
 
-        <div
-          className="
-            mt-12 md:mt-14
-            grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3
-            gap-px rounded-2xl overflow-hidden
-            border border-hairline
-            bg-hairline shadow-card
-          "
-        >
+        <div className="mt-12 md:mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {FEATURES.map((f, i) => (
             <motion.div
               key={f.title}
@@ -139,10 +131,10 @@ export function Features() {
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.5, ease, delay: i * 0.04 }}
               className="
-                group relative p-7 md:p-8
-                bg-bg-base
-                hover:bg-bg-raised
-                transition-colors duration-500
+                group rounded-2xl p-7
+                bg-bg-base border border-hairline shadow-card
+                hover:shadow-cardHover hover:-translate-y-px
+                transition-[transform,box-shadow] duration-500
               "
             >
               <div

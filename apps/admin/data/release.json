@@ -1,0 +1,16 @@
+{
+  "current_version": "0.1.0 (pre-alpha)",
+  "next_milestone": "0.2.0 public alpha",
+  "installer": "ready",
+  "mac": "preview",
+  "signing": "unsigned",
+  "screenshots": "complete",
+  "go_no_go": "NO-GO",
+  "blocked": [
+    "Three fresh-VM runs in CLEAN_MACHINE_RUN.md (currently 1 build-machine row only; floor for gate 1 is 3 successful installs)",
+    "EV code-signing certificate (Windows) - SmartScreen warns until signed",
+    "Alpha-001 cohort distribution + first returns in alpha_report.md (currently awaiting cohort data)",
+    "macOS verification by external maintainer per MAC_OWNER_NEEDED.md",
+    "Apple Developer ID + notarisation (macOS Gatekeeper warning)"
+  ]
+}

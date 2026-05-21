@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import List, Optional
+from typing import Optional
 
 from app.core.evolution import (
     EvolutionBuilder,
@@ -24,7 +24,7 @@ from app.core.evolution import (
     ThreadEvolutionStore,
 )
 from app.core.events import EventStore
-from app.core.threads import Thread, ThreadBuilder
+from app.core.threads import Thread
 
 from ..logging_config import log_with
 from .threads import ThreadsService

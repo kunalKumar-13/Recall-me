@@ -46,9 +46,9 @@ import json
 import threading
 import time
 from dataclasses import asdict, dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Iterable, Iterator, List, Optional
+from typing import Iterator, List, Optional
 
 from .config import EVENTS_DIR
 
@@ -306,21 +306,38 @@ class EventStore:
     short-TTL per-file cache was added: identical reads within the
     `_file_cache_ttl_seconds` window reuse a pre-parsed `list[Event]`.
 
-    Cache freshness: writes invalidate the cache for the day file
-    they touch (see `EventLogger`). The TTL is a backstop for any
-    code path that writes outside the logger.
+    Cache freshness (Phase 4F): a cached parse is reused only when
+    the file's `(mtime, size)` is unchanged since the parse. Every
+    write the system makes is an *append* via `EventLogger`, and an
+    append always grows the file — so the size check alone detects
+    every real write immediately, with the mtime check as a second
+    signal. The TTL is now only a paranoia backstop for the
+    pathological case of an in-place same-length overwrite that
+    also preserves mtime (hand-edits change mtime; the logger only
+    appends) — so it can be generous.
+
+    Phase 4F history: the TTL was 0.5 s, tuned to "cover one
+    launcher request". That made it load-bearing for correctness
+    and far too short for *reuse* — two launcher searches more than
+    half a second apart each re-parsed the whole log (~80 ms at
+    10K events). Adding the size check moved correctness onto
+    `(mtime, size)` and freed the TTL to be a 60 s backstop, so
+    sustained interactive use stays on the warm path.
     """
 
-    # 500 ms covers a launcher request (debounce + worker + render)
-    # while leaving plenty of headroom — even a slow query finishes
-    # well inside this window, and subsequent queries don't reuse
-    # stale data because writes invalidate the cache immediately.
-    _file_cache_ttl_seconds: float = 0.5
+    # Paranoia backstop only — correctness rides on the (mtime,
+    # size) check below. 60 s keeps a day of intermittent launcher
+    # use almost entirely on the warm path: one re-parse per minute
+    # of idle, never one per search.
+    _file_cache_ttl_seconds: float = 60.0
     _file_cache_max_entries: int = 32
 
     def __init__(self, base_dir: Path = EVENTS_DIR) -> None:
         self.base_dir = base_dir
-        self._file_cache: dict[str, tuple[float, list[Event]]] = {}
+        # value: (cached_at_monotonic, events, file_mtime, file_size)
+        self._file_cache: dict[
+            str, tuple[float, list[Event], float, int]
+        ] = {}
         self._cache_lock = threading.Lock()
 
     def _files_for(self, days: int) -> List[Path]:
@@ -393,17 +410,20 @@ class EventStore:
         now = time.monotonic()
 
         try:
-            file_mtime = path.stat().st_mtime
+            st = path.stat()
+            file_mtime = st.st_mtime
+            file_size = st.st_size
         except OSError:
             return None
 
         with self._cache_lock:
             cached = self._file_cache.get(key)
             if cached is not None:
-                ts, events, cached_mtime = cached
+                ts, events, cached_mtime, cached_size = cached
                 if (
-                    (now - ts) < self._file_cache_ttl_seconds
-                    and cached_mtime == file_mtime
+                    cached_mtime == file_mtime
+                    and cached_size == file_size
+                    and (now - ts) < self._file_cache_ttl_seconds
                 ):
                     return events
 
@@ -455,7 +475,7 @@ class EventStore:
                     key=lambda k: self._file_cache[k][0],
                 )
                 del self._file_cache[oldest_key]
-            self._file_cache[key] = (now, events, file_mtime)
+            self._file_cache[key] = (now, events, file_mtime, file_size)
         return events
 
     def invalidate_cache(self, path: Optional[Path] = None) -> None:

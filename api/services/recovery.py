@@ -26,8 +26,6 @@ from app.core.recovery import (
     RecoveryEngine,
     RestorationPlan,
 )
-from app.core.threads import ThreadBuilder
-
 from ..logging_config import log_with
 from .threads import ThreadsService
 

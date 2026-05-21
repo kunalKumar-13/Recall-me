@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Recall.app bundle metadata.
+
+  `LSUIElement` is true: Recall is a menu-bar app, not a Dock app —
+  it lives quietly in the status bar, the same calm posture as the
+  Windows system-tray build. The launcher is summoned with the
+  global hotkey, not by clicking a Dock icon.
+
+  `build.sh` copies this into Recall.app/Contents/Info.plist (or it
+  is supplied to PyInstaller's BUNDLE step).
+-->
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key>
+  <string>Recall</string>
+  <key>CFBundleDisplayName</key>
+  <string>Recall</string>
+  <key>CFBundleIdentifier</key>
+  <string>computer.recall.app</string>
+  <key>CFBundleVersion</key>
+  <string>0.1.0</string>
+  <key>CFBundleShortVersionString</key>
+  <string>0.1.0</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleExecutable</key>
+  <string>Recall</string>
+  <key>CFBundleIconFile</key>
+  <string>recall.icns</string>
+
+  <!-- Menu-bar app: no Dock icon, no app-switcher entry. -->
+  <key>LSUIElement</key>
+  <true/>
+
+  <!-- Apple Silicon era. Universal2 builds also run on Intel; the
+       fallback is documented in this folder's README. -->
+  <key>LSMinimumSystemVersion</key>
+  <string>11.0</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+
+  <!-- Recall is local-first; it asks for nothing. No camera, no
+       microphone, no location, no contacts usage strings — because
+       it uses none of them. The only network call is the one-time
+       embedding-model download. -->
+  <key>NSAppTransportSecurity</key>
+  <dict>
+    <key>NSAllowsLocalNetworking</key>
+    <true/>
+  </dict>
+</dict>
+</plist>

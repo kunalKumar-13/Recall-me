@@ -1,40 +1,29 @@
 import { AmbientBackground } from "./components/AmbientBackground";
-import { Architecture } from "./components/Architecture";
-import { ContinueWorking } from "./components/ContinueWorking";
-import { EvolutionTimeline } from "./components/EvolutionTimeline";
 import { FAQ } from "./components/FAQ";
 import { Features } from "./components/Features";
 import { FinalCTA } from "./components/FinalCTA";
 import { Footer } from "./components/Footer";
 import { Hero } from "./components/Hero";
-import { LocalFirstTopology } from "./components/LocalFirstTopology";
+import { HowItWorks } from "./components/HowItWorks";
 import { Nav } from "./components/Nav";
+import { Privacy } from "./components/Privacy";
+import { ThreadConstellation } from "./components/ThreadConstellation";
+import { TrustedBy } from "./components/TrustedBy";
 
 /**
- * Page narrative — one cinematic arc:
+ * Page narrative — one calm scroll:
  *
- *     Hero                  fragmentary memory → continuity core
- *     Architecture          the six-layer stack stabilizes upward
- *     EvolutionTimeline     one thread, gaining structure
- *     ContinueWorking       the emotional payoff
+ *     Hero                  the launcher + the promise
+ *     TrustedBy             who the continuity layer is for
+ *     HowItWorks            capture → group → ask → restore
  *     Features              what the system actually exposes
- *     LocalFirstTopology    the bind is the boundary
+ *     ThreadConstellation   threads, connected — no metaphor
+ *     Privacy               the bind is the boundary
  *     FAQ                   the open questions
- *     FinalCTA              calm certainty
+ *     FinalCTA              calm close
  *
  * Each section is its own act. The page does not loop animations,
- * does not parallax, does not glow. Motion exists where it earns
- * its weight — entrance staggers on view, the continuity-core
- * convergence on first paint, the evolution trace's one-shot draw.
- *
- * The HowItWorks + MemoryVisualization + BuiltForThinkers sections
- * have been retired. Their roles are now covered by:
- *
- *   • Hero's ContinuityCore (replaces the abstract memory orb)
- *   • Architecture (replaces "how it works" with the actual layer
- *     hierarchy)
- *   • ContinueWorking (replaces the role-marketing strip with the
- *     real launcher digest surface)
+ * does not parallax, does not glow. Motion exists only on entrance.
  */
 export default function Page() {
   return (
@@ -43,11 +32,11 @@ export default function Page() {
       <Nav />
       <main className="relative">
         <Hero />
-        <Architecture />
-        <EvolutionTimeline />
-        <ContinueWorking />
+        <TrustedBy />
+        <HowItWorks />
         <Features />
-        <LocalFirstTopology />
+        <ThreadConstellation />
+        <Privacy />
         <FAQ />
         <FinalCTA />
       </main>

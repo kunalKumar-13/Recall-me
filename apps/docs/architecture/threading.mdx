@@ -156,6 +156,38 @@ Decay happens through the same mechanism, in reverse:
 There is **no automatic deletion**. The engine never throws away
 identity on its own — it only stops surfacing.
 
+## Investigation coherence — session-anchored bucketing
+
+A browser visit, a search, or a chat session names its topic in
+its own text. A bare **file open does not** — it carries a
+filename. Keying a file event off its filename made `backoff.py`
+its own thread, severed from the WebSocket debugging it belonged
+to: the human saw one investigation, the engine saw loose
+artifacts.
+
+Bucketing is therefore two passes (Phase 4H):
+
+1. **Anchor each session.** Browser / search / chat events are
+   bucketed by topic; each session is tagged with its dominant
+   topic (a deterministic majority vote, ties broken
+   lexicographically).
+2. **Bucket every event.** A file `open` / `reveal` **bridges into
+   its session's anchor topic** when one exists — so `backoff.py`
+   opened inside a WebSocket session joins the WebSocket
+   investigation. A file opened in a session with *no* anchor (a
+   pure coding session, no browser activity) keeps its
+   filename-derived key.
+
+The bridge signal is **same-session co-occurrence** — work inside
+one 30-minute window is one working context. It is deterministic
+and local; no embeddings, no similarity model. Only file events
+bridge, so two distinct browser topics sharing a session never
+fuse. Consumers that need a thread's membership (recovery in
+particular) read it from `events_for_topic()` — the *same*
+bucketing — never by re-deriving keys per event. The calibration
+fixtures live in
+[`TRUST_FIXTURES_CONTINUITY.md`](https://github.com/kunalKumar-13/Recall-me).
+
 ## Dedupe and merge
 
 Two threads that share more than 55% of their representative

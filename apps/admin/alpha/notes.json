@@ -1,0 +1,11 @@
+{
+  "_comment": "Free-form founder notes per cohort. Bake folds them into the cohort summary section as the `notes` field. Keep notes short; one or two lines each.",
+  "cohorts": {
+    "alpha-001": "Watching the first-recovery moment closely. Two of three early users hit it; the third lapsed before the third day.",
+    "friends": "Forgiving testers; useful for rough edges. Extension pairing is the recurring pain point.",
+    "builders": "Opens after alpha-001 friction is addressed.",
+    "researchers": "Fragmented-research continuity is their loop.",
+    "students": "Multi-day investigation continuity is their loop.",
+    "writers": "Day-0 only; no return data yet."
+  }
+}

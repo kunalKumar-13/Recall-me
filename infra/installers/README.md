@@ -32,7 +32,7 @@ infra/installers/
     └── README.md
 ```
 
-See [`RELEASE.md`](../../RELEASE.md) § *Installer pipeline
+See [`RELEASE.md`](../../docs/release/RELEASE.md) § *Installer pipeline
 (Windows)* for the current commands; that document is the
 source of truth for the build invocation until the per-OS
 directories above are populated.

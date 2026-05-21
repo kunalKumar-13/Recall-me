@@ -35,9 +35,8 @@ temporal adjacency carries the assignment.
 
 from __future__ import annotations
 
-import time as _time
 from dataclasses import dataclass, field
-from typing import Iterable, List, Optional, Tuple
+from typing import List, Optional, Tuple
 from urllib.parse import urlparse
 
 from .episodic import _content_tokens, _expand_tokens

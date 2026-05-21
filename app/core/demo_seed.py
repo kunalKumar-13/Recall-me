@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -49,7 +49,7 @@ DEMO_EVENTS_DIR: Path = CONFIG_DIR / "events-demo"
 # to detect "already seeded" on subsequent boots so the same
 # story doesn't get appended again. Versioned so a future
 # seed-data refresh forces a re-seed.
-_SEED_VERSION = "4B.1"
+_SEED_VERSION = "4E.1"
 _MARKER_NAME = ".seeded"
 
 
@@ -164,6 +164,12 @@ _SCRIPT: List[_DemoEvent] = [
     _DemoEvent(7.9, 3, "query", {
         "text": "websocket retry the part about jitter",
         "result_count": 4,
+    }),
+    # ...and reopened the implementation file — the interruption
+    # lands mid-edit, which is exactly the moment recovery is for.
+    _DemoEvent(7.8, 3, "open", {
+        "path": "~/code/ws-retry/backoff.py",
+        "title": "backoff.py",
     }),
 
     # ─────────────────────────────────────────────────────────

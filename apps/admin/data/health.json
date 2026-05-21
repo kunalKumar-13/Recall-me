@@ -1,0 +1,44 @@
+[
+  {
+    "id": "active_installs",
+    "label": "Active installs",
+    "value": 12,
+    "foot": "devices with imported exports",
+    "health": "yellow"
+  },
+  {
+    "id": "returning_installs",
+    "label": "Returning installs",
+    "value": 5,
+    "foot": "weekly_active_days >= 2",
+    "health": "yellow"
+  },
+  {
+    "id": "continuity_restored",
+    "label": "Continuity restored",
+    "value": "78%",
+    "foot": "avg resume_success_rate",
+    "health": "green"
+  },
+  {
+    "id": "resume_sessions",
+    "label": "Resume sessions",
+    "value": 41,
+    "foot": "sum of recoveries_accepted",
+    "health": "green"
+  },
+  {
+    "id": "investigations",
+    "label": "Investigations",
+    "value": 134,
+    "foot": "sum across cohort exports",
+    "health": "green"
+  },
+  {
+    "id": "extension_connected",
+    "label": "Extension connected",
+    "value": "75%",
+    "foot": "extension_connected_days / install_age_days",
+    "health": "green"
+  }
+]

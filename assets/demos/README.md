@@ -8,6 +8,19 @@ recipes that produce them.
 - **[`demo-script.md`](demo-script.md)** — the canonical
   90-second walkthrough. Three acts, one restoration moment,
   exact click sequence + timing + narration.
+- **`launcher.gif`** — Phase 5H. 4-frame state cycle (loading →
+  empty → first week → digest). Deterministic, generated from
+  `assets/screenshots/launcher-*.png` by
+  `infra/scripts/capture/generate_demo_gifs.py`.
+- **`recovery.gif`** — Phase 5H. 2-frame focus animation
+  (resting → keyboard-focused).
+- **`extension.gif`** — Phase 5H. 4-frame popup state cycle
+  (loading → empty → capturing → connected). Reflects the new
+  Phase 5H state machine in `apps/extension/ui/src/App.tsx`.
+
+Two deferred GIFs (live recording, not derivable from PNGs) live
+in [`../../docs/release/RECORDING_PROTOCOL.md`](../../docs/release/RECORDING_PROTOCOL.md):
+`install.gif` and `control-room.gif`.
 
 ## Capturing a demo
 

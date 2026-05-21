@@ -1,0 +1,60 @@
+{
+  "_comment": "Public-alpha cohort registry. Hand-maintained — there is no enrolment server. Add a member only with their consent; a cohort is a group of people the founder talks to, not a tracked population. `checkins` are voluntary `recall stats` pastes (see apps/admin/README.md).",
+  "schema_version": 1,
+  "cohorts": [
+    {
+      "id": "alpha-001",
+      "label": "Alpha 001 — first installs",
+      "status": "forming",
+      "opened": "",
+      "members": [],
+      "checkins": [],
+      "notes": "The first real users. Watched closely; high-touch."
+    },
+    {
+      "id": "alpha-002",
+      "label": "Alpha 002 — second wave",
+      "status": "planned",
+      "opened": "",
+      "members": [],
+      "checkins": [],
+      "notes": "Opens after alpha-001 friction is addressed."
+    },
+    {
+      "id": "friends",
+      "label": "Friends",
+      "status": "planned",
+      "opened": "",
+      "members": [],
+      "checkins": [],
+      "notes": "Forgiving testers; good for rough edges."
+    },
+    {
+      "id": "builders",
+      "label": "Builders",
+      "status": "planned",
+      "opened": "",
+      "members": [],
+      "checkins": [],
+      "notes": "Developers — interrupted-coding recovery is their loop."
+    },
+    {
+      "id": "researchers",
+      "label": "Researchers",
+      "status": "planned",
+      "opened": "",
+      "members": [],
+      "checkins": [],
+      "notes": "Fragmented-research continuity is their loop."
+    },
+    {
+      "id": "students",
+      "label": "Students",
+      "status": "planned",
+      "opened": "",
+      "members": [],
+      "checkins": [],
+      "notes": "Multi-day investigation continuity is their loop."
+    }
+  ]
+}

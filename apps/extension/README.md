@@ -1,69 +1,134 @@
-# Recall.me — Memory Sync (browser extension)
+# Recall — Continuity Companion (browser extension)
 
-The smallest possible bridge between Chrome / Edge and the local
-Recall daemon. Captures page visits, search-engine queries, and
-chat-platform sessions, and POSTs them to `127.0.0.1:4545`.
+The browser side of Recall. It does two things, kept deliberately
+separate:
+
+1. **Capture** (`background.js`) — quietly records page visits,
+   search queries, and chat-platform sessions and POSTs them to the
+   local Recall daemon at `127.0.0.1:4545`.
+2. **The popup** (`popup/`, built from `ui/`) — a small memory
+   *surface*. Open it and it answers one question: *what was I
+   doing?* It is not a telemetry dashboard, not browser analytics,
+   not an assistant.
 
 Nothing leaves the machine. No remote network. No DOM scraping. No
-telemetry. The only HTTP destination this extension is permitted to
-reach is the loopback Recall daemon.
+telemetry. The only HTTP destination this extension can reach is the
+loopback Recall daemon.
 
-## Install (developer mode)
+## Layout
 
-1. Make sure the Recall desktop app is running. Confirm in Settings →
-   Browser Memory that the listener is "Listening on 127.0.0.1:4545".
-2. Open `chrome://extensions` (or `edge://extensions`).
-3. Toggle **Developer mode** in the top-right corner.
-4. Click **Load unpacked** and pick this `extension/` folder.
-5. The extension's puzzle-piece icon appears in the toolbar; click it
-   to confirm "Connected · N captured".
+```
+apps/extension/
+├── manifest.json     MV3 manifest (hand-written)
+├── background.js     capture service worker (hand-written)
+├── popup/            ← BUILT popup — what Chrome loads (generated)
+│   ├── index.html
+│   └── assets/
+└── ui/               ← popup SOURCE (React + Vite + Framer Motion)
+    ├── index.html
+    ├── src/
+    │   ├── App.tsx               two-view shell + connection state machine
+    │   ├── components/           ContinueCard, InvestigationCard,
+    │   │                         MemoryList, TrustSurface, SettingsPanel,
+    │   │                         Section, states, icons
+    │   └── lib/                  api, types, motion
+    └── package.json
+```
 
-That's the whole setup.
+Chrome loads `apps/extension/` as the unpacked extension.
+`manifest.json` and `background.js` are hand-written at that root;
+`popup/` is a build artifact produced from `ui/`.
+
+## Build the popup
+
+```bash
+cd apps/extension/ui
+npm install
+npm run build      # type-checks, then writes apps/extension/popup/
+```
+
+`npm run dev` serves the popup in a normal browser tab for fast
+iteration (the daemon calls fall back gracefully when `chrome.*`
+APIs are absent).
+
+## The popup
+
+A 440 px-wide companion. One fresh read of the daemon per open —
+never a stale cached dashboard. Sections, top to bottom:
+
+| Section | Answers |
+|---|---|
+| **Continue** | the single strongest interrupted investigation, with a **Resume** button |
+| **Active investigations** | up to four ongoing topics |
+| **Browser memory** | recent searches / tabs / chats, grouped |
+| **Trust** | local-only, daemon status, events captured today |
+| **Settings** | capture toggles + links (reached via the header gear) |
+
+### Popup states
+
+The popup is a small state machine. Every non-normal state is a
+calm, full-body screen — no red, no error iconography. For
+storybook-style isolated preview, append a `state` query param when
+running `npm run dev`:
+
+| `?state=` | Screen |
+|---|---|
+| `loading` | first daemon read in flight |
+| `connected` | the normal surface |
+| `disconnected` | daemon not running — capture continues, Resume offline |
+| `reconnecting` | a retry in flight |
+| `offline` | the browser itself has no network (Recall never needed it) |
+
+The empty state (connected, but nothing captured yet) appears on
+its own when there is genuinely nothing to show.
+
+### Design language
+
+Calm, quiet, spatial, trustworthy, minimal — Raycast × Arc ×
+Granola. Light surfaces over warm off-white, soft hairline borders,
+14 px radius, a 24 px section rhythm. One accent (lavender), used
+once per zone. No glass, no neon, no charts, no gradient "AI"
+energy. Motion is continuity motion only — fade, expand, slide —
+on a single calm easing curve, never a bounce or a float.
+
+See [`architecture.md`](architecture.md) for the component model
+and data flow.
 
 ## What it captures
 
-| Page                                  | Becomes        |
-|---------------------------------------|----------------|
-| Any normal page (`https://…`)         | `browser_visit`|
+| Page | Becomes |
+|---|---|
+| Any normal page (`https://…`) | `browser_visit` |
 | Google / DuckDuckGo / Bing / Kagi search | `browser_search` |
 | chatgpt.com / chat.openai.com / claude.ai | `chat_session` |
 
-Every event carries: `url`, `title`, `domain`, plus the kind-specific
-payload. The full schema is documented in `app/core/ingest.py`.
-
 ## What it never captures
 
-- `chrome://`, `edge://`, `about:`, `file://`, `view-source:`, and
-  similar internal pages — dropped before they leave the worker.
-- Incognito / Private windows — Chrome's runtime hides these from
-  the extension; we additionally check `tab.incognito` as a belt.
-- Page contents — only the URL and the title. The DOM is never read.
-- Anything in your domain exclude list (configured in Recall →
-  Settings → Browser Memory). The list is matched as a suffix, so
-  adding `google.com` silently filters `mail.google.com`,
-  `docs.google.com`, etc.
+- `chrome://`, `edge://`, `about:`, `file://`, `view-source:` — dropped
+  before they leave the worker.
+- Incognito / Private windows.
+- Page contents — only the URL and title. The DOM is never read.
+- Anything in your domain exclude list (Recall → Settings → Browser
+  Memory).
 
 ## Privacy contract
 
-- The extension's `host_permissions` is exactly one URL —
-  `http://127.0.0.1:4545/*`. Chrome will refuse any other network
-  request from the worker.
-- The extension does not request `<all_urls>` permissions; it only
-  uses the `tabs` API, which exposes URL + title metadata for the
-  active tab and never the page contents.
-- All captured data lives in the per-day JSONL files under
-  `~/.recall/events/`. Plain text. Open them in any editor. Delete
-  them whenever.
+- `host_permissions` is exactly one URL — `http://127.0.0.1:4545/*`.
+  Chrome refuses any other network request from this extension.
+- No `<all_urls>` permission; only the `tabs` API (URL + title
+  metadata, never page contents).
+- All captured data lives in plain JSONL under `~/.recall/events/`.
 
-## Build
+## Install (developer mode)
 
-There is no build step. The extension is vanilla JavaScript +
-HTML + JSON; what you see in this folder is what runs in the
-browser.
+1. Build the popup (above).
+2. Make sure the Recall desktop app is running.
+3. Open `chrome://extensions` (or `edge://extensions`).
+4. Toggle **Developer mode**.
+5. **Load unpacked** → pick this `apps/extension/` folder.
 
 ## Icons
 
-Icons are intentionally not bundled — Chrome falls back to a
-default puzzle-piece glyph. Add `icons/icon-{16,48,128}.png` and
-the corresponding `"icons"` block in `manifest.json` if you want a
-custom toolbar icon.
+Icons are intentionally not bundled — Chrome falls back to a default
+glyph. Add `icons/icon-{16,48,128}.png` plus an `"icons"` block in
+`manifest.json` for a custom toolbar icon.

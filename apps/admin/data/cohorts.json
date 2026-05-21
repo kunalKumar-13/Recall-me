@@ -1,0 +1,62 @@
+[
+  {
+    "id": "alpha-001",
+    "label": "Alpha 001 \u2014 first installs",
+    "status": "forming",
+    "devices": 5,
+    "returning": 3,
+    "feedback_count": 3,
+    "health": "green",
+    "notes": "Watching the first-recovery moment closely. Two of three early users hit it; the third lapsed before the third day."
+  },
+  {
+    "id": "alpha-002",
+    "label": "Alpha 002 \u2014 second wave",
+    "status": "planned",
+    "devices": 0,
+    "returning": 0,
+    "feedback_count": 0,
+    "health": "mute",
+    "notes": "Opens after alpha-001 friction is addressed."
+  },
+  {
+    "id": "friends",
+    "label": "Friends",
+    "status": "planned",
+    "devices": 4,
+    "returning": 2,
+    "feedback_count": 3,
+    "health": "green",
+    "notes": "Forgiving testers; useful for rough edges. Extension pairing is the recurring pain point."
+  },
+  {
+    "id": "builders",
+    "label": "Builders",
+    "status": "planned",
+    "devices": 0,
+    "returning": 0,
+    "feedback_count": 0,
+    "health": "mute",
+    "notes": "Opens after alpha-001 friction is addressed."
+  },
+  {
+    "id": "researchers",
+    "label": "Researchers",
+    "status": "planned",
+    "devices": 0,
+    "returning": 0,
+    "feedback_count": 0,
+    "health": "mute",
+    "notes": "Fragmented-research continuity is their loop."
+  },
+  {
+    "id": "students",
+    "label": "Students",
+    "status": "planned",
+    "devices": 0,
+    "returning": 0,
+    "feedback_count": 0,
+    "health": "mute",
+    "notes": "Multi-day investigation continuity is their loop."
+  }
+]
