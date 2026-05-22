@@ -1,4 +1,5 @@
 import { AmbientBackground } from "./components/AmbientBackground";
+import { Download } from "./components/Download";
 import { FAQ } from "./components/FAQ";
 import { Features } from "./components/Features";
 import { FinalCTA } from "./components/FinalCTA";
@@ -7,18 +8,25 @@ import { Hero } from "./components/Hero";
 import { HowItWorks } from "./components/HowItWorks";
 import { Nav } from "./components/Nav";
 import { Privacy } from "./components/Privacy";
+import { Problem } from "./components/Problem";
+import { Screens } from "./components/Screens";
+import { Story } from "./components/Story";
 import { ThreadConstellation } from "./components/ThreadConstellation";
-import { TrustedBy } from "./components/TrustedBy";
 
 /**
- * Page narrative — one calm scroll:
+ * Page narrative — one calm scroll, Phase 6G alpha-public order:
  *
  *     Hero                  the launcher + the promise
- *     TrustedBy             who the continuity layer is for
+ *     Problem               the context-loss tax this fixes
  *     HowItWorks            capture → group → ask → restore
+ *     Story                 three real-shape investigations
+ *                           (WebSocket / Proposal / Research)
  *     Features              what the system actually exposes
  *     ThreadConstellation   threads, connected — no metaphor
- *     Privacy               the bind is the boundary
+ *     Screens               launcher + extension v2 captures
+ *     Privacy               trust — local / no cloud / no telemetry /
+ *                           counts only / export only
+ *     Download              four artifacts, one calm grid
  *     FAQ                   the open questions
  *     FinalCTA              calm close
  *
@@ -32,11 +40,14 @@ export default function Page() {
       <Nav />
       <main className="relative">
         <Hero />
-        <TrustedBy />
+        <Problem />
         <HowItWorks />
+        <Story />
         <Features />
         <ThreadConstellation />
+        <Screens />
         <Privacy />
+        <Download />
         <FAQ />
         <FinalCTA />
       </main>

@@ -184,19 +184,30 @@ def _check_installer_state() -> Check:
         bundle = Path(sys.executable).resolve()
         return Check("installer", GREEN,
                      f"running from bundle - {bundle.name}")
-    artifact = _REPO_ROOT / "dist" / "installer" / "Recall-Setup.exe"
-    if artifact.exists():
+    # Phase 5J: recognise the lite + full variants alongside the
+    # historical `Recall-Setup.exe` name. Reports the first that
+    # exists, with both sizes if both are present.
+    installer_dir = _REPO_ROOT / "dist" / "installer"
+    candidates = [
+        installer_dir / "Recall-Setup-lite.exe",
+        installer_dir / "Recall-Setup-full.exe",
+        installer_dir / "Recall-Setup.exe",   # historical name
+    ]
+    present = [p for p in candidates if p.exists()]
+    if present:
         try:
-            mb = artifact.stat().st_size / (1024 * 1024)
-            return Check("installer", GREEN,
-                         f"Recall-Setup.exe present ({mb:.1f} MB)")
+            parts = [
+                f"{p.name} ({p.stat().st_size / (1024 * 1024):.1f} MB)"
+                for p in present
+            ]
+            return Check("installer", GREEN, " / ".join(parts))
         except OSError:
             return Check("installer", YELLOW,
-                         "Recall-Setup.exe found but unreadable")
+                         f"{present[0].name} found but unreadable")
     bundle_exe = _REPO_ROOT / "dist" / "Recall" / "Recall.exe"
     if bundle_exe.exists():
         return Check("installer", YELLOW,
-                     "PyInstaller bundle present, Recall-Setup.exe not built")
+                     "PyInstaller bundle present, no installer artifact yet")
     return Check("installer", YELLOW,
                  "running from source - no installer artifact")
 

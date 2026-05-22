@@ -11,6 +11,759 @@ build cycle.
 
 ## [Unreleased]
 
+### Added — Phase 6H (Control Room OS)
+- **Eight new live data loaders** under
+  [`apps/admin/web/lib/loaders/`](../../apps/admin/web/lib/loaders/):
+  `paths.ts` (canonical filesystem paths) · `fsx.ts` (defensive
+  `readJSON` / `readJSONL` / `listDir` / `exists` / `fileMtime`
+  / `pct`) · `health.ts` (baked health + live `~/.recall`
+  state) · `trust.ts` (baked + the live 6-kind recovery-ledger
+  aggregation) · `daily.ts` (mirrors `app/core/daily_loop.summary()`
+  in TypeScript) · `alpha.ts` (re-derives `recall alpha export`
+  on every request) · `release.ts` (normalised gate state +
+  per-gate progress) · `system.ts` (filesystem-derived doctor
+  checks). Every loader is idempotent and defensive — missing
+  files return typed fallbacks; the page never throws.
+- **Three-column operator shell** in
+  [`apps/admin/web/app/layout.tsx`](../../apps/admin/web/app/layout.tsx):
+  sticky left rail (`Nav.tsx`, 10 sections in 3 groups,
+  accesskey hotkeys 1-9 + 0) · main route content · sticky
+  right actions sidebar (`ActionsBar.tsx`, 7 buttons; *Refresh*
+  triggers `router.refresh()`; the other six copy canonical CLI
+  commands to the clipboard — **no server endpoint executes
+  anything**).
+- **Six live panel components** in
+  [`apps/admin/web/components/panels/`](../../apps/admin/web/components/panels/):
+  `HealthPanel`, `AlphaPanel` (6 directive signal cards with
+  GYR pills), `DailyLoopPanel` (3 signal cards + counter table
+  + 7-day heatmap of 5 bins × 7 days), `TrustPanel` (6 outcome
+  stats + derived-signals row including trust %, returns
+  linked, median time-to-resume), `ReleasePanel` (per-gate
+  progress bars with GYR + GO/PARTIAL/NO-GO + blockers),
+  `SystemPanel` (5 live filesystem checks). Plus a shared
+  `Verdict.tsx` pill (3 colours + `mute`).
+- **Ten dashboard routes**: `/` (overview — every panel
+  compact), `/users` (per-cohort table → click to replay),
+  `/alpha` (deep-dive), `/trust` (deep-dive), `/daily-loop`
+  (deep-dive + heatmap), `/recovery` (6-stat header +
+  time-to-resume sparkline + ledger rows linking to replays),
+  `/replays?tester=<handle>` (per-tester event timeline +
+  coverage line: install / activity / recovery / resume /
+  return / wow / failure), `/release`, `/system`, `/docs`
+  (static map of canonical docs). Every route is a React
+  Server Component with `export const dynamic = "force-dynamic"`
+  — no cache, no revalidate.
+- **Inline SVG + styled-div for charts** — heatmap +
+  time-to-resume sparkline are pure CSS / inline elements. No
+  `recharts`, no `d3`, no charts library; the directive's *no
+  chart explosion* rule held.
+- **`PHASE_6H_STATUS.md`** ships the receipt + the green/yellow/red
+  thresholds (also documented in
+  [`docs/product/DAILY_LOOP.md`](../product/DAILY_LOOP.md)).
+- **No Python, no engine, no recovery, no marketing-site touches.**
+  Next.js build for the admin app: 10 routes, all `ƒ`
+  server-rendered, 87.4 KB first-load shared. The directive's
+  *no fake data, no hardcoded cards, everything derived* rule
+  held across every panel.
+
+### Added — Phase 6G (Public Alpha Surface)
+- **Four new marketing-site section components** in
+  [`apps/web/app/components/`](../../apps/web/app/components/):
+  `Problem.tsx`, `Story.tsx`, `Screens.tsx`, `Download.tsx`.
+  Each follows the existing visual rhythm (warm white +
+  lavender + hairline borders, entrance animation only).
+- **Hero copy aligned to the directive** in
+  [`Hero.tsx`](../../apps/web/app/components/Hero.tsx). Headline
+  *Recall notices unfinished work.*; sub *Return later. /
+  Continue instantly.*; primary CTA *Download alpha* (now
+  anchors to the in-page `#download` section instead of jumping
+  to GitHub releases); secondary CTA *Watch demo*.
+- **Privacy → Trust five-point rewrite** in
+  [`Privacy.tsx`](../../apps/web/app/components/Privacy.tsx).
+  Section eyebrow flipped to *Trust*; points rewritten to
+  *Local only / No cloud / No telemetry / Counts only / Export
+  only*, with each body mirroring the on-disk contract in
+  [`docs/product/TRUST.md`](../product/TRUST.md).
+- **Nav rebuilt to the new narrative order** in
+  [`Nav.tsx`](../../apps/web/app/components/Nav.tsx):
+  *The problem · How it works · Stories · Screens · Trust ·
+  Download · GitHub*. The desktop + mobile Download button
+  renamed to *Download alpha* and anchored to `#download`.
+- **`apps/web/public/screens/`** — 19 PNGs in 4 subdirectories,
+  copied from `assets/screenshots/{launcher-v2, extension-v2,
+  demo, alpha}/`. The `Story` and `Screens` components reference
+  these directly.
+- **`docs/product/TRUST.md`** — the public trust statement.
+  Five rules + on-disk contract per rule + *what Recall will /
+  won't ask for* + the enforcement-in-code map.
+- **`docs/release/DOWNLOAD_GUIDE.md`** — the four install paths
+  (Windows lite / Windows full / macOS preview / browser
+  extension) with platform-specific install steps, the 5-step
+  first-run validation, and the per-platform uninstall paths.
+- **`docs/release/DEMO_VIDEO_SCRIPT.md`** — the 60-second
+  placeholder storyboard. Six beats, captions only (no
+  voice-over), pre-flight checklist, the cuts to never make.
+  The marketing site's *Watch demo* button flips to the hosted
+  URL once `demo.mp4` is recorded.
+- **`docs/founder/PUBLIC_ALPHA.md`** gains a Phase 6G addendum
+  naming the new front-door surfaces and cross-linking the
+  doc trio above.
+- **`page.tsx` narrative order**:
+  `Hero · Problem · HowItWorks · Story · Features ·
+  ThreadConstellation · Screens · Privacy(Trust) · Download ·
+  FAQ · FinalCTA`. The pre-6G `TrustedBy` strip is no longer
+  mounted (no real "trusted by" logos yet).
+- **No engine work**, **no recovery work**. The
+  `app/core/`, `api/`, `app/ui/` (launcher / widgets), and
+  `apps/extension/` trees are untouched. Next.js build:
+  `/` at 55 KB, first-load 142 KB.
+
+### Added — Phase 6F (Daily Loop Validation)
+- **New `app/core/daily_loop.py` layer** — six counters per local
+  day stored at `~/.recall/daily_loop.jsonl`
+  (one JSON line per local day, < 50 KB / year):
+  `day_started`, `investigations_opened`, `recoveries_shown`,
+  `recoveries_used`, `returns`, `resume_success`. Three derived
+  signals computed at read time
+  (`continuity_restored` / `return_rate` / `resume_quality`)
+  with GREEN/YELLOW/RED verdicts pinned in the in-source
+  `verdict()`. **Counts only** — no URLs, filenames, queries,
+  chat content, titles, or per-event timestamps. Disable via
+  `RECALL_DAILY_LOOP=off`.
+- **Return detector.** Every successful ingest calls
+  `daily_loop.mark_event(time.time())`. The detector keeps
+  `last_event_ts` in `~/.recall/daily_loop_state.json` and
+  bumps the `returns` bin when the gap crosses 30 minutes
+  (`RETURN_GAP_MIN_SECONDS = 1800`, matching the session
+  reconstructor's idle break). Local-only, no upload, no event
+  data exposed.
+- **`POST /v1/loop/bump`** + **`GET /v1/loop/summary?days=7`**
+  — two thin routes in [`api/main.py`](../../api/main.py),
+  5 new DTOs in [`api/schemas.py`](../../api/schemas.py).
+  Closed pydantic `Literal` of six bin names; bad input → 422.
+- **Recovery-surface hooks.** `/v1/recovery/recent` bumps
+  `recoveries_shown` **only** when the candidate list is
+  non-empty (empty response = correct silence, tracked at the
+  alpha-ledger level). `/v1/recovery/{id}/restore` bumps
+  `recoveries_used`.
+- **`recall founder daily-loop`** — new subcommand in
+  [`app/core/founder_cli.py`](../../app/core/founder_cli.py).
+  Reads `~/.recall/daily_loop.jsonl` directly (no bake), prints
+  today / yesterday / 7-day window rows plus the three signals
+  with GREEN/YELLOW/RED brackets and the directive's repeat-use
+  success-line. ASCII-only, cp1252 safe.
+- **`recall alpha replay <handle>`** — new subcommand in
+  [`app/core/alpha_cli.py`](../../app/core/alpha_cli.py). Compiles
+  a per-tester event-only timeline from `status.json` and the
+  matching `recovery_journal.json` entries. **No content** —
+  only dates + kinds + handle labels + meta hints. Ends with a
+  coverage line (`OK install, OK activity, OK recovery, …`) so
+  the founder can scan one tester in 5 seconds.
+- **Recovery journal v2.** Schema in
+  [`alpha/recovery_journal.json`](../../alpha/recovery_journal.json)
+  gains `return_after_gap` (true/false/null) + `time_to_resume`
+  (integer seconds). Both optional; legacy entries keep
+  working. The two are the strongest correlation we have
+  between *return* and *recovery* — the heart of the directive's
+  *repeat-use* test.
+- **Doc trio.**
+  - [`docs/product/DAILY_LOOP.md`](../product/DAILY_LOOP.md) —
+    six bins, three signals, thresholds, the *not telemetry*
+    contract, performance budget.
+  - [`docs/product/RETURN_BEHAVIOR.md`](../product/RETURN_BEHAVIOR.md)
+    — the return detector's semantics in detail. What counts,
+    what doesn't, why 30 min, the state file, the manual
+    verification recipe.
+  - [`docs/alpha/MOMENTS.md`](../alpha/MOMENTS.md) — the seven
+    first-time moments per tester
+    (first install / first capture / first investigation /
+    first recovery / first resume / first wow / trust break)
+    with a per-cohort log table.
+- **No visual redesign**, **no installer work**. The launcher
+  widget tree, the extension popup, the InnoSetup spec, and
+  every existing UI surface are unchanged. The only runtime
+  side effect is two new files under `~/.recall/`, both
+  human-readable JSON, both deletable.
+
+### Added — Phase 6E (Alpha Reality)
+- **`alpha/users/_TEMPLATE/status.json` extended** with four
+  directive-named optional metadata fields:
+  `installer_version`, `extension`, `wow_moment`, `confusion`.
+  Existing tester records keep working — the loader defaults
+  missing keys to `None`. The boundary is unchanged: metadata
+  only, never URLs / filenames / queries / chat content.
+- **`recall alpha update <handle> --<field> <value> ...`** — new
+  subcommand in [`app/core/alpha_cli.py`](../../app/core/alpha_cli.py).
+  Cross-cohort lookup by handle (optional `--cohort` filter for
+  disambiguation), closed allowlist of accepted fields
+  (`_UPDATABLE_FIELDS`), type-coercion (`install_minutes` → float,
+  `feedback_returned` → bool), empty-string clears a field.
+- **`recall alpha export [--cohort <name>]`** — JSON dump of the
+  same aggregation `report` prints in human form. Five top-level
+  keys match the directive vocabulary verbatim:
+  `installs` / `returning` / `recoveries` / `issues` / `trust`.
+  Counts only.
+- **`alpha/recovery_journal.json` schema rewritten** around the
+  Phase 6E six-outcome vocabulary: `shown` / `accepted` /
+  `ignored` / `correct_silence` / `bad_recovery` / `resume_ok`.
+  Trust % computed as `(resume_ok + correct_silence) / shown`.
+  Legacy entries (pre-6E `accepted` / `wrong` booleans) get
+  mapped on read so old rows still count. Local only, export only.
+- **`recall founder alpha-health`** — new subcommand in
+  [`app/core/founder_cli.py`](../../app/core/founder_cli.py). Reads
+  the source-of-truth files directly (bypasses `bake`) and prints
+  the five signals with `[GREEN]` / `[YELLOW]` / `[RED]` brackets
+  plus the directive's alpha-001 success-line (*5 humans / 3
+  recoveries / 1 wow / 1 failure story*). ASCII-only output
+  (cp1252 console safe).
+- **`docs/alpha/` doc trio** — new operations book:
+  - [`PLAYBOOK.md`](../alpha/PLAYBOOK.md) — six-moment tester
+    lifecycle (install / use / leave / return / resume / report),
+    daily morning loop, per-tester field list, six recovery
+    outcomes, the no-content-no-telemetry contract restated.
+  - [`STATUS.md`](../alpha/STATUS.md) — the live cohort board,
+    hand-edited weekly from `recall alpha export` +
+    `recall founder alpha-health`. Mirrors the directive's
+    success-line table.
+  - [`KNOWN_FAILURES.md`](../alpha/KNOWN_FAILURES.md) — failure
+    catalogue with the quote-don't-paraphrase / never-inflate
+    trust contract; promotion-to-engineering at ≥ 2 testers.
+- **`docs/trust/ALPHA_MATRIX.md` extended** with a *Phase 6E
+  daily-use + browser matrix* section: 5 new rows (Windows 11
+  daily use × Chrome / Edge / Arc + macOS Intel / Apple Silicon
+  daily use), each with *Recovery appeared?* + *Resume worked?*
+  columns. `unknown` until a real tester completes ≥ 3 days on
+  the machine + browser pair.
+- **`assets/screenshots/alpha/`** — 3 new offscreen-Qt captures
+  (Consolas mono, warm-white background so the alpha screens sit
+  next to the launcher / extension v2 sets visually):
+  `alpha-control-room.png` (the `alpha-health` panel populated
+  with fixture data — 5 installs / 3 returning / 3 recoveries /
+  trust 83 % / 1 yellow drop reason), `alpha-status.png`
+  (`recall alpha status` with 5 testers across 4 cohorts),
+  `alpha-empty.png` (the honest zero on a fresh repo).
+- **`docs/engineering/PHASE_6E_STATUS.md`** — the engineering
+  receipt + verification matrix.
+- **No engine layer was touched.** The `events` / `sessions` /
+  `microcontexts` / `resurfacing` / `threads` / `evolution` /
+  `recovery` modules are not consulted, even indirectly. No UI
+  surface (launcher widget tree / extension popup) touched —
+  the directive's *no engine work, no UI redesign, only alpha
+  operations* rule held.
+
+### Added — Phase 6D (Demo Mode)
+- **`app/core/demo_mode.py`** — five-state machine (`disabled` /
+  `available` / `active` / `dismissed` / `completed`) persisted
+  at `~/.recall/demo.json`. Public surface: `state()`,
+  `is_active()`, `activate()`, `dismiss()`, `complete()`,
+  `disable()`, `mark_real_activity()`, and the canonical
+  `demo_payload(now=None)` fixture (1 recovery + 3 investigations
+  + 8 timeline events + trust copy). **Hand-written, fully
+  deterministic, no AI, no engine read.**
+- **`/v1/demo/{state, activate, dismiss}` routes** in
+  [`api/main.py`](../../api/main.py). `state` returns
+  `{state, payload}`; `payload` is non-null only when
+  `state === "active"`, so a naive consumer doesn't accidentally
+  render demo content. Plus an internal `_post_ingest_hook(ok)`
+  that every ingest route calls after a successful write —
+  one line that calls `demo_mode.mark_real_activity()`, which
+  auto-flips state to `dismissed` if it was `active`. *Real
+  events override demo*, enforced in 1 function.
+- **`api/schemas.py`** — 6 new DTOs (`DemoStateResponse`,
+  `DemoPayloadOut`, `DemoRecoveryOut`, `DemoInvestigationOut`,
+  `DemoTimelineEventOut`, `DemoTrustOut`).
+- **Launcher empty surface wired live to `EmptyCard.empty()`**
+  — closes the Phase 6B *Live launcher's empty surface wired to
+  use `EmptyCard.empty()`* deferral. `EmptyCard` gained a
+  `start_normally` signal + a *Start normally* secondary button
+  (transparent fill, warm hairline border via new
+  `QPushButton#secondary_button` QSS rule), paired with the
+  existing *Show example*.
+- **`Launcher._build_demo_panel()`** — the demo overlay
+  rendered when `demo_mode.is_active()`. Trust banner
+  (lavender-tinted, accent dot, *Example data — Nothing here
+  came from your device.* + clickable *Dismiss*), a
+  *Continue where you left off* section with the canonical
+  demo `RecoveryCard` (WebSocket retry debugging, 2 tabs / 2
+  files / 2d gap, confidence=high), and an *Active
+  investigations* section with three `InvestigationCard` rows
+  (WebSocket / Healthcare pitch — proposal draft / RLHF reward
+  shaping). `Launcher._refresh_idle_state` dispatches on
+  three branches (demo / empty / digest), with a
+  belt-and-braces auto-dismiss for any path that bypasses the
+  ingest hook.
+- **Extension popup demo overlay.** `EmptyState`
+  ([`apps/extension/ui/src/components/states.tsx`](../../apps/extension/ui/src/components/states.tsx))
+  gained a *Start normally* secondary button next to the
+  existing *Show example*; both wire to new
+  `activateDemo()` / `dismissDemo()` helpers in
+  `lib/api.ts`. `App.tsx` fetches `/v1/demo/state` alongside
+  health / recovery / threads / events, and a new `"demo"`
+  branch in the `PopupState` machine renders the canonical
+  payload through the existing `ConnectedBody` (so the demo
+  uses the same code path as a real populated surface). New
+  [`DemoBanner` component](../../apps/extension/ui/src/components/DemoBanner.tsx)
+  — lavender-tinted strip, accent dot, *Example data —
+  Nothing here came from your device.*, right-aligned
+  *Dismiss* link with `framer-motion` slide-fade entry.
+- **Capture pipeline.** New
+  [`infra/scripts/capture/capture_demo.py`](../../infra/scripts/capture/capture_demo.py)
+  produces the launcher demo digest + the post-transition
+  digest (same widget tree without the trust banner — the diff
+  is exactly the banner). `apps/extension/ui/capture_extension.mjs`
+  extended with an `OUT_DEMO` sibling directory, a
+  `MOCK_DEMO_ACTIVE` fixture that mirrors the daemon's
+  `/v1/demo/state` payload, and two new captures
+  (`demo-extension.png`, `demo-extension-empty.png`).
+- **`docs/product/FIRST_MAGIC.md`** — the product-side story:
+  what demo is, what it isn't, how it disappears, the trust
+  rules. Pairs with the engineering receipt
+  [`PHASE_6D_STATUS.md`](../engineering/PHASE_6D_STATUS.md).
+- **No engine layer was touched.** The `events`, `sessions`,
+  `microcontexts`, `resurfacing`, `threads`, `evolution`, and
+  `recovery` modules are not consulted by the demo path, even
+  indirectly. Deleting `app/core/demo_mode.py` would remove
+  the demo entirely without breaking any downstream artifact —
+  the *purely additive* rule that CLAUDE.md requires of any
+  new layer.
+
+### Added — Phase 6C (Extension Premium)
+- **Header — today count + repair icon.** `Header` in
+  [`apps/extension/ui/src/App.tsx`](../../apps/extension/ui/src/App.tsx)
+  now accepts `todayCount: number`. When the daemon is connected
+  and `eventsToday > 0`, a quiet mono caption `"248 today"` sits
+  next to the lavender `DaemonPulse` so the user has a passive
+  live signal that isn't just a dot. A wrench-icon button (new
+  glyph in
+  [`icons.tsx`](../../apps/extension/ui/src/components/icons.tsx))
+  sits between the wordmark and the gear — the directive's
+  *repair* affordance.
+- **`ContinueCard` confidence pill.** New `_deriveConfidence`
+  (`n ≥ 4 → high`, `2-3 → medium`, `0-1 → low`) + `ConfidencePill`
+  helpers render an inline pill right-aligned in the *Continue*
+  header row. Mirrors the launcher's
+  `derive_recovery_confidence(n_targets)` exactly — high =
+  accent lavender, medium = warn amber, low = ink-3 grey. Pure
+  UI-side derivation; **no engine field**. The outer
+  `Section label="Continue"` wrapper was dropped because the
+  card already owns that header with its own accent dot — the
+  hero card now stands alone.
+- **`MemoryList` rewritten as a vertical *Today* rail.** The
+  grouped Searches/Tabs/Chats layout becomes a single
+  chronological timeline: `HH:MM` local-time mono stamp + small
+  round kind glyph + kind label + short title, sorted newest-first
+  by `ts`, capped at 8. A 1 px vertical hairline ties the dots
+  together — literally the *rail*. Rows without a real `ts` are
+  dropped silently; **the popup never invents a timestamp**.
+- **`InvestigationCard` → horizontal pill.** The row-card became
+  a 28 px / radius-14 pill (`var(--surface-1)` background, soft
+  border, 12 px thread glyph + ellipsised title). The host site
+  renders investigations as `slice(0, 4).map(...)` inside a
+  `flex-wrap` strip with a left-to-right slide-fade entry
+  (`x: -6 → 0`, `opacity: 0 → 1`, `delay: i * 0.04`). Calm in,
+  calm to settle — no bounce.
+- **`EmptyState` — launcher-parity copy.** Headline
+  *"Recall notices unfinished work."*, body *"Work normally.
+  Return later. / Recall fills itself."*, and a soft *Show
+  example* pill (`accent-soft` fill, `accent-line` border,
+  accent text) that on click dispatches `openRecall()` — the
+  popup hands off to the launcher, which owns the
+  `EmptyCard.show_example` signal + the demo-seed wiring. This
+  honours the *NO engine work* anti-rule.
+- **Capture pipeline — `extension-v2/`.** `capture_extension.mjs`
+  gained an `OUT_V2` sibling directory + optional `dir` arg on
+  `shot()` / `shotWithMock()`, mkdir-ed via
+  `mkdirSync(..., { recursive: true })`. Two new MOCK payloads —
+  `MOCK_HOME_V2` (populated home: 248 events today, a recovery,
+  4 investigations, 5 recent events) and `MOCK_RECOVERY_V2`
+  (recovery-only, confidence pill + domain preview as focal
+  point). Five new captures: `extension-home.png`,
+  `extension-empty.png`, `extension-recovery.png`,
+  `extension-repair.png`, `extension-offline.png`. The
+  historical `assets/screenshots/extension-*.png` set stays
+  untouched as the *before* reference, matching the
+  `launcher-v2/` pattern from Phase 6B.
+- **`docs/engineering/PHASE_6C_STATUS.md`** ships the full
+  receipt + verification matrix. The directive's success line
+  was *"wait this looks like product."*
+
+### Added — Phase 6B (Launcher Identity)
+- **Palette inverted to warm white + lavender.** Every
+  `app/ui/styles.py` token flipped: `BG` `#0f1115` → `#fbf7f4`;
+  `BG_RAISED` `#161922` → `#ffffff`; `TEXT` `#e8eaf0` → `#16112b`;
+  `ACCENT` `#8b9bff` (blue) → `#8b7fe3` (lavender, matching the
+  extension popup's `--accent`). The launcher and the extension
+  popup now share one visual language. Tokens kept their names
+  so every widget that read through the indirection picked up
+  the new palette without further edits.
+- **`LAUNCHER_QSS` rewritten** for the new theme. Floating
+  glass card at `rgba(255, 255, 255, 184)` (72 % white over the
+  OS), 1 px warm hairline, 22 px radius. Section labels gain
+  generous padding (18 px top / 24 px sides) per the directive's
+  spacing rhythm. List items get 10 px radius + 2 px margin.
+  Scrollbar handles flipped to lavender at low alpha. A new
+  `QPushButton#example_button` style ships for the empty-state
+  CTA.
+- **Card hover-fill swapped** from warm beige (`BG_HOVER`, which
+  read as a flash on white) to low-alpha lavender accent
+  (`ACCENT` at 0.10 × hover). Hover lift bumped 2 → 3 px;
+  rounded-rect radius 9 → 12. `_ACCENT_RAIL`, `_OK`, `_WARN`
+  retuned for the new background.
+- **Recovery card evidence row as chip pills.** The dim text
+  *"2 tabs · 3 files · reopened after a 2-day gap"* now renders
+  as three separate widgets: `[2 tabs] [3 files] [2d gap]`. New
+  `_EvidenceChip` (height 18, radius 6, count/time variants),
+  new `_middle_with_chips(title, chips)` helper, new
+  `_parse_evidence_chips(evidence)` parser that splits on `·`
+  and normalises *"-day gap"* / *"hours ago"* into compact chip
+  labels. Pure parsing — never invents data.
+- **EmptyCard.empty redesigned** at 210 px tall with the
+  directive's copy: headline *"Recall notices unfinished work."*,
+  body *"Work normally. Return later. / Recall fills itself."*,
+  and a soft *Show example* lavender pill that emits a new
+  `EmptyCard.show_example` Qt signal (stub — no engine wiring).
+  `EmptyCard.__init__` gained optional `height` +
+  `show_example_button` kwargs so the unchanged `offline()` /
+  `first_week()` factories still produce the compact card.
+- **Capture pipeline gained optional `subdir`.** `_render.py`'s
+  `render(...)` takes a `subdir=None` keyword; passing
+  `subdir="launcher-v2"` writes to `assets/screenshots/launcher-v2/`.
+  `Panel`'s default background flipped from `#13151b` to
+  `#ffffff` so captures render against the new launcher
+  backdrop. Capture scripts that need the historical dark
+  surface can still pass `bg=...` explicitly.
+- **Seven new launcher-v2 PNGs** in
+  `assets/screenshots/launcher-v2/`: `launcher-digest.png` (the
+  populated digest with chips + confidence badge),
+  `launcher-empty.png` (the new first-magic surface),
+  `launcher-loading.png`, `launcher-offline.png`,
+  `launcher-first-week.png`, `recovery-card.png` (the chip-row
+  recovery card), `recovery-card-focused.png` (with the lavender
+  focus ring). The historical dark-theme launcher PNGs at the
+  top level stay as the *before* set.
+- **[`docs/engineering/PHASE_6B_STATUS.md`](../engineering/PHASE_6B_STATUS.md)** —
+  receipt.
+
+### Changed — Phase 6B
+- `HOVER_LIFT_PX` 2.0 → 3.0 (still inside the directive's
+  *"hover lift: 4 px max"* rule).
+- `infra/scripts/capture/_render.py:Panel` default `bg` and
+  `radius` parameters: `#13151b` → `#ffffff`, 14 → 22.
+- `infra/scripts/capture/capture_launcher.py` and
+  `capture_recovery.py` updated to call
+  `render(..., subdir="launcher-v2")`.
+
+### Discovered — Phase 6B (deferred)
+- Wiring the live launcher's empty path to use `EmptyCard.empty()`
+  (currently the running launcher uses its own QLabel-based
+  empty widget; the redesigned `EmptyCard` lives in `cards.py`
+  and renders in screenshots only). Focused launcher refactor;
+  deferred to keep this phase's diff readable.
+- *Show example* button — live demo-seed integration. The
+  button + signal exist; the connection target is the live
+  empty path migration above.
+- Section rename to *Continue / Investigations / Recent returns
+  / Trust* — same as 6A; touches the canonical vocabulary doc.
+
+### Added — Phase 6A (First Magic)
+- **RecoveryCard confidence badge.** A small inline pill in the
+  meta column above the Resume affordance, in one of three
+  bands: *high* (lavender), *medium* (amber), *low* (grey).
+  Low-confidence cards keep the calmer `_StateDot` Resume
+  affordance instead of the full `_ResumePill` — a Resume CTA
+  on a hedged surface would over-promise. `RECOVERY_HEIGHT`
+  bumped 64 → 76 to fit the badge.
+- **`derive_recovery_confidence(n_targets)`** in
+  [`app/ui/cards.py`](../../app/ui/cards.py) — UI-side mapping
+  from candidate target count to band (≥ 4 → high, 2-3 →
+  medium, ≤ 1 → low). Pure display logic; no engine-side trust
+  field added (the directive's *No engine work* rule held).
+- **Softer EmptyCard copy.** Refreshed from instructional
+  ("Recall is ready. Work a little, then come back later…")
+  to trusting ("Recall fills itself. Work a little. Come back
+  later. What you can step back into will appear here.").
+- **Extension Connection drawer made collapsible.** Header
+  click toggles; `AnimatePresence`-wrapped body animates height
+  + opacity over `calmFast` (180 ms). Default expanded when
+  daemon is off, collapsed when healthy.
+- **MemoryList timeline labels.** Each row gained a small
+  mono-font age label on the right (*just now / 3m / 2h /
+  yesterday / 3d / 2w*). New optional `ts?: number` field on
+  `MemoryItem`; `fetchMemory` reads `e.ts` from the API. Events
+  without a `ts` render no label - never fabricated.
+- **[`docs/engineering/PHASE_6A_STATUS.md`](../engineering/PHASE_6A_STATUS.md)** —
+  receipt.
+
+### Changed — Phase 6A
+- `RecoveryCard` parameter rename: `high_trust: bool` →
+  `confidence: str` (values: high / medium / low). Capture
+  scripts `capture_launcher.py` + `capture_recovery.py`
+  updated. Back-compat not retained because the only callers
+  were inside the repo.
+- Capture mocks (`capture_extension.mjs` `MOCK` and
+  `MOCK_CAPTURING`) grew `ts` values on each event so the
+  deterministic extension screenshots render the new timeline
+  labels.
+
+### Discovered — Phase 6A (deferred)
+- Full launcher theme swap to warm white + lavender + glass
+  (major QSS rewrite; regression risk against the 15 existing
+  screenshots).
+- First-run *Show example* demo story (new launcher screen +
+  demo-mode dispatch path against `app/core/demo_seed.py`).
+- Recovery-card chip-row split (replacing evidence text with
+  per-count chip widgets).
+- Section rename to *Continue / Investigations / Recent returns
+  / Trust* (touches `docs/product/CONTINUITY_LANGUAGE.md`).
+
+### Added — Phase 5K (Alpha Reality)
+- **`alpha/users/` directory tree.** Five cohort folders
+  (`alpha-001` / `alpha-002` / `friends` / `builders` /
+  `students`) each with a `TEMPLATE.md`, plus a shared
+  `_TEMPLATE/status.json` schema the CLI copies. Per-tester
+  fields: handle / cohort / install_date / platform /
+  install_ok / install_minutes / day1 / day2 / day3 /
+  first_recovery / first_resume_ok / kept_using / drop_reason /
+  feedback_returned / notes. **Metadata only — never URLs,
+  filenames, queries, chat content.** Zero fake testers seeded.
+  Boundary documented in
+  [`alpha/users/README.md`](../../alpha/users/README.md).
+- **`app/core/alpha_cli.py`** — three-subcommand cohort CLI
+  (~280 LOC, stdlib only).
+  - `recall alpha create <handle> --cohort <name>` copies the
+    JSON template into `alpha/users/<cohort>/<handle>/`, fills
+    `handle` + `cohort` + `install_date: <today>`. Refuses to
+    overwrite; rejects PII-shaped handles (any with `@`, spaces,
+    or > 24 chars); rejects unknown cohorts.
+  - `recall alpha status [--cohort <name>]` prints one calm row
+    per tester with a compact `YYY|R3`-style day/recovery
+    summary plus a totals footer (`returning`, `first-recovery
+    seen`, `drops`).
+  - `recall alpha report [--cohort <name>]` aggregates: users,
+    returning, first-recovery, issues (install fails + wrong
+    recoveries + drops), blockers (drop_reason counts),
+    platforms, plus a directive-target check (5 users / 3
+    recoveries / 2 returning).
+- **`recall.py` fast-path dispatch** — `recall alpha …` routes
+  through `app.core.alpha_cli` before the launcher import,
+  matching the existing `stats` / `doctor` / `founder` /
+  `repair` / `reset` / `reinstall-check` pattern.
+- **[`alpha/ALPHA_FEEDBACK_V2.md`](../../alpha/ALPHA_FEEDBACK_V2.md)** —
+  the tightened intake form. Six rows: moment of delight /
+  confusion / wrong recovery / missed recovery / install pain /
+  keep-remove. Each row mapped to a concrete artifact the
+  founder must update if the row is filled (e.g. *wrong
+  recovery* → a row in
+  [`recovery_journal.json`](../../alpha/recovery_journal.json)
+  with `wrong: true`). Supersedes v1 for cohorts opened
+  post-5K; v1 stays live for already-mid-week testers.
+- **[`docs/trust/ALPHA_MATRIX.md`](../trust/ALPHA_MATRIX.md)** —
+  install-validation matrix. 5 slots × 7 columns (install time
+  / doctor / extension / first capture / first recovery /
+  resume / status). 3 Windows VM rows + 1 macOS Intel +
+  1 macOS Apple Silicon, all `unknown` today. Each row maps to
+  one walkthrough of `CLEAN_MACHINE_RUN.md` (Windows) or
+  `MAC_OWNER_NEEDED.md` (Mac).
+- **Extension Settings → *Connection* drawer.** New top-of-
+  Settings card in
+  [`SettingsPanel.tsx`](../../apps/extension/ui/src/components/SettingsPanel.tsx).
+  Real-data: a breathing status dot (same vocabulary as
+  `DaemonPulse`), `health.ingestedTotal` + `health.eventsToday`
+  counts in mono font, a *Re-probe* button that re-runs the
+  popup's existing `/v1/health` fetch, and a conditional *Open
+  Recall* button (visible only when daemon is down) that routes
+  through `openRecall()`. Three new props on `SettingsPanel`:
+  `connection`, `health`, `onRetry`. Extension build: 286.85 kB
+  JS / 91.58 kB gzipped (+1.81 kB).
+- **[`docs/engineering/PHASE_5K_STATUS.md`](../engineering/PHASE_5K_STATUS.md)** —
+  the phase close-out.
+
+### Discovered — Phase 5K (not closed)
+- **Zero alpha-001 testers enrolled.** The infrastructure is now
+  ready; the distribution channel has not opened. The directive's
+  success line (5 humans, 3 recoveries, real friction, real trust
+  signal) is external-dependent.
+- **Control room: alpha-growth / drop-reasons / install-success
+  cards** named in the directive but not built. The CLI's `recall
+  alpha report` already serves the same data in a terminal-
+  friendly form; the Next.js dashboard work is deferred until
+  cohort data exists to render.
+- **Timeline chips + `correct_silence` counter** still deferred
+  (same reasons as 5I + 5J — engine surface unchanged).
+- **Launcher paper cuts** — none surfaced this phase without
+  visual feedback on a running launcher. Documented as
+  *nothing to fix* rather than fabricated polish.
+
+### Added — Phase 5J (Installer Shrink Execution)
+- **`Recall-Setup-lite.exe`** — new lite installer at
+  `dist/installer/Recall-Setup-lite.exe`. **216.2 MB** (down
+  44.6 MB from the 5F full's 260.8 MB). SHA-256 `F18D19FE7EB1CCD58C7260550F9DA6ACD1F70BAF3405A3200C0155BBE4513ED1`.
+  Bundle expanded on disk: **783.3 MB** (down 187 MB / 19% from
+  the 5F full's 970 MB). PyQt6 alone dropped 167 MB (217 → 50 MB)
+  via the unused-modules submodule exclude; pyarrow + imageio_ffmpeg
+  fully removed.
+- **`Recall-Setup-full.exe`** — the 5F historical artifact stays
+  side-by-side, renamed from the legacy `Recall-Setup.exe`. SHA
+  recorded in [`INSTALL_PROOF_WINDOWS.md`](../trust/INSTALL_PROOF_WINDOWS.md);
+  both variants now reported by `recall doctor` in one GREEN row.
+- **`recall.spec`** — new `TIER_A_EXCLUDES` list (24 Python
+  submodule excludes: `pyarrow`, `imageio_ffmpeg`, the 14 unused
+  PyQt6 submodules — `Quick` / `Qml` / `Quick3D` / `Pdf` /
+  `Designer` / `Multimedia` / `WebEngine*` / `Charts` /
+  `DataVisualization` / `SerialPort` / `Sensors` / `Bluetooth` /
+  `Nfc` / `Positioning` / `Location` / `TextToSpeech` — plus the
+  existing dev-tool excludes). New `TIER_A_BIN_PATTERNS` list (19
+  patterns) drives a post-Analysis binary filter that drops any
+  Qt6 DLL / FFmpeg codec the Python excludes would have missed.
+  Build log carries a one-line receipt: *"binaries 376 → 374
+  (2 dropped); datas 5837 → 5837 (0 dropped)"* — the Python
+  excludes did the heavy lifting.
+- **`infra/packaging/windows/recall.iss`** — `OutputBaseFilename`
+  changed to `Recall-Setup-lite`; the historical full installer's
+  SHA + size are noted inline as the comparison baseline.
+- **`app/ui/launcher_digest.py`** — second launcher slice. The
+  `DIGEST_RECENT_MAX` / `DIGEST_RESURFACED_MAX` /
+  `DIGEST_CONTINUE_MAX` / `DIGEST_THREADS_MAX` /
+  `DIGEST_RECOVERY_MAX` / `DIGEST_RECENT_QUERIES_MAX` /
+  `DIGEST_RECENT_ACTIVITY_MAX` / `RESURFACED_MIN_AGE_DAYS`
+  constants + the `digest_labels()` time-of-day helper moved out
+  of the 2.5 KLOC `launcher.py` into a stdlib-only sibling. The
+  launcher imports them back so every existing
+  `from app.ui.launcher import Launcher` keeps working.
+- **Extension `ResumePreview`** — a mono-font caption above the
+  Resume button on `ContinueCard` showing up to four unique
+  hosts the click is about to reopen. Real data from
+  `recovery.urls` only; rendered as `<host>  ·  <host>  ·
+  <host>  ·  +N more` when the candidate has more URLs than
+  fit. No placeholders — dropped silently when the recovery has
+  zero URLs (file-only candidate).
+- **[`docs/engineering/INSTALL_REDUCTION_REPORT.md`](../engineering/INSTALL_REDUCTION_REPORT.md)** —
+  the Tier A execution receipt. Before/after table per subtree
+  (with measured bytes), the 9-surface smoke matrix, and the
+  honest *not-verified-this-phase* list (install time, daemon
+  on a clean port, `_smoke_api.py` against the installed bundle).
+- **[`docs/engineering/PHASE_5J_STATUS.md`](../engineering/PHASE_5J_STATUS.md)** —
+  the phase close-out.
+
+### Changed — Phase 5J
+- **`app/core/doctor.py`** — `_check_installer_state` now
+  recognises `Recall-Setup-lite.exe` + `Recall-Setup-full.exe`
+  (alongside the historical `Recall-Setup.exe`) and reports
+  every present variant in one GREEN row. Doctor's installer
+  line reads:
+  `Recall-Setup-lite.exe (216.2 MB) / Recall-Setup-full.exe (260.8 MB)`.
+
+### Discovered — Phase 5J (and not closed)
+- **Bundle still 783 MB; installer still 216 MB.** Directive
+  targets were ≤ 660 / ≤ 180 MB. The gap closes with `pandas`
+  exclude (~28 MB total transitive) + `torch+cpu` swap (~140 MB).
+  Both deferred to Phase 5K because they need a clean-VM smoke
+  to verify chromadb survives without arrow + pandas isn't on
+  the runtime path.
+- **Install wall time on a clean profile not measured.** The
+  ≤ 45 s target requires a wipe-and-reinstall dance that was
+  permission-denied this phase. Closed by a maintainer with VM
+  access timing `Recall-Setup-lite.exe /VERYSILENT /LOG=...`.
+
+### Added — Phase 5I (Install Speed + Real World Loop)
+- **`infra/scripts/audit_install_size_v2.py`** — V2 install-size
+  audit. Cross-references `install.log` against site-packages so
+  every subtree row carries a real byte count instead of a wheel
+  estimate. Produces the top-25 subtree report + top-20 single
+  files report. Stdlib only, ~1.5 s runtime.
+- **[`docs/engineering/INSTALL_SIZE_AUDIT_V2.md`](../engineering/INSTALL_SIZE_AUDIT_V2.md)** —
+  real-byte breakdown of the 970 MB bundle. Names the elephants:
+  `torch_cpu.dll` 265.8 MB; `imageio_ffmpeg` 87.7 MB FFmpeg
+  (Recall has no media path); `pyarrow` 88.6 MB; ~60 MB of unused
+  PyQt6 Quick / Qml / Designer / Pdf / opengl32sw / avcodec.
+  Three reduction tiers: A (PyInstaller excludes alone, ~180 MB
+  installer) / A+B (`torch+cpu`, ~150 MB) / A+C (ONNX runtime,
+  ~50 MB).
+- **[`docs/engineering/MODEL_STRATEGY.md`](../engineering/MODEL_STRATEGY.md)** —
+  three concrete routes from torch + transformers to a smaller
+  embedding stack. Recommends Tier B (ONNX runtime + bundled
+  FP32 model; ~80 LOC swap in `app/core/embeddings.py`). Includes
+  the int8 quantisation follow-up (~22 MB model vs ~80 MB FP32).
+- **[`docs/engineering/SPLIT_DISTRIBUTION.md`](../engineering/SPLIT_DISTRIBUTION.md)** —
+  four packs (Core / Retrieval Pack / Dev Tools / Demo Seed) +
+  two install paths (Minimal 30 MB / Full ~110 MB). Inno Setup
+  `[Components]` mapping; on-disk layout the engine reads to
+  detect whether semantic search is available.
+- **[`alpha/FIRST_72_HOURS.md`](../../alpha/FIRST_72_HOURS.md)** —
+  hour-by-hour cohort journey map. Plots the trust / confusion /
+  drop-risk / aha curve from minute-0 install through the Day 3+
+  resume click. Pairs with `ALPHA_001_RUNBOOK.md` (founder view)
+  and `SAMPLE_WORKFLOW.md` (cohort view).
+- **`app/ui/launcher_anims.py`** — first slice extracted from
+  `app/ui/launcher.py` (2.5 KLOC). Contains
+  `play_digest_stagger_reveal(launcher)`. The launcher method
+  becomes a one-line call. Net: launcher.py is ~50 lines shorter;
+  the eventual `app/ui/launcher/` package layout has its first
+  resident.
+- **Extension `1` quick-resume hotkey.** Pressing `1` (no
+  modifier) fires `onResume` on the visible recovery card. The
+  Resume button shows a small `1` indicator with
+  `aria-keyshortcuts="1"`. Handler skips when focus is in an
+  input field (defensive).
+- **Extension investigation surface chips.** `InvestigationCard`
+  shows up to four small tags listing the *surface types* an
+  investigation has touched (tabs / searches / chats / files).
+  Real data from `investigation.surfaces` only.
+- **[`docs/engineering/PHASE_5I_STATUS.md`](../engineering/PHASE_5I_STATUS.md)** —
+  the receipt for the phase.
+
+### Changed — Phase 5I
+- **`app/ui/launcher.py`** — dropped three Qt6 imports
+  (`QEasingCurve`, `QPropertyAnimation`, `QGraphicsOpacityEffect`)
+  and the `MOTION_NORMAL_MS` import that moved with the slice.
+  `_show_digest` now calls `play_digest_stagger_reveal(self)`
+  instead of the 40-line inline method.
+- **`docs/engineering/OPEN_PROBLEMS.md`** — Performance section
+  rewritten against the V2 audit's three reduction tiers (concrete
+  saving / risk / closure-path columns).
+
+### Added — Phase 5H² (Friction Kill)
+- **`app/core/install_repair.py`** — three-command install-side
+  CLI. `recall repair` probes config dir / instance lock /
+  `recall://` protocol / autostart and fixes the non-GREEN ones
+  (with `--dry-run` to preview). `recall reset` clears derived
+  caches (`resurfacing.json` / `threads.json` / `evolution.json` /
+  `instance.lock`); `--full` adds `events/` + `chroma/` +
+  `config.json` with a confirm prompt. `recall reinstall-check`
+  is a read-only "what survives a reinstall" verdict. All ASCII,
+  GREEN / YELLOW / RED, never raises.
+- **`recall.py` fast-path dispatch** — added `repair` / `reset` /
+  `reinstall-check` next to the existing `stats` / `doctor` /
+  `founder` triad so a tester can run any of them from a Command
+  Prompt without booting the launcher.
+- **Extension `DaemonPulse`** — the 6 px dot in the popup header
+  now breathes (opacity 0.5 → 1 → 0.5 over 1.6 s, looping) when
+  the daemon is `connected`. Still when not. A single passive
+  live-signal, no badges, no notifications.
+- **Launcher `_play_digest_stagger_reveal`** — one-shot cascade
+  on the first digest render per launcher instance. Each visible
+  section (recovery → investigations → resurface → recent
+  queries → recent activity → resurfaced) fades from opacity 0
+  → 1 over `MOTION_NORMAL_MS` (180 ms) with a 60 ms inter-row
+  stagger. `QGraphicsOpacityEffect` + `QPropertyAnimation`; refs
+  held on `self` so Qt's GC does not eat them mid-flight.
+- **[`docs/engineering/PHASE_5H_STATUS.md`](../engineering/PHASE_5H_STATUS.md)** —
+  the receipt for the Friction Kill iteration.
+- **[`docs/engineering/FRICTION_FIXED.md`](../engineering/FRICTION_FIXED.md)** —
+  the cumulative ledger: 40 named frictions fixed across Phase 5F
+  → here, grouped install / doctor / extension / launcher / code
+  hygiene.
+- **[`docs/engineering/OPEN_PROBLEMS.md`](../engineering/OPEN_PROBLEMS.md)** —
+  the still-open list: 26 items, 16 *accept-by-design*, 10 real
+  engineering with named closure paths.
+
+### Fixed — Phase 5H²
+- **`repair --dry-run` summary line.** The pre-fix codepath
+  always reported "All install-side checks GREEN" in dry-run
+  mode because the worst-state tracker only updated when fixes
+  ran. Replaced with a `_bump` closure that updates on the
+  probe verdict when `dry_run or fix is None`.
+
 ### Added — Phase 5H (Alpha Cohorts + Friction Removal)
 - **Extension popup state machine.** `PopupState` (8 values:
   `loading` / `reconnecting` / `offline` / `disconnected` /

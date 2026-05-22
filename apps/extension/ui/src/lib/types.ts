@@ -41,7 +41,11 @@ export type PopupState =
   | "empty"
   | "capturing"
   | "investigations"
-  | "recovery";
+  | "recovery"
+  // Phase 6D — demo overlay. Engine is empty AND demo_mode is
+  // `active`; the body renders the canned `WebSocket / Proposal
+  // / Research` story on top of a quiet trust banner.
+  | "demo";
 
 export interface Health {
   ok: boolean;
@@ -78,6 +82,10 @@ export interface MemoryItem {
   label: string;
   detail: string;
   url?: string;
+  /** Event timestamp (epoch seconds). Used by the Phase 6A timeline
+   *  label; absent on rows where the API omits `ts` (defensive
+   *  default is treated as "unknown time"). */
+  ts?: number;
 }
 
 export interface Settings {
@@ -93,3 +101,26 @@ export const DEFAULT_SETTINGS: Settings = {
   captureChats: true,
   paused: false,
 };
+
+// ── Phase 6D — demo overlay ────────────────────────────────────────────
+
+/** State machine for the first-run *Show example* demo. */
+export type DemoStateKind =
+  | "disabled"
+  | "available"
+  | "active"
+  | "dismissed"
+  | "completed";
+
+/** The full demo payload the daemon returns when state === "active". */
+export interface DemoPayload {
+  recovery: Recovery;
+  investigations: Investigation[];
+  timeline: MemoryItem[];
+  trust: { bannerTitle: string; bannerBody: string };
+}
+
+export interface DemoState {
+  state: DemoStateKind;
+  payload: DemoPayload | null;
+}

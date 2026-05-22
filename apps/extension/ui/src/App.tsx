@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  dismissDemo,
+  fetchDemoState,
   fetchHealth,
   fetchInvestigations,
   fetchMemory,
@@ -12,10 +14,11 @@ import {
   saveSettings,
   wasEverConnected,
 } from "./lib/api";
-import { bodyState, calm, calmFast, slideView } from "./lib/motion";
+import { bodyState, calm, calmFast, fadeExpand, slideView, staggered } from "./lib/motion";
 import {
   DEFAULT_SETTINGS,
   type ConnectionState,
+  type DemoState,
   type Health,
   type Investigation,
   type MemoryItem,
@@ -25,6 +28,7 @@ import {
 } from "./lib/types";
 import { ContinueCard } from "./components/ContinueCard";
 import { DebugStrip } from "./components/DebugStrip";
+import { DemoBanner } from "./components/DemoBanner";
 import { Icon } from "./components/icons";
 import { InvestigationCard } from "./components/InvestigationCard";
 import { MemoryList } from "./components/MemoryList";
@@ -66,6 +70,11 @@ export function App() {
   // Phase 5I: DebugStrip is hidden by default and toggled with Alt+D.
   // Persisted in chrome.storage so power-users keep it on across opens.
   const [debugVisible, setDebugVisible] = useState(false);
+  // Phase 6D — demo overlay state. `null` while in flight; otherwise
+  // the daemon's current view of `~/.recall/demo.json`. Re-fetched on
+  // each `load()` so the auto-dismiss-on-real-ingest transition lands
+  // smoothly on the next popup open.
+  const [demo, setDemo] = useState<DemoState | null>(null);
 
   const load = useCallback(async (reconnect = false) => {
     if (!isOnline()) {
@@ -81,15 +90,29 @@ export function App() {
     setHealth(h);
     markConnected();
     setEverConnected(true);
-    const [rec, inv, mem] = await Promise.all([
+    const [rec, inv, mem, dem] = await Promise.all([
       fetchRecovery(),
       fetchInvestigations(),
       fetchMemory(),
+      fetchDemoState(),
     ]);
     setRecovery(rec);
     setInvestigations(inv);
     setMemory(mem);
+    setDemo(dem);
     setConnection("connected");
+  }, []);
+
+  // Phase 6D — refresh just the demo slice. Called by the EmptyState's
+  // *Show example* button so the overlay appears without a full
+  // reload that would refetch health / recovery / threads.
+  const reloadDemo = useCallback(async () => {
+    setDemo(await fetchDemoState());
+  }, []);
+
+  const onDemoDismiss = useCallback(async () => {
+    await dismissDemo();
+    setDemo(await fetchDemoState());
   }, []);
 
   useEffect(() => {
@@ -105,14 +128,13 @@ export function App() {
     }
   }, [load]);
 
-  // Alt+D toggles the DebugStrip. Captured at the window level so the
-  // shortcut works no matter where focus is inside the popup. Listener
-  // is cleaned up on unmount (popup close).
+  // Alt+D toggles the DebugStrip. The "1" hotkey fires Resume on the
+  // visible recovery card (Phase 5I quick-resume). Both captured at
+  // the window level so they work no matter where focus is inside the
+  // popup; both cleaned up on unmount.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      // altKey is the platform-correct modifier on Win/Linux; on
-      // macOS the same physical key is `Option`, which also reports
-      // altKey true. `code === "KeyD"` is layout-independent.
+      // Alt+D — toggle debug strip.
       if (e.altKey && (e.code === "KeyD" || e.key.toLowerCase() === "d")) {
         e.preventDefault();
         setDebugVisible((v) => {
@@ -122,11 +144,26 @@ export function App() {
           }
           return next;
         });
+        return;
+      }
+      // "1" — quick-resume the recovery card if one is showing.
+      // Modifier-less; skipped when the user is typing in a real
+      // input (the popup currently has none, but the guard is cheap).
+      if (
+        !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey &&
+        e.key === "1" &&
+        !(e.target instanceof HTMLInputElement) &&
+        !(e.target instanceof HTMLTextAreaElement)
+      ) {
+        if (recovery) {
+          e.preventDefault();
+          recovery.urls.forEach(openTab);
+        }
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [recovery]);
 
   const onSettingsChange = useCallback((next: Settings) => {
     setSettings(next);
@@ -160,6 +197,9 @@ export function App() {
             settings={settings}
             onChange={onSettingsChange}
             onBack={() => setView("main")}
+            connection={connection}
+            health={health}
+            onRetry={() => load(true)}
           />
         </motion.div>
       </AnimatePresence>
@@ -169,7 +209,7 @@ export function App() {
   const state: PopupState = previewMissing
     ? "disconnected"
     : (forced as PopupState | null) ??
-      derivePopupState(connection, health, recovery, investigations, memory);
+      derivePopupState(connection, health, recovery, investigations, memory, demo);
 
   return (
     <motion.div
@@ -180,7 +220,11 @@ export function App() {
       transition={calm}
       style={{ display: "flex", flexDirection: "column", flex: 1 }}
     >
-      <Header connection={connection} onSettings={() => setView("settings")} />
+      <Header
+        connection={connection}
+        todayCount={health?.eventsToday ?? 0}
+        onSettings={() => setView("settings")}
+      />
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={state}
@@ -199,8 +243,11 @@ export function App() {
             memory={memory}
             paused={settings.paused}
             everConnected={effEverConnected}
+            demo={demo}
             onResume={onResume}
             onRetry={() => load(true)}
+            onDemoActivate={reloadDemo}
+            onDemoDismiss={onDemoDismiss}
           />
         </motion.div>
       </AnimatePresence>
@@ -247,6 +294,7 @@ export function derivePopupState(
   recovery: Recovery | null,
   investigations: Investigation[],
   memory: MemoryItem[],
+  demo: DemoState | null = null,
 ): PopupState {
   if (connection === "offline") return "offline";
   if (connection === "loading") return "loading";
@@ -255,6 +303,10 @@ export function derivePopupState(
   if (recovery) return "recovery";
   if (investigations.length > 0) return "investigations";
   if (health.ingestedTotal > 0 || memory.length > 0) return "capturing";
+  // Phase 6D — at this point the engine is empty. The demo overlay
+  // wins only when the user clicked Show example AND the daemon
+  // has not already auto-dismissed it on a real ingest.
+  if (demo?.state === "active" && demo.payload) return "demo";
   return "empty";
 }
 
@@ -274,11 +326,51 @@ function readForcedState(): string | null {
 
 // ── header ──────────────────────────────────────────────────────────
 
+/**
+ * A 6 px dot next to the wordmark. When the daemon is connected it
+ * breathes (opacity 0.5 → 1 → 0.5 over 1.6 s, looping) so the user
+ * has a passive live-signal that capture is on. When disconnected /
+ * reconnecting / offline / loading it stops pulsing - a still dot
+ * is the correct visual for "not flowing right now".
+ */
+function DaemonPulse({
+  connection,
+  color,
+}: {
+  connection: ConnectionState;
+  color: string;
+}) {
+  const alive = connection === "connected";
+  return (
+    <motion.span
+      title={connection}
+      role="status"
+      aria-label={`daemon ${connection}`}
+      animate={alive ? { opacity: [0.5, 1, 0.5] } : { opacity: 1 }}
+      transition={
+        alive
+          ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
+          : { duration: 0 }
+      }
+      style={{
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        background: color,
+        marginLeft: 2,
+      }}
+    />
+  );
+}
+
+
 function Header({
   connection,
+  todayCount,
   onSettings,
 }: {
   connection: ConnectionState;
+  todayCount: number;
   onSettings: () => void;
 }) {
   const dot =
@@ -287,6 +379,8 @@ function Header({
       : connection === "disconnected" || connection === "reconnecting"
         ? "var(--warn)"
         : "var(--ink-4)";
+
+  const showCount = connection === "connected" && todayCount > 0;
 
   return (
     <header
@@ -309,17 +403,43 @@ function Header({
       <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: "-0.1px" }}>
         Recall
       </span>
-      <span
-        title={connection}
-        style={{
-          width: 6,
-          height: 6,
-          borderRadius: 3,
-          background: dot,
-          marginLeft: 2,
-        }}
-      />
+      <DaemonPulse connection={connection} color={dot} />
+      {/* Phase 6C - small "N today" count next to the pulse. Real data:
+          health.eventsToday from /v1/health. Shown only when daemon is
+          connected and the count is non-zero; otherwise the slot is
+          quiet. */}
+      {showCount && (
+        <motion.span
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          aria-label={`${todayCount} events today`}
+          style={{
+            marginLeft: 4,
+            fontSize: 10.5,
+            color: "var(--ink-4)",
+            fontFamily:
+              "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+            letterSpacing: "0.2px",
+          }}
+        >
+          {todayCount.toLocaleString()} today
+        </motion.span>
+      )}
       <span style={{ flex: 1 }} />
+      {/* Phase 6C repair icon. Opens Settings (which holds the Phase
+          5K Connection drawer + repair affordances). The icon is the
+          left of the two icon-buttons. */}
+      <motion.button
+        whileHover={{ y: -1 }}
+        transition={calm}
+        onClick={onSettings}
+        aria-label="Repair"
+        title="Connection + repair"
+        style={{ display: "flex", color: "var(--ink-3)", padding: 2 }}
+      >
+        <Icon.wrench size={16} />
+      </motion.button>
       <motion.button
         whileHover={{ rotate: 35 }}
         transition={calm}
@@ -343,8 +463,11 @@ function Body({
   memory,
   paused,
   everConnected,
+  demo,
   onResume,
   onRetry,
+  onDemoActivate,
+  onDemoDismiss,
 }: {
   state: PopupState;
   health: Health | null;
@@ -353,8 +476,11 @@ function Body({
   memory: MemoryItem[];
   paused: boolean;
   everConnected: boolean;
+  demo: DemoState | null;
   onResume: () => void;
   onRetry: () => void;
+  onDemoActivate: () => void;
+  onDemoDismiss: () => void;
 }) {
   switch (state) {
     case "loading":
@@ -368,7 +494,39 @@ function Body({
         <DisconnectedState everConnected={everConnected} onRetry={onRetry} />
       );
     case "empty":
-      return <EmptyState />;
+      return (
+        <EmptyState
+          onDemoStarted={onDemoActivate}
+          onDemoDeclined={onDemoActivate}
+        />
+      );
+    case "demo":
+      /* Phase 6D — render the demo overlay using the same connected
+         body as a real populated popup. The payload's `recovery`,
+         `investigations`, and `timeline` plug into the existing
+         render path; the only addition is the DemoBanner up top
+         (trust statement + Dismiss). */
+      return (
+        <ConnectedBody
+          recovery={demo?.payload?.recovery ?? null}
+          investigations={demo?.payload?.investigations ?? []}
+          memory={demo?.payload?.timeline ?? []}
+          paused={paused}
+          eventsToday={0}
+          onResume={() => {
+            demo?.payload?.recovery.urls.forEach(openTab);
+          }}
+          banner={
+            demo?.payload?.trust ? (
+              <DemoBanner
+                title={demo.payload.trust.bannerTitle}
+                body={demo.payload.trust.bannerBody}
+                onDismiss={onDemoDismiss}
+              />
+            ) : null
+          }
+        />
+      );
     case "capturing":
       return (
         <CapturingState
@@ -404,6 +562,7 @@ function ConnectedBody({
   paused,
   eventsToday,
   onResume,
+  banner,
 }: {
   recovery: Recovery | null;
   investigations: Investigation[];
@@ -411,14 +570,30 @@ function ConnectedBody({
   paused: boolean;
   eventsToday: number;
   onResume: () => void;
+  /* Phase 6D — optional trust banner rendered above the Continue
+     card. Used by the demo overlay to declare "Example data —
+     Nothing here came from your device." */
+  banner?: React.ReactNode;
 }) {
   let index = 0;
   return (
     <div className="scroll-area" style={{ flex: 1, padding: "20px 0 8px" }}>
+      {banner}
       {recovery && (
-        <Section label="Continue" index={index++}>
+        /* Phase 6C: the Continue card is the popup's hero, so we drop
+           the outer Section's "CONTINUE" label — the card already
+           owns that header with its own accent dot. Animation matches
+           a normal Section so the entry stagger is unchanged. */
+        <motion.section
+          variants={fadeExpand}
+          initial="hidden"
+          animate="show"
+          transition={staggered(index++)}
+          className="section"
+          style={{ marginBottom: "var(--gap-section)" }}
+        >
           <ContinueCard recovery={recovery} onResume={onResume} />
-        </Section>
+        </motion.section>
       )}
 
       {investigations.length > 0 && (
@@ -427,12 +602,21 @@ function ConnectedBody({
           count={`${investigations.length}`}
           index={index++}
         >
-          <div className="card" style={{ overflow: "hidden" }}>
-            {investigations.map((inv, i) => (
+          {/* Phase 6C: horizontal pill strip — max four pills, never
+              a full feed. Wraps cleanly inside the 360 px popup. */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 7,
+              padding: "2px 0",
+            }}
+          >
+            {investigations.slice(0, 4).map((inv, i) => (
               <InvestigationCard
                 key={inv.id}
                 investigation={inv}
-                last={i === investigations.length - 1}
+                index={i}
               />
             ))}
           </div>
@@ -440,7 +624,7 @@ function ConnectedBody({
       )}
 
       {memory.length > 0 && (
-        <Section label="Browser memory" index={index++}>
+        <Section label="Today" index={index++}>
           <MemoryList items={memory} />
         </Section>
       )}

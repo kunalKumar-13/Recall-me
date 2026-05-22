@@ -115,3 +115,44 @@ Success is one sentence, from a real user:
 > that?"*
 
 Everything in this repo is in service of that sentence.
+
+---
+
+## 9. Phase 6G — the public-alpha front door
+
+Phase 6G turned the alpha-readiness path into a *public* front
+door. The marketing site at `apps/web/` carries the same nine-
+section story this doc names, in the order a stranger reads:
+
+1. **Hero** — *Recall notices unfinished work. / Return later. /
+   Continue instantly.*
+2. **Problem** — the context-loss tax.
+3. **HowItWorks** — capture → group → ask → restore.
+4. **Story** — three real-shape investigations (the same three
+   the demo overlay shows: WebSocket retry debugging /
+   Healthcare pitch — proposal draft / RLHF reward shaping).
+5. **Features** — what the engine exposes.
+6. **ThreadConstellation** — threads, connected.
+7. **Screens** — gallery of launcher-v2 + extension-v2 + demo
+   captures.
+8. **Trust** — the five rules from
+   [`docs/product/TRUST.md`](../product/TRUST.md): local only /
+   no cloud / no telemetry / counts only / export only.
+9. **Download** — four artifacts in one calm grid (Windows lite /
+   Windows full / macOS preview / browser extension).
+10. **FAQ** — the open questions.
+11. **FinalCTA** — calm close.
+
+Cross-references for the doc trio Phase 6G added:
+
+- [`docs/product/TRUST.md`](../product/TRUST.md) — the public
+  trust statement that the marketing site's `Trust` section
+  renders verbatim.
+- [`docs/release/DOWNLOAD_GUIDE.md`](../release/DOWNLOAD_GUIDE.md)
+  — every install path the `Download` section links to.
+- [`docs/release/DEMO_VIDEO_SCRIPT.md`](../release/DEMO_VIDEO_SCRIPT.md)
+  — the 60-second placeholder script the `Watch demo` button
+  will link to once recorded.
+
+Phase 6G's own engineering receipt:
+[`PHASE_6G_STATUS.md`](../engineering/PHASE_6G_STATUS.md).

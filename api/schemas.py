@@ -409,3 +409,119 @@ class HealthResponse(BaseModel):
     ingested_total: int = 0
     dropped_total: int = 0
     events_dir: str = ""
+
+
+# --------------------------------------------------------------- demo (Phase 6D)
+
+
+class DemoTimelineEventOut(BaseModel):
+    """One row in the demo overlay's *Today* rail. Shape mirrors
+    the fields the extension's `MemoryList` reads (`kind` / `ts` /
+    `label` / `detail`) so the demo path reuses the same renderer
+    as the real one."""
+
+    kind: str
+    ts: float
+    label: str
+    detail: str = ""
+
+
+class DemoRecoveryOut(BaseModel):
+    """The hero Continue card the demo overlays on the empty state.
+    Pre-shaped so the launcher + extension can render it as-is —
+    no engine fields, no scoring, just the surfaces a real
+    recovery candidate would produce."""
+
+    id: str
+    thread_id: str
+    title: str
+    preview_caption: str
+    confidence: Literal["high", "medium", "low"] = "high"
+    tab_count: int = 0
+    file_count: int = 0
+    gap_label: str = ""
+    urls: List[str] = Field(default_factory=list)
+    files: List[str] = Field(default_factory=list)
+    chips: List[str] = Field(default_factory=list)
+
+
+class DemoInvestigationOut(BaseModel):
+    id: str
+    title: str
+    timeline_summary: str = ""
+    surface_types: List[str] = Field(default_factory=list)
+
+
+class DemoTrustOut(BaseModel):
+    banner_title: str
+    banner_body: str
+
+
+class DemoStateResponse(BaseModel):
+    """Response body for `GET /v1/demo/state` + the three mutating
+    POST endpoints. The `payload` is omitted when state ≠ `active`
+    so consumers don't render demo content by accident."""
+
+    state: Literal["disabled", "available", "active", "dismissed", "completed"]
+    payload: Optional["DemoPayloadOut"] = None
+
+
+class DemoPayloadOut(BaseModel):
+    recovery: DemoRecoveryOut
+    investigations: List[DemoInvestigationOut]
+    timeline: List[DemoTimelineEventOut]
+    trust: DemoTrustOut
+    generated_at: int
+
+
+# --------------------------------------------------------------- daily loop (Phase 6F)
+
+
+class LoopBumpResponse(BaseModel):
+    """Generic ack for the /v1/loop/* counter routes. The body is
+    the *post-bump* counter value so a caller can spot a regression
+    (e.g. counter went down because the file was deleted) without
+    a follow-up GET."""
+
+    bin: str
+    today: int
+
+
+class LoopBumpRequest(BaseModel):
+    """Optional body for `/v1/loop/bump`. Lets a single helper hit
+    any of the six bins instead of one route per bin."""
+
+    bin: Literal[
+        "day_started",
+        "investigations_opened",
+        "recoveries_shown",
+        "recoveries_used",
+        "returns",
+        "resume_success",
+    ]
+
+
+class LoopSignalsOut(BaseModel):
+    continuity_restored: Optional[int] = None
+    return_rate: Optional[int] = None
+    resume_quality: Optional[int] = None
+
+
+class LoopDayOut(BaseModel):
+    date: str
+    day_started: int = 0
+    investigations_opened: int = 0
+    recoveries_shown: int = 0
+    recoveries_used: int = 0
+    returns: int = 0
+    resume_success: int = 0
+
+
+class LoopSummaryResponse(BaseModel):
+    today: LoopDayOut
+    yesterday: LoopDayOut
+    window: LoopDayOut
+    window_days: int = 7
+    days_with_any_activity: int = 0
+    signals: LoopSignalsOut
+    green_yellow_red: dict[str, str]

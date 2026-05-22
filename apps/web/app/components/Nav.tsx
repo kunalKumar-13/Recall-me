@@ -13,10 +13,13 @@ type NavItem = {
 };
 
 const NAV_LINKS: NavItem[] = [
+  // Phase 6G — narrative-order links, matching the page sections.
+  { href: "#problem", label: "The problem" },
   { href: ANCHORS.how, label: "How it works" },
-  { href: ANCHORS.features, label: "Features" },
-  { href: ANCHORS.privacy, label: "Privacy" },
-  { href: LINKS.docs, label: "Docs", external: true },
+  { href: "#story", label: "Stories" },
+  { href: "#screens", label: "Screens" },
+  { href: ANCHORS.privacy, label: "Trust" },
+  { href: ANCHORS.download, label: "Download" },
   { href: LINKS.github, label: "GitHub", external: true },
 ];
 
@@ -90,9 +93,7 @@ export function Nav() {
           </a>
 
           <a
-            href={LINKS.release}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={ANCHORS.download}
             className="
               hidden sm:inline-flex items-center gap-2
               h-9 px-3.5 rounded-lg
@@ -103,7 +104,7 @@ export function Nav() {
             "
           >
             <WindowsGlyph className="w-3.5 h-3.5" />
-            Download for Windows
+            Download alpha
           </a>
 
           {/* Mobile hamburger */}
@@ -163,9 +164,7 @@ export function Nav() {
               Sign in
             </a>
             <a
-              href={LINKS.release}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={ANCHORS.download}
               onClick={() => setOpen(false)}
               className="
                 mt-2 inline-flex items-center justify-center gap-2
@@ -175,7 +174,7 @@ export function Nav() {
               "
             >
               <WindowsGlyph className="w-3.5 h-3.5" />
-              Download for Windows
+              Download alpha
             </a>
           </div>
         </div>

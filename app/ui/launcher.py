@@ -73,6 +73,7 @@ from ..core.resurfacing import ResurfacedContext
 from ..core.search import SearchEngine, SearchResult
 from ..core.sessions import Session
 from ..core.threads import Thread
+from .launcher_anims import play_digest_stagger_reveal
 from .styles import LAUNCHER_QSS, TEXT_DIM
 from ..core.ceremonies import Ceremonies
 from ..core.stats import StatsCounters
@@ -80,33 +81,15 @@ from ..core.stats import StatsCounters
 # Phase 5B — the digest's section labels follow the time of day so
 # the surface answers a slightly different question depending on
 # *when* a user reopened the launcher.
-def _digest_labels() -> dict[str, str]:
-    """Recovery + threads header text by time of day. Calm shifts
-    only — never a notification, never a streak. Morning leads with
-    "Continue today" (offer the next step); evening with
-    "You paused here" (the things to come back to); midday keeps
-    "Still active" on the threads section."""
-    from datetime import datetime as _dt
-    hour = _dt.now().hour
-    if hour < 12:
-        return {
-            "recovery": "Continue today",
-            "threads": "Active investigations",
-        }
-    if hour >= 18:
-        return {
-            "recovery": "You paused here",
-            "threads": "Still active",
-        }
-    return {
-        "recovery": "Continue where you left off",
-        "threads": "Still active",
-    }
+# Phase 5J launcher-split phase 2: the time-of-day digest labels
+# moved to `launcher_digest.py` as a stdlib-only helper.
+from .launcher_digest import digest_labels as _digest_labels  # noqa: F401
 from .cards import (
     CARD_HEIGHT,
     InvestigationCard,
     RecoveryCard,
     ResurfaceCard,
+    derive_recovery_confidence,
 )
 from .widgets import (
     BrowserActivityRow,
@@ -164,8 +147,6 @@ H_EMPTY = 180
 # again to make room for the new section without forcing internal
 # scroll. _capped_card_height still clamps on small screens.
 H_DIGEST = 540
-DIGEST_RECENT_QUERIES_MAX = 4
-DIGEST_RECENT_ACTIVITY_MAX = 3
 
 # Adaptive results bounds. Floor lets a single result still feel like a
 # proper command bar (not a blink); ceiling caps the launcher so a full
@@ -173,24 +154,19 @@ DIGEST_RECENT_ACTIVITY_MAX = 3
 H_RESULTS_MIN = 280
 H_RESULTS_MAX = 480
 
-DIGEST_RECENT_MAX = 4
-DIGEST_RESURFACED_MAX = 2
-RESURFACED_MIN_AGE_DAYS = 30
-
-# Phase 2B resurfacing — hard ceiling matches the engine's own cap.
-# Anything higher would push the digest past one screenful and turn a
-# quiet section into a feed.
-DIGEST_CONTINUE_MAX = 4
-
-# Phase 2C: memory threads. The brief asks for an infrastructure
-# aesthetic — show fewer than a dashboard would, even though the
-# engine supports up to 20. Five is the sweet spot.
-DIGEST_THREADS_MAX = 5
-
-# Phase 3B: continuity recovery. The brief's ceiling is three; the
-# launcher honours it. Recovery is the *primary* idle surface, but
-# fewer is better — three resumable threads ON TOP is plenty.
-DIGEST_RECOVERY_MAX = 3
+# Phase 5J launcher-split phase 2: the digest-section caps moved to
+# `launcher_digest.py`. Imported back so the rest of the file reads
+# unchanged.
+from .launcher_digest import (  # noqa: E402
+    DIGEST_CONTINUE_MAX,
+    DIGEST_RECENT_ACTIVITY_MAX,
+    DIGEST_RECENT_MAX,
+    DIGEST_RECENT_QUERIES_MAX,
+    DIGEST_RECOVERY_MAX,
+    DIGEST_RESURFACED_MAX,
+    DIGEST_THREADS_MAX,
+    RESURFACED_MIN_AGE_DAYS,
+)
 
 # `RECALL_DEBUG=1` flips the "Why am I seeing this?" hover on resurfaced
 # rows. We check the env once at import time so we never pay an env
@@ -495,27 +471,24 @@ class Launcher(QWidget):
 
         # --- empty-index welcome -------------------------------------------
         # First-run state — the user has just installed Recall and the
-        # index is empty. The copy here sets the trust tone for the
-        # whole product: calm, factual, no hyperbole, no exclamation,
-        # no "AI-powered" framing.
+        # index is empty. Phase 6D wires the live empty surface to the
+        # `EmptyCard.empty()` factory so the launcher uses the same
+        # *Recall notices unfinished work.* + *Show example* + *Start
+        # normally* surface that the screenshots have shown since 6B,
+        # rather than the pre-6B QLabel pair. Both buttons emit Qt
+        # signals; this widget wires them to `demo_mode.activate()` /
+        # `demo_mode.dismiss()` + a digest refresh so the click loop
+        # is end-to-end.
+        from .cards import EmptyCard
         self.empty_widget = QWidget()
         ev = QVBoxLayout(self.empty_widget)
-        ev.setContentsMargins(0, 0, 0, 0)
-        ev.setSpacing(2)
-        empty_title = QLabel("Recall is ready.")
-        empty_title.setObjectName("empty_title")
-        empty_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        empty_body = QLabel(
-            "Work a little, then come back later — the launcher fills "
-            "with the threads and files you can step back into.  "
-            "Press Ctrl + , to choose folders to remember."
-        )
-        empty_body.setObjectName("empty_body")
-        empty_body.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        empty_body.setWordWrap(True)
+        ev.setContentsMargins(20, 18, 20, 18)
+        ev.setSpacing(0)
         ev.addStretch(1)
-        ev.addWidget(empty_title)
-        ev.addWidget(empty_body)
+        self._empty_card = EmptyCard.empty()
+        self._empty_card.show_example.connect(self._on_show_example_clicked)
+        self._empty_card.start_normally.connect(self._on_start_normally_clicked)
+        ev.addWidget(self._empty_card)
         ev.addStretch(1)
         self.empty_widget.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
@@ -736,6 +709,20 @@ class Launcher(QWidget):
         )
         self.digest_panel.hide()
 
+        # --- Phase 6D: demo digest -----------------------------------------
+        # The surface the launcher shows when `demo_mode.is_active()`.
+        # A calm overlay on top of the empty engine state: a trust
+        # banner ("Example data — Nothing here came from your device.
+        # Dismiss"), the canonical demo RecoveryCard, and the demo
+        # InvestigationCard list. Real events override demo: the
+        # ingest hook flips state to `dismissed`, and the next
+        # _refresh_idle_state falls through to the digest path.
+        self.demo_panel = self._build_demo_panel()
+        self.demo_panel.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
+        self.demo_panel.hide()
+
         # --- results body: list + preview side-by-side ---------------------
         self.results_body = QWidget()
         rb = QHBoxLayout(self.results_body)
@@ -804,6 +791,7 @@ class Launcher(QWidget):
         root.addWidget(self.hint_label, 1)
         root.addWidget(self.empty_widget, 1)
         root.addWidget(self.digest_panel, 1)
+        root.addWidget(self.demo_panel, 1)
         root.addWidget(self.evolution_strip_slot)
         root.addWidget(self.results_body, 1)
         root.addWidget(self.footer)
@@ -909,6 +897,11 @@ class Launcher(QWidget):
         self.hint_label.hide()
         self.empty_widget.hide()
         self.digest_panel.hide()
+        # Phase 6D: include the demo overlay in the hide-all sweep so
+        # state transitions from `demo` back to `empty` / `digest`
+        # clear cleanly.
+        if hasattr(self, "demo_panel"):
+            self.demo_panel.hide()
         self.results_body.hide()
 
     def _show_compact(self, hint_text: str | None = None) -> None:
@@ -929,6 +922,18 @@ class Launcher(QWidget):
         self._enter_state("empty", H_EMPTY)
         self._refresh_default_footer()
 
+    def _show_demo(self) -> None:
+        """Phase 6D — the demo overlay surface. Shown when the user
+        clicked *Show example* on the empty card; replaced
+        automatically the moment a real event arrives (the ingest
+        hook flips `demo_mode` to `dismissed`)."""
+        if self._state != "demo":
+            self._hide_all_bodies()
+            self.demo_panel.show()
+            self._clear_evolution_strip()
+        self._enter_state("demo", H_EMPTY)
+        self._refresh_default_footer()
+
     def _show_digest(self) -> None:
         if self._state != "digest":
             self._hide_all_bodies()
@@ -937,6 +942,11 @@ class Launcher(QWidget):
             self._clear_evolution_strip()
         self._enter_state("digest", H_DIGEST)
         self._refresh_default_footer()
+        # Phase 5I: a one-shot stagger reveal the first time the
+        # digest is shown per launcher instance. The cascade lives
+        # in `launcher_anims.play_digest_stagger_reveal` — the first
+        # slice of the planned `app/ui/launcher/` package split.
+        play_digest_stagger_reveal(self)
 
     def _show_results(self) -> None:
         if self._state != "results":
@@ -1035,15 +1045,159 @@ class Launcher(QWidget):
         self.search_input.setFocus(Qt.FocusReason.ActiveWindowFocusReason)
         self.search_input.selectAll()
 
+    # ---- Phase 6D: demo overlay -----------------------------------------
+
+    def _build_demo_panel(self) -> QWidget:
+        """Construct the demo overlay shown when `demo_mode.is_active()`.
+
+        Contents (top to bottom):
+          1. Trust banner — *Example data* / *Nothing here came from
+             your device.* / *Dismiss* link.
+          2. Section header — *Continue where you left off*.
+          3. The canonical demo `RecoveryCard` (WebSocket retry
+             debugging, 4 targets, confidence=high).
+          4. Section header — *Active investigations*.
+          5. Three `InvestigationCard` rows from the demo payload.
+
+        Hand-built once; visibility flips via show() / hide() so
+        we don't reconstruct widgets on every refresh.
+        """
+        from app.core import demo_mode
+        from .cards import (
+            CARD_HEIGHT,
+            InvestigationCard,
+            RecoveryCard,
+        )
+        from .styles import (
+            ACCENT,
+            ACCENT_DIM,
+            BORDER,
+            TEXT,
+            TEXT_DIM,
+        )
+
+        payload = demo_mode.demo_payload()
+        rec = payload["recovery"]
+
+        panel = QWidget()
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(8, 10, 8, 8)
+        layout.setSpacing(8)
+
+        # --- trust banner ---
+        banner = QWidget()
+        banner.setObjectName("demo_banner")
+        b = QHBoxLayout(banner)
+        b.setContentsMargins(14, 8, 10, 8)
+        b.setSpacing(10)
+        dot = QLabel()
+        dot.setFixedSize(8, 8)
+        dot.setStyleSheet(
+            f"background:{ACCENT}; border-radius:4px;"
+        )
+        title = QLabel(payload["trust"]["banner_title"])
+        title.setStyleSheet(
+            f"color:{TEXT}; font-size:11px; font-weight:600;"
+        )
+        body = QLabel(payload["trust"]["banner_body"])
+        body.setStyleSheet(
+            f"color:{TEXT_DIM}; font-size:11px;"
+        )
+        dismiss = QLabel("Dismiss")
+        dismiss.setObjectName("demo_dismiss")
+        dismiss.setStyleSheet(
+            f"color:{ACCENT}; font-size:11px; font-weight:600;"
+        )
+        dismiss.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        def _dismiss(_=None):
+            demo_mode.dismiss()
+            self._refresh_idle_state()
+
+        dismiss.mousePressEvent = _dismiss  # type: ignore[assignment]
+        b.addWidget(dot)
+        b.addWidget(title)
+        b.addWidget(body, 1)
+        b.addWidget(dismiss)
+        banner.setStyleSheet(
+            f"QWidget#demo_banner {{ "
+            f"background:{ACCENT_DIM}; "
+            f"border:1px solid {BORDER}; "
+            f"border-radius:10px; }}"
+        )
+        layout.addWidget(banner)
+
+        # --- continue header ---
+        rec_header = QLabel("Continue where you left off")
+        rec_header.setObjectName("digest_section")
+        layout.addWidget(rec_header)
+
+        # --- demo recovery card ---
+        card = RecoveryCard(
+            candidate_id=rec["id"],
+            title=rec["title"],
+            evidence=rec["preview_caption"],
+            time_label="just now",
+            confidence=rec["confidence"],
+            n_targets=rec["tab_count"] + rec["file_count"],
+        )
+        card.setFixedHeight(card.RECOVERY_HEIGHT)
+        layout.addWidget(card)
+
+        # --- investigations header ---
+        inv_header = QLabel("Active investigations")
+        inv_header.setObjectName("digest_section")
+        layout.addWidget(inv_header)
+
+        for inv in payload["investigations"]:
+            icard = InvestigationCard(
+                thread_id=inv["id"],
+                topic_key=inv["id"],
+                title=inv["title"],
+                evidence=inv["timeline_summary"],
+                time_label="active",
+            )
+            icard.setFixedHeight(CARD_HEIGHT)
+            layout.addWidget(icard)
+
+        layout.addStretch(1)
+        return panel
+
+    def _on_show_example_clicked(self) -> None:
+        """User clicked *Show example* on the empty card. Activate
+        demo overlay and refresh into the demo state."""
+        from app.core import demo_mode
+        demo_mode.activate()
+        self._refresh_idle_state()
+
+    def _on_start_normally_clicked(self) -> None:
+        """User clicked *Start normally*. Mark the demo dismissed
+        (so it doesn't reappear on the next idle refresh) and stay
+        on the empty card."""
+        from app.core import demo_mode
+        demo_mode.dismiss()
+        self._refresh_idle_state()
+
     def _refresh_idle_state(self) -> None:
-        """Pick the right "no query" state: welcome / digest."""
+        """Pick the right "no query" state: welcome / digest /
+        demo overlay (Phase 6D)."""
+        from app.core import demo_mode
         try:
             empty = self.search_engine.store.count() == 0
         except Exception:
             empty = False
         self._index_was_empty = empty
+        # Phase 6D — when real engine state exists, demo never wins.
+        # The ingest hook usually flips state to `dismissed` first;
+        # this is the belt-and-braces check for any path that reached
+        # here without going through ingest (e.g., reseed from disk).
+        if not empty and demo_mode.is_active():
+            demo_mode.dismiss()
         if empty:
-            self._show_empty()
+            if demo_mode.is_active():
+                self._show_demo()
+            else:
+                self._show_empty()
         else:
             self._populate_digest()
             self._show_digest()
@@ -1486,6 +1640,11 @@ class Launcher(QWidget):
             evidence = cand.preview_caption or "  ·  ".join(
                 f"{c} {lbl}" for lbl, c in counts
             )
+            # Phase 6A — derive the confidence band UI-side from the
+            # candidate's target count. Pure display; no engine field
+            # added. >=4 targets reads as a real multi-surface thread
+            # (high); 2-3 as plausible (medium); 0-1 as a hint (low).
+            n_targets = len(cand.suggested_targets)
             row = RecoveryCard(
                 candidate_id=cand.id,
                 title=cand.title,
@@ -1494,8 +1653,8 @@ class Launcher(QWidget):
                     humanize_age(cand.last_active_at)
                     if cand.last_active_at else ""
                 ),
-                high_trust=True,
-                n_targets=len(cand.suggested_targets),
+                confidence=derive_recovery_confidence(n_targets),
+                n_targets=n_targets,
             )
             if _RESURFACING_DEBUG and tip_lines:
                 row.setToolTip(

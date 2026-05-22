@@ -66,6 +66,38 @@ Pairs with [`engineering/DOC_HEALTH.md`](engineering/DOC_HEALTH.md)
 | [`FRICTION_FIXES.md`](engineering/FRICTION_FIXES.md) | 11 Phase-5G findings × (issue/root-cause/fix/verification) | 5H | live |
 | [`INSTALL_SIZE_AUDIT.md`](engineering/INSTALL_SIZE_AUDIT.md) | the 260 MB installer mapped to file counts + wheel sizes + reduction paths | 5H | live |
 | [`REPO_CLEANUP_REPORT.md`](engineering/REPO_CLEANUP_REPORT.md) | the Repo Stabilization Pass receipt (28 imports + duplicate fn + motion exports + .gitignore + 5-surface verification) | Repo Stabilization Pass | live |
+| [`PHASE_5H_STATUS.md`](engineering/PHASE_5H_STATUS.md) | Friction Kill receipt (install_repair CLI + DaemonPulse + stagger reveal + verification matrix) | 5H² | live |
+| [`FRICTION_FIXED.md`](engineering/FRICTION_FIXED.md) | the cumulative fixed-frictions ledger (40 items across 5F → 5H²) | 5H² | live |
+| [`OPEN_PROBLEMS.md`](engineering/OPEN_PROBLEMS.md) | the still-named open list (26 items, 16 accept-by-design + 10 with named paths) | 5H² | live |
+| [`INSTALL_SIZE_AUDIT_V2.md`](engineering/INSTALL_SIZE_AUDIT_V2.md) | real-byte breakdown of the 970 MB bundle; 3 reduction tiers | 5I | live |
+| [`MODEL_STRATEGY.md`](engineering/MODEL_STRATEGY.md) | path to a <150 MB embedding stack (ONNX recommended) | 5I | live |
+| [`SPLIT_DISTRIBUTION.md`](engineering/SPLIT_DISTRIBUTION.md) | four packs (Core / Retrieval / Dev Tools / Demo Seed); two install paths | 5I | live |
+| [`PHASE_5I_STATUS.md`](engineering/PHASE_5I_STATUS.md) | Phase 5I receipt | 5I | live |
+| [`alpha/FIRST_72_HOURS.md`](../alpha/FIRST_72_HOURS.md) | hour-by-hour trust / confusion / drop-risk / aha curve | 5I | live |
+| [`INSTALL_REDUCTION_REPORT.md`](engineering/INSTALL_REDUCTION_REPORT.md) | Tier A execution receipt — excludes table + before/after measurements + smoke matrix | 5J | live |
+| [`PHASE_5J_STATUS.md`](engineering/PHASE_5J_STATUS.md) | Phase 5J Installer Shrink Execution close-out | 5J | live |
+| [`PHASE_5K_STATUS.md`](engineering/PHASE_5K_STATUS.md) | Phase 5K Alpha Reality close-out — the cohort infrastructure receipt | 5K | live |
+| [`PHASE_6A_STATUS.md`](engineering/PHASE_6A_STATUS.md) | Phase 6A First Magic close-out — UX polish toward the 30-second magic test | 6A | live |
+| [`PHASE_6B_STATUS.md`](engineering/PHASE_6B_STATUS.md) | Phase 6B Launcher Identity close-out — warm white + lavender theme swap, chip-row split, EmptyCard redesign | 6B | live |
+| [`PHASE_6C_STATUS.md`](engineering/PHASE_6C_STATUS.md) | Phase 6C Extension Premium close-out — popup gains confidence pill, today rail, investigation pill strip, launcher-parity empty state | 6C | live |
+| [`PHASE_6D_STATUS.md`](engineering/PHASE_6D_STATUS.md) | Phase 6D Demo Mode close-out — first-run overlay, 5-state machine, 3 demo API routes, auto-dismiss on real ingest, no engine touch | 6D | live |
+| [`FIRST_MAGIC.md`](product/FIRST_MAGIC.md) | the demo overlay product story — what it is, what it isn't, how it disappears, trust rules | 6D | live |
+| [`PHASE_6E_STATUS.md`](engineering/PHASE_6E_STATUS.md) | Phase 6E Alpha Reality close-out — operations only: CLI `update`/`export`, recovery ledger 6-kind vocabulary, `founder alpha-health` panel | 6E | live |
+| [`alpha/PLAYBOOK.md`](alpha/PLAYBOOK.md) | the alpha cohort operations book — six-moment tester lifecycle + daily morning loop + field list | 6E | live |
+| [`alpha/STATUS.md`](alpha/STATUS.md) | live cohort board, hand-edited weekly | 6E | live, empty (waiting for cohort) |
+| [`alpha/KNOWN_FAILURES.md`](alpha/KNOWN_FAILURES.md) | failure catalogue, quote-don't-paraphrase / never-inflate contract | 6E | live, empty (waiting for first failure) |
+| [`PHASE_6F_STATUS.md`](engineering/PHASE_6F_STATUS.md) | Phase 6F Daily Loop Validation close-out — 6 counters at `~/.recall/daily_loop.jsonl`, return detector, 3 signals with RYG, `recall founder daily-loop` + `recall alpha replay` | 6F | live |
+| [`DAILY_LOOP.md`](product/DAILY_LOOP.md) | the daily-loop product story — six bins, three signals, the *not telemetry* contract | 6F | live |
+| [`RETURN_BEHAVIOR.md`](product/RETURN_BEHAVIOR.md) | the return detector's exact semantics (what counts / why 30 min / state file / manual verify recipe) | 6F | live |
+| [`alpha/MOMENTS.md`](alpha/MOMENTS.md) | the seven first-time moments per tester — install / capture / investigation / recovery / resume / wow / trust break | 6F | live, empty (waiting for cohort) |
+| [`PHASE_6G_STATUS.md`](engineering/PHASE_6G_STATUS.md) | Phase 6G Public Alpha Surface close-out — marketing-site narrative + download grid + trust five-rule rewrite + screenshot pipeline | 6G | live |
+| [`TRUST.md`](product/TRUST.md) | the public trust statement — five rules + on-disk contract per rule + what Recall will / won't ask for | 6G | live |
+| [`DOWNLOAD_GUIDE.md`](release/DOWNLOAD_GUIDE.md) | the four alpha download paths in detail (Win lite / Win full / macOS preview / extension) | 6G | live |
+| [`DEMO_VIDEO_SCRIPT.md`](release/DEMO_VIDEO_SCRIPT.md) | the 60-second placeholder demo storyboard — 6 beats, captions only | 6G | live, placeholder (recording pending) |
+| [`PHASE_6H_STATUS.md`](engineering/PHASE_6H_STATUS.md) | Phase 6H Control Room OS close-out — 8 live loaders, 3-column shell, 6 panels, 10 dynamic routes, no fake data | 6H | live |
+| [`ALPHA_MATRIX.md`](trust/ALPHA_MATRIX.md) | 5 install-validation slots × 7 columns (Windows ×3 / Mac Intel / Mac Silicon) | 5K | live, all `unknown` |
+| [`alpha/ALPHA_FEEDBACK_V2.md`](../alpha/ALPHA_FEEDBACK_V2.md) | tightened 6-row intake form (delight / confusion / wrong / missed / install pain / keep-remove) | 5K | live |
+| [`alpha/users/`](../alpha/users/) | per-tester records: 5 cohort folders + TEMPLATE + JSON schema (zero fake testers) | 5K | live |
 
 ## `docs/release/` — what ships when
 

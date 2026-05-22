@@ -96,7 +96,7 @@ re-labelling them to a remaining one.
 ## Bootstrapping on a new repo
 
 If you're standing up a fresh GitHub repo (e.g. after the
-[`REPO_STRUCTURE.md`](../REPO_STRUCTURE.md) split), use the
+[`REPO_STRUCTURE.md`](../docs/engineering/REPO_STRUCTURE.md) split), use the
 GitHub CLI to apply this set:
 
 ```bash

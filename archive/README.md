@@ -34,5 +34,5 @@ A PR that archives a system includes:
 2. A `archive/<system-name>/README.md` recording when it was
    active, why it was retired, and what replaced it.
 3. The removal of any remaining references in the live tree
-   ([`AUDIT_REPORT.md`](../AUDIT_REPORT.md) tracks the
+   ([`AUDIT_REPORT.md`](../docs/engineering/AUDIT_REPORT.md) tracks the
    standing list).

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { openRecall, openTab } from "../lib/api";
+import { activateDemo, dismissDemo, openRecall, openTab } from "../lib/api";
 import { calm, fade } from "../lib/motion";
 import type { MemoryItem } from "../lib/types";
 import { MemoryList } from "./MemoryList";
@@ -341,16 +341,47 @@ export function OfflineState({ onRetry }: { onRetry: () => void }) {
 }
 
 /**
- * Empty state — the popup's *honest zero*. The smallest calm
- * statement of the contract: capture is local, investigations form
- * from repetition, recovery follows from there. No demo card; no
- * CTA — the user is mid-flow and the popup's job here is *not to
- * interrupt*.
+ * Empty state — the popup's *honest zero*. Phase 6C carried the
+ * launcher's headline / body across; Phase 6D pairs the *Show
+ * example* pill with a quieter *Start normally* secondary so the
+ * empty surface mirrors the launcher's two-button choice exactly.
  *
- * Reachable only when daemon=ok AND ingestedTotal=0 AND memory=∅.
- * The state machine in `App.tsx` enforces this invariant.
+ * Behaviour:
+ *   - *Show example* → `activateDemo()` (POST `/v1/demo/activate`).
+ *     The parent re-fetches demo state and swaps the popup into
+ *     the demo overlay; the engine itself never sees a synthetic
+ *     event.
+ *   - *Start normally* → `dismissDemo()` so the choice persists,
+ *     and the popup stays on this empty state until real events
+ *     arrive.
+ *
+ * Reachable only when daemon=ok AND ingestedTotal=0 AND memory=∅
+ * AND demo state ≠ "active". The state machine in `App.tsx` enforces
+ * this invariant.
  */
-export function EmptyState() {
+export function EmptyState({
+  onDemoStarted,
+  onDemoDeclined,
+}: {
+  onDemoStarted?: () => void;
+  onDemoDeclined?: () => void;
+} = {}) {
+  const [busy, setBusy] = useState<null | "demo" | "decline">(null);
+
+  async function handleShowExample() {
+    setBusy("demo");
+    await activateDemo();
+    setBusy(null);
+    onDemoStarted?.();
+  }
+
+  async function handleStartNormally() {
+    setBusy("decline");
+    await dismissDemo();
+    setBusy(null);
+    onDemoDeclined?.();
+  }
+
   return (
     <motion.div
       variants={fade}
@@ -363,27 +394,89 @@ export function EmptyState() {
         flexDirection: "column",
         alignItems: "center",
         textAlign: "center",
-        padding: "44px 28px 24px",
-        gap: 14,
+        padding: "48px 28px 26px",
+        gap: 12,
       }}
     >
       <Badge />
-      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>
-        Recall is watching locally
+      <div
+        style={{
+          marginTop: 6,
+          fontSize: 15,
+          fontWeight: 600,
+          color: "var(--ink)",
+          lineHeight: 1.3,
+        }}
+      >
+        Recall notices unfinished work.
       </div>
       <div
         style={{
-          fontSize: 12,
-          lineHeight: 1.55,
+          fontSize: 12.5,
+          lineHeight: 1.6,
           color: "var(--ink-3)",
           maxWidth: 280,
         }}
       >
-        Keep browsing. Recall builds investigations from repeated work.
+        Work normally. Return later.
+        <br />
+        Recall fills itself.
       </div>
       <div
         style={{
-          marginTop: 6,
+          marginTop: 14,
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <motion.button
+          whileHover={busy ? undefined : { y: -1 }}
+          whileTap={busy ? undefined : { y: 0 }}
+          transition={calm}
+          onClick={busy ? undefined : handleShowExample}
+          disabled={busy !== null}
+          style={{
+            height: 32,
+            padding: "0 16px",
+            borderRadius: 16,
+            background: "var(--accent-soft)",
+            color: "var(--accent)",
+            fontSize: 12,
+            fontWeight: 600,
+            border: "1px solid var(--accent-line)",
+            cursor: busy ? "default" : "pointer",
+            opacity: busy === "decline" ? 0.55 : 1,
+          }}
+        >
+          {busy === "demo" ? "Loading…" : "Show example"}
+        </motion.button>
+        <motion.button
+          whileHover={busy ? undefined : { y: -1 }}
+          whileTap={busy ? undefined : { y: 0 }}
+          transition={calm}
+          onClick={busy ? undefined : handleStartNormally}
+          disabled={busy !== null}
+          style={{
+            height: 32,
+            padding: "0 14px",
+            borderRadius: 16,
+            background: "transparent",
+            color: "var(--ink-3)",
+            fontSize: 12,
+            fontWeight: 500,
+            border: "1px solid var(--border-soft)",
+            cursor: busy ? "default" : "pointer",
+            opacity: busy === "demo" ? 0.55 : 1,
+          }}
+        >
+          Start normally
+        </motion.button>
+      </div>
+      <div
+        style={{
+          marginTop: 12,
           fontSize: 10.5,
           color: "var(--ink-4)",
           fontFamily:

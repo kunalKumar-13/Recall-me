@@ -27,6 +27,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core import daily_loop, demo_mode
 from app.core.events import Event, EventLogger, EventStore
 from app.core.episodic import EpisodicResult, EpisodicRetriever
 from app.core.evolution import EvolutionBuilder, EvolutionPhase
@@ -41,6 +42,17 @@ from .schemas import (
     BrowserSearchIn,
     BrowserVisitIn,
     ChatSessionIn,
+    DemoInvestigationOut,
+    DemoPayloadOut,
+    DemoRecoveryOut,
+    DemoStateResponse,
+    DemoTimelineEventOut,
+    DemoTrustOut,
+    LoopBumpRequest,
+    LoopBumpResponse,
+    LoopDayOut,
+    LoopSignalsOut,
+    LoopSummaryResponse,
     EpisodicResultOut,
     EventOut,
     EvolutionPhaseOut,
@@ -254,6 +266,31 @@ def _thread_to_out(t: Thread) -> ThreadOut:
     )
 
 
+def _demo_payload_out() -> DemoPayloadOut:
+    """Project the in-memory demo fixture (`demo_mode.demo_payload`)
+    onto its HTTP shape. Pure data transform; no scoring, no
+    engine read."""
+    raw = demo_mode.demo_payload()
+    return DemoPayloadOut(
+        recovery=DemoRecoveryOut(**raw["recovery"]),
+        investigations=[DemoInvestigationOut(**i) for i in raw["investigations"]],
+        timeline=[DemoTimelineEventOut(**t) for t in raw["timeline"]],
+        trust=DemoTrustOut(**raw["trust"]),
+        generated_at=raw["generated_at"],
+    )
+
+
+def _demo_state_response() -> DemoStateResponse:
+    """Build the response body for /v1/demo/state. Payload is
+    attached only when the overlay is currently active so
+    consumers don't accidentally render demo content."""
+    current = demo_mode.state()
+    return DemoStateResponse(
+        state=current,
+        payload=_demo_payload_out() if current == "active" else None,
+    )
+
+
 def _resurfaced_to_out(r: ResurfacedContext) -> ResurfacedContextOut:
     """Project a `ResurfacedContext` onto its HTTP shape. Mirrors the
     session/micro-context transformer so the launcher's existing
@@ -317,6 +354,26 @@ def create_app(deps: AppDeps) -> FastAPI:
         return app.state.deps
 
     # ----------- ingestion routes (POST /v1/events/*) ------------------
+    #
+    # Every ingest path calls this after a successful write so the
+    # demo overlay fades when real activity arrives. The hook is a
+    # JSON-file flip; no engine touch.
+    #
+    # Phase 6F: the same hook also feeds the daily-loop return
+    # detector so a return-after-gap is counted on the *first* event
+    # after the gap, not on the next launcher open.
+
+    def _post_ingest_hook(ok: bool) -> None:
+        if not ok:
+            return
+        demo_mode.mark_real_activity()
+        # Best-effort — never propagate a daily-loop persistence
+        # failure into the ingest response.
+        try:
+            daily_loop.mark_event(time.time())
+        except Exception:  # noqa: BLE001
+            log.warning("daily_loop: mark_event failed silently")
+
 
     @app.post(
         "/v1/events/browser",
@@ -330,6 +387,7 @@ def create_app(deps: AppDeps) -> FastAPI:
         ok, reason = await run_in_threadpool(
             deps.ingestion.ingest_typed, "browser_visit", ev.model_dump()
         )
+        _post_ingest_hook(ok)
         return IngestResponse(
             received=1, ingested=1 if ok else 0, reason=reason,
         )
@@ -346,6 +404,7 @@ def create_app(deps: AppDeps) -> FastAPI:
         ok, reason = await run_in_threadpool(
             deps.ingestion.ingest_typed, "browser_search", ev.model_dump()
         )
+        _post_ingest_hook(ok)
         return IngestResponse(
             received=1, ingested=1 if ok else 0, reason=reason,
         )
@@ -362,6 +421,7 @@ def create_app(deps: AppDeps) -> FastAPI:
         ok, reason = await run_in_threadpool(
             deps.ingestion.ingest_typed, "chat_session", ev.model_dump()
         )
+        _post_ingest_hook(ok)
         return IngestResponse(
             received=1, ingested=1 if ok else 0, reason=reason,
         )
@@ -381,6 +441,7 @@ def create_app(deps: AppDeps) -> FastAPI:
             kind,
             ev.model_dump(exclude={"reveal"}),
         )
+        _post_ingest_hook(ok)
         return IngestResponse(
             received=1, ingested=1 if ok else 0, reason=reason,
         )
@@ -399,6 +460,7 @@ def create_app(deps: AppDeps) -> FastAPI:
         ok, reason = await run_in_threadpool(
             deps.ingestion.ingest_typed, ev.kind, ev.payload
         )
+        _post_ingest_hook(ok)
         return IngestResponse(
             received=1, ingested=1 if ok else 0, reason=reason,
         )
@@ -742,6 +804,15 @@ def create_app(deps: AppDeps) -> FastAPI:
         candidates, elapsed_ms = await run_in_threadpool(
             deps.recovery.recent, n
         )
+        # Phase 6F — count *non-empty* recovery surfaces. An empty
+        # response is correct silence, not a shown card; surface
+        # silence is tracked at the alpha-ledger level, not in the
+        # daily-loop counters.
+        if candidates:
+            try:
+                daily_loop.record_recovery_shown()
+            except Exception:  # noqa: BLE001
+                log.warning("daily_loop: shown bump failed silently")
         return RecoveryRecentResponse(
             candidates=[_recovery_to_out(c) for c in candidates],
             elapsed_ms=round(elapsed_ms, 2),
@@ -768,6 +839,15 @@ def create_app(deps: AppDeps) -> FastAPI:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"recovery candidate not found: {candidate_id}",
             )
+        # Phase 6F — a successful plan means the user clicked Resume
+        # and the engine produced a restoration. Bump
+        # `recoveries_used`; the `resume_success` bin is the deferred
+        # signal that fires only when the launcher's executor reports
+        # back that the targets actually opened.
+        try:
+            daily_loop.record_recovery_used()
+        except Exception:  # noqa: BLE001
+            log.warning("daily_loop: used bump failed silently")
         steps_out = [
             RestorationStepOut(
                 kind=s.kind, target=s.target,
@@ -787,6 +867,111 @@ def create_app(deps: AppDeps) -> FastAPI:
                 OpenableTarget(kind=s.kind, target=s.target)
                 for s in plan.steps[:_MAX_OPENABLE_TARGETS]
             ],
+        )
+
+    # ----------- demo overlay (Phase 6D) ------------------------------
+    #
+    # Three tiny routes for the first-run demo experience. The state
+    # is owned by `app.core.demo_mode`, persisted at
+    # `~/.recall/demo.json`. The engine itself never reads this state
+    # — the launcher + extension consult these endpoints and overlay
+    # the demo payload on top of the empty engine surface.
+
+    @app.get(
+        "/v1/demo/state",
+        response_model=DemoStateResponse,
+        tags=["demo"],
+        summary=(
+            "Current demo overlay state. `payload` is non-null only when "
+            "`state == 'active'`, so consumers can render the demo "
+            "directly off this single endpoint."
+        ),
+    )
+    async def demo_state() -> DemoStateResponse:
+        return _demo_state_response()
+
+    @app.post(
+        "/v1/demo/activate",
+        response_model=DemoStateResponse,
+        tags=["demo"],
+        summary=(
+            "User clicked Show example. Flip the overlay on and "
+            "return the fresh state + payload."
+        ),
+    )
+    async def demo_activate() -> DemoStateResponse:
+        await run_in_threadpool(demo_mode.activate)
+        return _demo_state_response()
+
+    @app.post(
+        "/v1/demo/dismiss",
+        response_model=DemoStateResponse,
+        tags=["demo"],
+        summary=(
+            "User clicked Dismiss on the demo banner. Flip the "
+            "overlay off without altering any engine state."
+        ),
+    )
+    async def demo_dismiss() -> DemoStateResponse:
+        await run_in_threadpool(demo_mode.dismiss)
+        return _demo_state_response()
+
+    # ----------- daily loop (Phase 6F) --------------------------------
+    #
+    # Six counters about Recall's own surfaces (not user content).
+    # Counts only — never URLs / filenames / queries / titles. See
+    # `app.core.daily_loop` for the data model + storage.
+
+    _BUMPER = {
+        "day_started": daily_loop.record_day_started,
+        "investigations_opened": daily_loop.record_investigation_opened,
+        "recoveries_shown": daily_loop.record_recovery_shown,
+        "recoveries_used": daily_loop.record_recovery_used,
+        "returns": lambda: daily_loop.record_return(
+            gap_seconds=daily_loop.RETURN_GAP_MIN_SECONDS
+        ),
+        "resume_success": daily_loop.record_resume_success,
+    }
+
+    def _today_count(bin_name: str) -> int:
+        s = daily_loop.summary(days=1)
+        return int(s["today"].get(bin_name, 0))
+
+    @app.post(
+        "/v1/loop/bump",
+        response_model=LoopBumpResponse,
+        tags=["loop"],
+        summary=(
+            "Bump one daily-loop counter. Body is `{bin: <name>}`. "
+            "Six named bins; anything else is rejected by pydantic."
+        ),
+    )
+    async def loop_bump(body: LoopBumpRequest) -> LoopBumpResponse:
+        await run_in_threadpool(_BUMPER[body.bin])
+        return LoopBumpResponse(bin=body.bin, today=_today_count(body.bin))
+
+    @app.get(
+        "/v1/loop/summary",
+        response_model=LoopSummaryResponse,
+        tags=["loop"],
+        summary=(
+            "Today / yesterday / 7-day counter summary + the three "
+            "derived signals (continuity_restored, return_rate, "
+            "resume_quality) with green/yellow/red verdicts."
+        ),
+    )
+    async def loop_summary(
+        days: int = Query(default=7, ge=1, le=90),
+    ) -> LoopSummaryResponse:
+        s = await run_in_threadpool(daily_loop.summary, days=days)
+        return LoopSummaryResponse(
+            today=LoopDayOut(**s["today"]),
+            yesterday=LoopDayOut(**s["yesterday"]),
+            window=LoopDayOut(date="window", **s["window"]),
+            window_days=s["window_days"],
+            days_with_any_activity=s["days_with_any_activity"],
+            signals=LoopSignalsOut(**s["signals"]),
+            green_yellow_red=s["green_yellow_red"],
         )
 
     # ----------- health -----------------------------------------------

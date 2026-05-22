@@ -12,14 +12,155 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
 
 *In the current phase.*
 
-- **Repo Stabilization Pass** (this pass). Pure cleanup, no
-  behaviour change. Dead-code audit + import sweep + duplicate-
-  function collapse + un-export of zero-consumer motion exports
-  + a root `CHANGELOG.md` redirect + `.gitignore` hardening.
-  Full receipt: [`REPO_CLEANUP_REPORT.md`](../engineering/REPO_CLEANUP_REPORT.md).
-  All five build surfaces re-verified (doctor / launcher import /
-  extension `npm run build` / control-room `next build` /
-  `recall founder status`).
+- **Phase 6H — Control Room OS** (this phase). The founder
+  dashboard at `apps/admin/web/` becomes a real operating system
+  for Recall — **no fake data, no hardcoded cards, everything
+  derived**. New `apps/admin/web/lib/loaders/` (8 modules:
+  paths / fsx / health / trust / daily / alpha / release /
+  system) reads live from `apps/admin/data/*`, `alpha/users/`,
+  `alpha/recovery_journal.json`, `apps/admin/release_state.json`,
+  and `~/.recall/`. New three-column shell: sticky left rail
+  (10 sections, accesskey hotkeys 1-9 + 0, three groups) + main
+  + sticky right actions sidebar (7 buttons; *Refresh* re-runs
+  data fetch; the other six copy canonical CLI commands — *no
+  server endpoint*). Six live panels:
+  `HealthPanel` / `AlphaPanel` / `DailyLoopPanel` / `TrustPanel`
+  / `ReleasePanel` / `SystemPanel`, each taking typed loader
+  output. Ten routes: `/` (overview, every panel in compact
+  mode), `/users` (per-cohort table → replays), `/alpha`,
+  `/trust`, `/daily-loop` (full heatmap), `/recovery` (6-stat
+  + time-to-resume bar chart + ledger rows linking to replays),
+  `/replays?tester=<handle>` (per-tester event timeline,
+  coverage line), `/release`, `/system`, `/docs`. Inline SVG /
+  styled-div for charts (heatmap + sparkline); no charts
+  library. Next.js build clean — 10 routes, all
+  server-rendered on demand, 87.4 KB first-load shared. **No
+  Python, no engine, no recovery work, no `apps/web/`
+  touched.** Receipt:
+  [`PHASE_6H_STATUS.md`](../engineering/PHASE_6H_STATUS.md).
+
+- **Phase 6G — Public Alpha Surface** (prior phase). Build the
+  public alpha front door. Pure marketing-site + operator-doc
+  work — **no engine work**, **no recovery work**.
+  `apps/web/` gets four new section components — `Problem`,
+  `Story` (the three canonical demo threads with real
+  thumbnails), `Screens` (4-tile gallery of launcher-v2 +
+  extension-v2 + demo captures), and `Download` (four
+  artifacts: Win lite recommended / Win full / macOS preview /
+  browser extension). Hero copy flipped to the directive's
+  exact text — *Recall notices unfinished work. / Return later.
+  Continue instantly.* — with *Download alpha* + *Watch demo*
+  CTAs. The Trust section (was Privacy) rewritten around the
+  five-rule vocabulary: local only / no cloud / no telemetry /
+  counts only / export only. Nav links rebuilt to the new
+  narrative order. 19 screenshots copied into
+  `apps/web/public/screens/` (launcher / extension / demo /
+  alpha). Three new docs: `docs/product/TRUST.md` (public
+  trust statement + on-disk contract per rule),
+  `docs/release/DOWNLOAD_GUIDE.md` (four install paths,
+  validation, uninstall),
+  `docs/release/DEMO_VIDEO_SCRIPT.md` (60-second placeholder
+  storyboard, 6 beats, captions only). PUBLIC_ALPHA.md gains a
+  Phase 6G addendum. Next.js build clean (55 KB static, 142 KB
+  first-load). Receipt:
+  [`PHASE_6G_STATUS.md`](../engineering/PHASE_6G_STATUS.md).
+
+- **Phase 6F — Daily Loop Validation** (prior phase). Recall
+  earns the right to keep running only if a real human installs
+  it, uses it, leaves, and comes back. New
+  `app/core/daily_loop.py` layer — six counters per local day
+  (`day_started` / `investigations_opened` / `recoveries_shown`
+  / `recoveries_used` / `returns` / `resume_success`), three
+  derived signals (`continuity_restored` / `return_rate` /
+  `resume_quality`) with GREEN/YELLOW/RED verdicts, stored at
+  `~/.recall/daily_loop.jsonl` (one JSON line per day). New
+  return detector: every successful ingest passes through
+  `mark_event(ts)` which bumps `returns` when the gap crossed
+  30 min (matching the session reconstructor's idle break).
+  Three thin `/v1/loop/{bump, summary}` routes + 5 DTOs. Two
+  recovery-surface hooks (`recoveries_shown` only on non-empty
+  surfaces, `recoveries_used` in restore). New
+  `recall founder daily-loop` operator panel + new
+  `recall alpha replay <handle>` (per-tester event timeline,
+  no content). Recovery journal v2 schema gains
+  `return_after_gap` + `time_to_resume`. Doc trio:
+  `DAILY_LOOP.md` (product story) +
+  `RETURN_BEHAVIOR.md` (return semantics in detail) +
+  `MOMENTS.md` (seven first-time moments per tester).
+  **No visual redesign**, **no installer work**. Receipt:
+  [`PHASE_6F_STATUS.md`](../engineering/PHASE_6F_STATUS.md).
+
+- **Phase 6E — Alpha Reality** (prior phase). Recall leaves
+  founder-only mode: the operational scaffolding for real
+  cohort installs lands without touching the engine or
+  redesigning any UI surface. `alpha/users/_TEMPLATE/status.json`
+  gains four directive fields (`installer_version`, `extension`,
+  `wow_moment`, `confusion`); the alpha CLI gains
+  `update` + `export` subcommands; the recovery ledger schema
+  is rewritten around the six-outcome vocabulary (`shown` /
+  `accepted` / `ignored` / `correct_silence` / `bad_recovery` /
+  `resume_ok`). New `recall founder alpha-health` operator
+  panel reads the source-of-truth files directly and emits the
+  five signals (installs / returning / first recoveries / trust % /
+  drop reasons) with green/yellow/red verdicts. New doc trio in
+  `docs/alpha/` (PLAYBOOK / STATUS / KNOWN_FAILURES); the install
+  matrix gains a *Phase 6E daily-use* section with Windows ×
+  Chrome / Edge / Arc + macOS daily-use rows. 3 captures in
+  `assets/screenshots/alpha/` (control room / populated status /
+  honest empty). **No engine work**, **no UI redesign** — pure
+  operations. Receipt:
+  [`PHASE_6E_STATUS.md`](../engineering/PHASE_6E_STATUS.md).
+
+- **Phase 6D — Demo Mode** (prior phase). A fresh install must
+  feel alive. New `app/core/demo_mode.py` state machine
+  (`disabled` / `available` / `active` / `dismissed` /
+  `completed`) persisted at `~/.recall/demo.json`. Three thin
+  `/v1/demo/{state,activate,dismiss}` endpoints + a one-line
+  auto-dismiss hook in every ingest route. Launcher's
+  `EmptyCard.empty()` now wired live with a *Show example* +
+  *Start normally* button pair; clicking the primary flips
+  state and routes the launcher into a new `demo_panel` that
+  shows a trust banner + the canonical *WebSocket retry
+  debugging* `RecoveryCard` + three `InvestigationCard` rows
+  (WebSocket / Healthcare pitch — proposal draft / RLHF reward
+  shaping). Extension popup mirrors the flow — same two
+  buttons, a new `DemoBanner` component, a `"demo"` branch in
+  `derivePopupState`, and a payload-aware `Body` render that
+  reuses the existing `ConnectedBody` so the demo looks
+  identical to a real populated surface. 4 captures in
+  `assets/screenshots/demo/` (launcher / extension / transition
+  / empty). **No engine layer touched.** Receipt:
+  [`PHASE_6D_STATUS.md`](../engineering/PHASE_6D_STATUS.md).
+  Story doc: [`FIRST_MAGIC.md`](../product/FIRST_MAGIC.md).
+
+- **Phase 6C — Extension Premium** (prior phase). The popup gets
+  the same warm-white + lavender + chip vocabulary the launcher
+  earned in 6B. Header gains a today-count caption + repair
+  wrench icon. `ContinueCard` gains a `ConfidencePill` that
+  mirrors the launcher's `derive_recovery_confidence(n_targets)`
+  exactly. `MemoryList` is rebuilt as a single vertical *Today*
+  rail (`HH:MM` mono stamps + kind glyphs along a hairline) in
+  place of the grouped Searches/Tabs/Chats card. The
+  investigations card becomes a horizontal pill strip, max 4,
+  with a left-to-right slide-fade entry. `EmptyState` adopts the
+  launcher's exact copy (*"Recall notices unfinished work. /
+  Work normally. Return later. / Recall fills itself."*) + a
+  soft *Show example* pill that hands off to the launcher via
+  `recall://`. 5 new captures in
+  `assets/screenshots/extension-v2/`. **NO engine work**, **NO
+  founder work** — extension surface only. Receipt:
+  [`PHASE_6C_STATUS.md`](../engineering/PHASE_6C_STATUS.md).
+
+- **Phase 6B — Launcher Identity** (prior phase). The theme swap
+  deferred from 6A landed. Palette inverted to warm white +
+  lavender (matching the extension popup); `LAUNCHER_QSS`
+  rewritten with a floating white card + generous spacing; the
+  evidence text line finally split into `[2 tabs] [3 files] [2d
+  gap]` chip pills via `_EvidenceChip` + `_parse_evidence_chips`;
+  `EmptyCard.empty` redesigned at 210 px with *"Recall notices
+  unfinished work."* and a soft Show-example lavender pill. 7
+  new captures in `assets/screenshots/launcher-v2/`. Receipt:
+  [`PHASE_6B_STATUS.md`](../engineering/PHASE_6B_STATUS.md).
 
 ## Next
 

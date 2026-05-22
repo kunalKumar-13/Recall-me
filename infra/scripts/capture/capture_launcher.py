@@ -1,9 +1,15 @@
-"""Capture the launcher idle digest — Phase 4L.
+"""Capture the launcher idle digest.
 
 Renders the Phase 4K card set (recovery, investigations,
 resurfacing, trust) as the launcher's idle digest, plus the
 skeleton-loading and empty/offline/first-week states, to
-deterministic PNGs under `assets/screenshots/`.
+deterministic PNGs.
+
+Phase 6B writes into `assets/screenshots/launcher-v2/` (warm-white
+identity captures) so the historical dark-theme PNGs at
+`assets/screenshots/launcher-*.png` stay as the *before* set
+referenced by older docs. The new captures are the *after* the
+launcher theme swap.
 
     python infra/scripts/capture/capture_launcher.py
 """
@@ -59,7 +65,7 @@ def _digest() -> QWidget:
         RecoveryCard(
             "rc_demo", "WebSocket retry debugging",
             "2 tabs · 2 files · reopened after a 2-day gap",
-            "2d ago", high_trust=True, n_targets=5,
+            "2d ago", confidence="high", n_targets=5,
         ),
         _section("Active investigations"),
         InvestigationCard(
@@ -106,8 +112,12 @@ def main() -> None:
         ("launcher-offline", _state("offline")),
         ("launcher-first-week", _state("first_week")),
     ):
-        path = render(widget, name)
-        print(f"  wrote {path.relative_to(path.parents[2])}")
+        # Phase 6B - write to assets/screenshots/launcher-v2/ so the
+        # new warm-white captures sit alongside the historical dark
+        # ones rather than overwriting them. The directive named
+        # this directory explicitly.
+        path = render(widget, name, subdir="launcher-v2")
+        print(f"  wrote {path.relative_to(path.parents[3])}")
 
 
 if __name__ == "__main__":

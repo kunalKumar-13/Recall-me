@@ -37,7 +37,7 @@ If a future phase brings any of these back:
    apps/web/app/components/<File>.tsx`
 2. Add the import to the appropriate page or component.
 3. Update this README's table to remove the row.
-4. Update [`CHANGELOG.md`](../../CHANGELOG.md) with the
+4. Update [`CHANGELOG.md`](../../docs/release/CHANGELOG.md) with the
    restore.
 
 No PR should *reference* an archived component from outside

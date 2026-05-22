@@ -14,10 +14,15 @@ const pg = {
   strokeLinejoin: "round" as const,
 };
 
+// Phase 6G — the directive's five-point trust statement. Mirrors
+// `docs/engineering/TRUST_LEDGER.md`: local only · no cloud · no
+// telemetry · counts only · export only. Order is from broadest
+// (the boundary itself) to most specific (what the user can take
+// with them when they leave).
 const POINTS: Point[] = [
   {
-    title: "100% Local",
-    body: "All capture and processing happens on your device.",
+    title: "Local only",
+    body: "Capture, processing, and recovery all happen on this device. There is no remote engine.",
     glyph: (
       <svg viewBox="0 0 24 24" {...pg}>
         <rect x="3" y="4" width="18" height="13" rx="2" />
@@ -26,8 +31,8 @@ const POINTS: Point[] = [
     ),
   },
   {
-    title: "No Cloud",
-    body: "Recall never stores, syncs, or backs up your data.",
+    title: "No cloud",
+    body: "Recall never stores, syncs, or backs up your data to a remote service.",
     glyph: (
       <svg viewBox="0 0 24 24" {...pg}>
         <path d="M6.5 18A4 4 0 0 1 6 10.1 6 6 0 0 1 16.4 7.6" />
@@ -37,8 +42,8 @@ const POINTS: Point[] = [
     ),
   },
   {
-    title: "No Telemetry",
-    body: "No tracking, no analytics, no usage data, no pings.",
+    title: "No telemetry",
+    body: "Zero tracking, zero analytics, zero usage pings — even \"anonymous\" ones.",
     glyph: (
       <svg viewBox="0 0 24 24" {...pg}>
         <path d="M12 3l7.5 3v5.5c0 5-3.4 8.3-7.5 9.5-4.1-1.2-7.5-4.5-7.5-9.5V6z" />
@@ -47,11 +52,21 @@ const POINTS: Point[] = [
     ),
   },
   {
-    title: "Open & Inspectable",
-    body: "MIT-licensed source; state on disk as plain JSON.",
+    title: "Counts only",
+    body: "If you ever share stats with us, they're counts (recoveries shown / accepted). Never the work itself.",
     glyph: (
       <svg viewBox="0 0 24 24" {...pg}>
-        <path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13 5l-2 14" />
+        <path d="M4 19V5M9 19V9M14 19v-7M19 19v-4" />
+      </svg>
+    ),
+  },
+  {
+    title: "Export only",
+    body: "Every artifact on disk is plain JSON. `recall stats --export` puts your own data in your hands; deleting `~/.recall/` is a full reset.",
+    glyph: (
+      <svg viewBox="0 0 24 24" {...pg}>
+        <path d="M12 3v12M7 8l5-5 5 5" />
+        <path d="M5 21h14" />
       </svg>
     ),
   },
@@ -71,17 +86,18 @@ export function Privacy() {
               transition={{ duration: 0.55, ease }}
             >
               <div className="text-[10.5px] font-semibold tracking-[0.2em] text-lavender-deep uppercase">
-                Privacy
+                Trust
               </div>
               <h2 className="font-editorial mt-3 text-[32px] md:text-[44px] font-medium tracking-editorial text-ink-bright leading-[1.05]">
-                Your data <span className="italic">never</span>
+                Your memory <span className="italic">never</span>
                 <br />
                 leaves your device.
               </h2>
               <p className="mt-5 text-ink leading-relaxed text-[15px] max-w-md">
                 Recall is built on a simple promise: your memory is yours,
                 always. The loopback bind is the boundary — there is no
-                account to create and no server to trust.
+                account to create and no server to trust. The five rules
+                below are not aspiration; they are the on-disk contract.
               </p>
             </motion.div>
 

@@ -1,0 +1,23 @@
+{
+  "_comment": "Per-tester record. Metadata only — never URLs, filenames, queries, chat content. The boundary is docs/engineering/TRUST_LEDGER.md. See alpha/users/README.md for the full contract.",
+  "handle": "",
+  "cohort": "",
+  "install_date": null,
+  "platform": null,
+  "installer": null,
+  "installer_version": null,
+  "extension": null,
+  "install_ok": null,
+  "install_minutes": null,
+  "day1": null,
+  "day2": null,
+  "day3": null,
+  "first_recovery": null,
+  "first_resume_ok": null,
+  "kept_using": null,
+  "wow_moment": null,
+  "confusion": null,
+  "drop_reason": null,
+  "feedback_returned": false,
+  "notes": ""
+}

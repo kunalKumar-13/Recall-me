@@ -40,7 +40,9 @@ _FONT_CANDIDATES = [
     "/System/Library/Fonts/Supplemental/Arial.ttf",
 ]
 
-# Where doc images land.
+# Where doc images land. Capture scripts may override per call via
+# `render(... , subdir="launcher-v2")`; the default is the historical
+# `assets/screenshots/` root.
 ASSETS = ROOT / "assets" / "screenshots"
 
 _app: QApplication | None = None
@@ -77,9 +79,16 @@ FONT_FAMILY = _install_font()
 
 class Panel(QWidget):
     """A launcher-coloured rounded surface to mount cards onto, so a
-    captured card reads against the real background it ships on."""
+    captured card reads against the real background it ships on.
 
-    def __init__(self, bg: str = "#13151b", radius: int = 14) -> None:
+    Phase 6B - the default background flips from dark (`#13151b`) to
+    warm white (`#ffffff`, the new `BG_RAISED`) so screenshots taken
+    against the new launcher theme read as they will on a user's
+    machine. Capture scripts that want the historical dark surface
+    can still pass `bg=...` explicitly.
+    """
+
+    def __init__(self, bg: str = "#ffffff", radius: int = 22) -> None:
         super().__init__()
         self._bg = QColor(bg)
         self._radius = radius
@@ -95,9 +104,23 @@ class Panel(QWidget):
         p.end()
 
 
-def render(widget: QWidget, name: str, *, scale: int = 2) -> Path:
-    """Lay `widget` out, grab it to a PNG at `scale`×, return the path."""
-    ASSETS.mkdir(parents=True, exist_ok=True)
+def render(
+    widget: QWidget,
+    name: str,
+    *,
+    scale: int = 2,
+    subdir: str | None = None,
+) -> Path:
+    """Lay `widget` out, grab it to a PNG at `scale`×, return the path.
+
+    `subdir` (optional) writes under `assets/screenshots/<subdir>/`
+    so capture scripts can target a versioned folder (e.g. the Phase
+    6B `launcher-v2/` directive) without polluting the historical
+    flat layout. Default keeps the screenshots in the top-level
+    `assets/screenshots/` folder.
+    """
+    out_dir = ASSETS if subdir is None else ASSETS / subdir
+    out_dir.mkdir(parents=True, exist_ok=True)
     widget.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen, True)
     widget.show()
     app().processEvents()
@@ -112,7 +135,7 @@ def render(widget: QWidget, name: str, *, scale: int = 2) -> Path:
             Qt.AspectRatioMode.IgnoreAspectRatio,
             Qt.TransformationMode.SmoothTransformation,
         )
-    out = ASSETS / f"{name}.png"
+    out = out_dir / f"{name}.png"
     pm.save(str(out))
     widget.hide()
     return out

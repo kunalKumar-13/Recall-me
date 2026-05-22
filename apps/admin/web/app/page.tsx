@@ -1,114 +1,85 @@
 import {
-  loadCohorts,
-  loadFeedback,
-  loadHealth,
-  loadMeta,
+  loadAlpha,
+  loadDailyLoop,
+  loadHealthSnapshot,
   loadRelease,
-  loadTimeline,
-  loadTraction,
-  loadTrust,
-} from "../lib/data";
-import { AlphaCohorts } from "../components/AlphaCohorts";
-import { FeedbackRoom } from "../components/FeedbackRoom";
-import { FounderTimeline } from "../components/FounderTimeline";
-import { HealthOverview } from "../components/HealthOverview";
-import { ReleaseRoom } from "../components/ReleaseRoom";
-import { TractionRoom } from "../components/TractionRoom";
-import { TrustRoom } from "../components/TrustRoom";
+  loadSystemSnapshot,
+  loadTrustSnapshot,
+} from "../lib/loaders";
+import { AlphaPanel } from "../components/panels/AlphaPanel";
+import { DailyLoopPanel } from "../components/panels/DailyLoopPanel";
+import { HealthPanel } from "../components/panels/HealthPanel";
+import { ReleasePanel } from "../components/panels/ReleasePanel";
+import { SystemPanel } from "../components/panels/SystemPanel";
+import { TrustPanel } from "../components/panels/TrustPanel";
+
+export const dynamic = "force-dynamic";
 
 /**
- * The control-room page. One server component, eight sections,
- * every data row sourced from a JSON file the founder placed in
- * `apps/admin/data/`. Nothing fetched from anywhere else, by
- * construction.
+ * Phase 6H — control-room overview.
  *
- * The order is the 30-second read: health first, traction second,
- * cohorts third, release fourth, trust fifth, feedback sixth,
- * timeline last. A founder who opens this and stops after the
- * first two sections still leaves knowing whether the product is
- * alive.
+ * One server component, six panels, every value live-derived.
+ * The directive's *30-second understanding* lives here: this page
+ * is what the founder opens first, and after one scroll they know
+ * the engine's health, the cohort's pulse, the day-loop's state,
+ * the release verdict, and what `~/.recall/` looks like right now.
+ *
+ * Each panel renders in `compact` mode where applicable so the
+ * overview reads as a *briefing*, not a deep-dive. The deep dives
+ * live at `/alpha`, `/trust`, `/daily-loop`, `/release`, `/system`.
  */
-export default async function Page() {
-  const [
-    health, traction, cohorts, release, trust, feedback, timeline, meta,
-  ] = await Promise.all([
-    loadHealth(),
-    loadTraction(),
-    loadCohorts(),
+export default async function OverviewPage() {
+  const [health, alpha, daily, trust, release, system] = await Promise.all([
+    loadHealthSnapshot(),
+    loadAlpha(),
+    loadDailyLoop(7),
+    loadTrustSnapshot(),
     loadRelease(),
-    loadTrust(),
-    loadFeedback(),
-    loadTimeline(),
-    loadMeta(),
+    loadSystemSnapshot(),
   ]);
 
   return (
-    <main className="page">
+    <div className="page">
       <header className="page-header">
         <div>
-          <h1 className="page-title">Recall — control room</h1>
+          <h1 className="page-title">Overview</h1>
           <div className="page-subtitle">
             local-first · no server · no auth · no telemetry
           </div>
         </div>
         <div className="page-subtitle">
-          generated {meta.generated_at ?? "—"}
+          generated {new Date().toISOString()}
         </div>
       </header>
 
-      <Section title="1 · Health overview" aside="six cards · current state">
-        <HealthOverview cards={health} />
-      </Section>
+      <section className="section">
+        <HealthPanel snapshot={health} />
+      </section>
 
-      <Section title="2 · Traction" aside="30-day trend per metric">
-        <TractionRoom series={traction} />
-      </Section>
+      <section className="section">
+        <AlphaPanel data={alpha} compact />
+      </section>
 
-      <Section title="3 · Alpha cohorts" aside="manual roster">
-        <AlphaCohorts cohorts={cohorts} />
-      </Section>
+      <section className="section">
+        <DailyLoopPanel summary={daily} compact />
+      </section>
 
-      <Section title="4 · Release" aside="what ships, what blocks it">
-        <ReleaseRoom release={release} />
-      </Section>
+      <section className="section">
+        <TrustPanel snapshot={trust} compact />
+      </section>
 
-      <Section title="5 · Trust" aside="recoveries shown / accepted / silenced">
-        <TrustRoom cards={trust} />
-      </Section>
+      <section className="section">
+        <ReleasePanel release={release} compact />
+      </section>
 
-      <Section title="6 · Feedback" aside="manual import only">
-        <FeedbackRoom items={feedback} />
-      </Section>
+      <section className="section">
+        <SystemPanel snapshot={system} />
+      </section>
 
-      <Section title="7 · Founder timeline" aside="phase done %">
-        <FounderTimeline phases={timeline} />
-      </Section>
-
-      <footer className="footer">
-        <span>
-          data: <code>apps/admin/data/</code> &middot; refresh with{" "}
-          <code>merge_stats.py</code> + <code>pull_release_stats.py</code>
-        </span>
-        <span>{meta.source_note ?? ""}</span>
+      <footer className="footer" style={{ marginTop: 36, fontSize: 12, color: "var(--ink-3)" }}>
+        sources: <code>apps/admin/data/</code> · <code>alpha/users/</code> ·{" "}
+        <code>alpha/recovery_journal.json</code> · <code>~/.recall/</code>
       </footer>
-    </main>
-  );
-}
-
-function Section({
-  title, aside, children,
-}: {
-  title: string;
-  aside?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="section">
-      <div className="section-header">
-        <span className="section-title">{title}</span>
-        {aside ? <span className="section-aside">— {aside}</span> : null}
-      </div>
-      {children}
-    </section>
+    </div>
   );
 }

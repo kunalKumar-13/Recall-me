@@ -1,19 +1,30 @@
 {
-  "_comment_schema": "alpha-001 recovery journal. Hand-edited by the founder per tester report. Each entry is one Resume click (right OR wrong). Empty array until cohort starts. Never imported from telemetry - no telemetry exists. See alpha/ALPHA_001_RUNBOOK.md for the cadence.",
+  "_comment_schema": "alpha cohort recovery ledger. Hand-edited by the founder per tester report. Each entry is one launcher recovery decision — Shown / Accepted / Ignored / Correct silence / Bad recovery / Resume OK. Empty array until cohort starts. Never imported from telemetry — no telemetry exists. See docs/alpha/PLAYBOOK.md for the cadence and `recall alpha export` for the aggregation.",
   "_field_spec": {
-    "date": "YYYY-MM-DD - the local date the tester clicked Resume",
+    "date": "YYYY-MM-DD — the local date the tester reported the recovery decision",
     "tester": "founder-assigned handle (never PII)",
-    "cohort": "alpha-001 | friends | writers | ...",
-    "investigation": "the title the launcher rendered on the recovery card (verbatim, the tester quotes it)",
-    "recovered": "what was on the card: 'N tabs, M files, K-day gap'",
-    "accepted": "true | false - did the tester click Resume?",
-    "wrong": "true | false | null - did the reopened work match what they actually wanted? null = didn't click Resume",
-    "notes": "one short sentence: what was useful, what was off, any quote"
+    "cohort": "alpha-001 | alpha-002 | friends | builders | students",
+    "kind": "Phase 6E vocabulary — one of: shown, accepted, ignored, correct_silence, bad_recovery, resume_ok",
+    "investigation": "the title the launcher rendered on the recovery card (verbatim, the tester quotes it). Optional for kind=correct_silence.",
+    "recovered": "what was on the card: 'N tabs, M files, K-day gap'. Optional for kind=correct_silence.",
+    "return_after_gap": "Phase 6F — was the tester returning from a >=30-minute idle gap when the recovery surfaced? `true` | `false` | `null` (unknown). The strongest signal that recovery is doing what it's meant to.",
+    "time_to_resume": "Phase 6F — seconds between the recovery card appearing and the tester clicking Resume. Integer or null. Captures hesitation; useful for spotting `bad_recovery` rows that read as `resume_ok` only because the tester forced it.",
+    "notes": "one short sentence: what was useful, what was off, any direct quote (with tester's explicit OK)",
+    "_legacy_accepted": "deprecated — pre-6E entries used a true/false `accepted` flag. The export aggregator maps legacy entries onto the new kind vocabulary so old entries still count.",
+    "_legacy_wrong": "deprecated — same migration path as `_legacy_accepted`."
+  },
+  "_kind_vocabulary": {
+    "shown": "the launcher surfaced a recovery card. The user neither resumed nor explicitly dismissed it — they just saw it. Useful as a denominator for trust %.",
+    "accepted": "the tester clicked Resume. (Whether the reopen was *correct* is captured by resume_ok or bad_recovery — `accepted` alone means the click happened.)",
+    "ignored": "the tester saw the card and chose not to act on it. May or may not be a quality problem — the tester's notes tell the story.",
+    "correct_silence": "the launcher CORRECTLY showed no card on a day the tester had no resumable work. This is a positive — silence is a signal, not a failure mode.",
+    "bad_recovery": "the launcher surfaced a card AND the reopened work was wrong / misleading. A single bad_recovery caps the trust dimension in readiness_score.compute() at 0.2.",
+    "resume_ok": "the tester clicked Resume AND the reopened work matched what they actually wanted. The closest the alpha ledger has to a smile."
   },
   "_invariants": [
     "Never store URLs, filenames, queries, or chat content. The 'investigation' field is the launcher title only.",
-    "A single row with wrong=true caps the trust dimension in readiness_score.compute() at 0.2.",
-    "If a tester reports a Resume that was right - log it. If they report nothing - leave them off; absence is not signal."
+    "A single row with kind=bad_recovery caps the trust dimension in readiness_score.compute() at 0.2.",
+    "Trust % = (resume_ok + correct_silence) / shown — computed by `recall alpha export`."
   ],
   "entries": []
 }

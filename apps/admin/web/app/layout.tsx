@@ -1,5 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { ActionsBar } from "../components/ActionsBar";
+import { Nav } from "../components/Nav";
 
 export const metadata: Metadata = {
   title: "Recall — control room",
@@ -10,9 +12,17 @@ export const metadata: Metadata = {
 };
 
 /**
- * Root layout for the admin UI. Plain HTML shell, system fonts, calm
- * defaults. The page composes its sections directly — no shell chrome,
- * no nav (a one-page surface is the whole product).
+ * Phase 6H — three-column operator shell.
+ *
+ *   ┌────────────┬──────────────────────────┬───────────────┐
+ *   │  Left rail │   Main route content      │   Actions    │
+ *   │  (sticky)  │   (server-rendered)       │   (sticky)   │
+ *   └────────────┴──────────────────────────┴───────────────┘
+ *
+ * Rail + actions are client components (Nav reads the path,
+ * ActionsBar runs the clipboard fallback). Every route page is a
+ * server component that reads from the live loaders. Nothing in the
+ * shell hits the network.
  */
 export default function RootLayout({
   children,
@@ -21,7 +31,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <div className="shell">
+          <Nav />
+          <main className="shell-main">{children}</main>
+          <ActionsBar />
+        </div>
+      </body>
     </html>
   );
 }

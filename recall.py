@@ -65,6 +65,41 @@ if len(sys.argv) > 1 and sys.argv[1] == "founder":
         sys.exit(1)
     raise SystemExit(run_founder_cli(sys.argv[2:]))
 
+# Phase 5J install-repair triad. `repair` / `reset` / `reinstall-check`
+# all live in `app.core.install_repair` and are dispatched here so a
+# tester can run them from a Command Prompt without booting the
+# launcher.
+if len(sys.argv) > 1 and sys.argv[1] in {"repair", "reset", "reinstall-check"}:
+    try:
+        from app.core.install_repair import (
+            cli_repair,
+            cli_reset,
+            cli_reinstall_check,
+        )
+    except BaseException:
+        print("[boot] [FAIL] importing app.core.install_repair", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(1)
+    _sub = sys.argv[1]
+    _rest = sys.argv[2:]
+    if _sub == "repair":
+        raise SystemExit(cli_repair(_rest))
+    if _sub == "reset":
+        raise SystemExit(cli_reset(_rest))
+    raise SystemExit(cli_reinstall_check(_rest))
+
+# Phase 5K cohort CLI. `recall alpha create / status / report` writes
+# to the repo-tracked `alpha/users/` tree; metadata only, never
+# content (boundary in `alpha/users/README.md`).
+if len(sys.argv) > 1 and sys.argv[1] == "alpha":
+    try:
+        from app.core.alpha_cli import run_alpha_cli
+    except BaseException:
+        print("[boot] [FAIL] importing app.core.alpha_cli", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(1)
+    raise SystemExit(run_alpha_cli(sys.argv[2:]))
+
 _t0 = time.time()
 _log(">> importing app.main")
 try:

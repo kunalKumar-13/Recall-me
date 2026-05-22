@@ -53,7 +53,6 @@ from PyQt6.QtWidgets import (
 
 from .styles import (
     ACCENT,
-    BG_HOVER,
     MOTION_FAST_MS,
     MOTION_NORMAL_MS,
     MOTION_SLOW_MS,
@@ -67,12 +66,18 @@ from .styles import (
 # a list of irregular widgets.
 CARD_HEIGHT = 58
 
-# A small translation on hover (2–3 px lift, per the Phase 5I brief).
-HOVER_LIFT_PX = 2.0
+# Phase 6B bumps the hover lift slightly (3 → 4 px max, per the
+# directive's "hover lift: 4 px max" line for the Resume pill /
+# floating-card feel). Still inside the calm band.
+HOVER_LIFT_PX = 3.0
 
-_ACCENT_RAIL = "rgba(139, 155, 255, 0.85)"
-_OK = "#5fcf9e"
-_WARN = "#d6a06a"
+# Phase 6B — the accent rail and status dots retuned for the warm-
+# white surface. The lavender (#8b7fe3) matches the new `ACCENT`
+# token in styles.py; status dots stay close to their prior hues
+# but with slightly higher saturation so they read on white.
+_ACCENT_RAIL = "rgba(139, 127, 227, 0.88)"
+_OK = "#4fa784"     # matches the extension's --ok
+_WARN = "#c98a5e"   # matches the extension's --warn
 
 
 # --------------------------------------------------------------- glyphs
@@ -265,11 +270,15 @@ class CardBase(QWidget):
         )
 
         if self._hover > 0.001:
-            fill = QColor(BG_HOVER)
-            fill.setAlphaF(0.55 * self._hover)
+            # Phase 6B — hover fill is a faint accent-tinted lavender
+            # on warm white. BG_HOVER (warm beige) reads as a flash
+            # on the new light theme; a low-alpha accent reads as a
+            # gentle highlight instead. Same paced timing.
+            fill = QColor(ACCENT)
+            fill.setAlphaF(0.10 * self._hover)
             p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(fill)
-            p.drawRoundedRect(rect, 9, 9)
+            p.drawRoundedRect(rect, 12, 12)
 
         if self.hasFocus():
             # Lavender focus ring — the only colour state on a card.
@@ -317,6 +326,118 @@ def _middle(title: str, evidence: str, *, title_limit: int = 42) -> QWidget:
     return w
 
 
+class _EvidenceChip(QWidget):
+    """Phase 6B — a small soft pill for one preview chip (e.g.
+    *"2 tabs"*, *"3 files"*, *"2d gap"*). Replaces the prior
+    middle-dot-separated evidence text for `RecoveryCard`.
+
+    No outline; soft accent-tinted fill (or neutral for the gap
+    chip). The split into separate widgets is the directive's
+    "Use chips" line — *Instead of: '2 tabs · 3 files · after 2
+    days' / Use chips: [2 tabs] [3 files] [2d gap]*.
+    """
+
+    HEIGHT = 18
+
+    def __init__(self, label: str, *, kind: str = "count") -> None:
+        super().__init__()
+        self._label = label
+        # *count* chips (tabs / files / chats) use the accent tint;
+        # *time* chips (the gap "2d gap") use the neutral surface.
+        if kind == "time":
+            self._fg = QColor(TEXT_DIM)
+            self._bg_alpha = 0.55
+            self._bg = QColor("#f4efea")   # BG_HOVER (warm beige)
+        else:
+            self._fg = QColor(ACCENT)
+            self._bg_alpha = 1.0
+            self._bg = QColor("#ede9fb")   # ACCENT_DIM (soft accent)
+        f = self.font()
+        f.setPointSizeF(7.8)
+        fm = QFontMetrics(f)
+        self._w = fm.horizontalAdvance(label) + 14
+        self.setFixedSize(self._w, self.HEIGHT)
+
+    def paintEvent(self, _event) -> None:  # type: ignore[override]
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        bg = QColor(self._bg)
+        bg.setAlphaF(self._bg_alpha)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(bg)
+        p.drawRoundedRect(QRectF(0, 0, self._w, self.HEIGHT), 6, 6)
+        f = self.font()
+        f.setPointSizeF(7.8)
+        f.setWeight(QFont.Weight.DemiBold)
+        p.setFont(f)
+        p.setPen(QPen(self._fg))
+        p.drawText(
+            QRectF(0, 0, self._w, self.HEIGHT),
+            Qt.AlignmentFlag.AlignCenter,
+            self._label,
+        )
+        p.end()
+
+
+def _middle_with_chips(
+    title: str,
+    chips: list[tuple[str, str]],
+    *,
+    title_limit: int = 42,
+) -> QWidget:
+    """Phase 6B — like `_middle`, but the evidence row is a horizontal
+    layout of small soft pills instead of one dim text line.
+
+    `chips` is a list of `(label, kind)` tuples; `kind` is "count"
+    (accent pill) or "time" (neutral pill).
+    """
+    w = QWidget()
+    col = QVBoxLayout(w)
+    col.setContentsMargins(0, 0, 0, 0)
+    col.setSpacing(4)
+    col.addWidget(_text(_elide(title, title_limit), size=9.5,
+                        color=TEXT, weight=600))
+    if chips:
+        row = QHBoxLayout()
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(5)
+        for label, kind in chips[:4]:
+            row.addWidget(_EvidenceChip(label, kind=kind))
+        row.addStretch(1)
+        col.addLayout(row)
+    return w
+
+
+def _parse_evidence_chips(evidence: str) -> list[tuple[str, str]]:
+    """Phase 6B — split the engine's deterministic preview caption
+    (e.g. *"2 tabs · 3 files · reopened after a 2-day gap"*) into
+    `(label, kind)` chip tuples. Tokens containing *day(s) gap*,
+    *ago*, *return*, *reopened* are *time* chips; everything else
+    is a *count* chip. Pure parsing — never invents data.
+    """
+    parts = [seg.strip() for seg in (evidence or "").split("·") if seg.strip()]
+    out: list[tuple[str, str]] = []
+    for p in parts:
+        low = p.lower()
+        if any(k in low for k in ("gap", "ago", "return", "reopened", "day")):
+            # Compact the time chip to "Nd gap" / "Nh ago" shape.
+            short = (
+                p.replace("reopened after a ", "")
+                .replace("reopened after ", "")
+                .replace("returned after ", "")
+                .replace("-day gap", "d gap")
+                .replace(" day gap", "d gap")
+                .replace(" days gap", "d gap")
+                .replace(" hours ago", "h ago")
+                .replace(" minutes ago", "m ago")
+                .strip()
+            )
+            out.append((short, "time"))
+        else:
+            out.append((p, "count"))
+    return out
+
+
 def _meta(top: str, bottom: Optional[QWidget]) -> QWidget:
     """The shared right zone — a time line over a state affordance."""
     w = QWidget()
@@ -327,6 +448,28 @@ def _meta(top: str, bottom: Optional[QWidget]) -> QWidget:
     t = _text(top, size=7.8, color=TEXT_DIMMER)
     t.setAlignment(Qt.AlignmentFlag.AlignRight)
     col.addWidget(t)
+    if bottom is not None:
+        col.addWidget(bottom, 0, Qt.AlignmentFlag.AlignRight)
+    return w
+
+
+def _meta_with_confidence(
+    top: str, confidence: str, bottom: Optional[QWidget]
+) -> QWidget:
+    """Phase 6A — like `_meta`, but the time line is followed by a
+    small *confidence badge* before the bottom widget. Used by the
+    `RecoveryCard` so the user reads the trust band next to the
+    Resume affordance.
+    """
+    w = QWidget()
+    col = QVBoxLayout(w)
+    col.setContentsMargins(0, 0, 0, 0)
+    col.setSpacing(2)
+    col.setAlignment(Qt.AlignmentFlag.AlignRight)
+    t = _text(top, size=7.8, color=TEXT_DIMMER)
+    t.setAlignment(Qt.AlignmentFlag.AlignRight)
+    col.addWidget(t, 0, Qt.AlignmentFlag.AlignRight)
+    col.addWidget(_ConfidenceBadge(confidence), 0, Qt.AlignmentFlag.AlignRight)
     if bottom is not None:
         col.addWidget(bottom, 0, Qt.AlignmentFlag.AlignRight)
     return w
@@ -360,6 +503,80 @@ class _StateDot(QWidget):
 
 
 # --------------------------------------------------------------- cards
+
+
+class _ConfidenceBadge(QWidget):
+    """Phase 6A — a small pill next to the title that names the
+    recovery's confidence band: *high* (lavender), *medium* (amber),
+    *low* (muted gray).
+
+    The level is **derived** at the launcher's call site from
+    existing candidate data — no engine-side confidence field. The
+    badge is *display only*; nothing here computes trust.
+    """
+
+    HEIGHT = 14
+
+    # One color per level. *high* uses the accent lavender so the
+    # badge reads as "act on this"; *medium* uses the warn amber;
+    # *low* uses the dimmed text grey so the user reads it as a hint,
+    # not a recommendation.
+    _COLOR = {
+        "high": ACCENT,
+        "medium": _WARN,
+        "low": TEXT_DIMMER,
+    }
+    _LABEL = {
+        "high": "high",
+        "medium": "med",
+        "low": "low",
+    }
+
+    def __init__(self, level: str) -> None:
+        super().__init__()
+        self._level = level if level in self._COLOR else "high"
+        f = self.font()
+        f.setPointSizeF(7.6)
+        fm = QFontMetrics(f)
+        self._w = fm.horizontalAdvance(self._LABEL[self._level]) + 14
+        self.setFixedSize(self._w, self.HEIGHT)
+
+    def paintEvent(self, _event) -> None:  # type: ignore[override]
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        color = QColor(self._COLOR[self._level])
+        bg = QColor(color)
+        bg.setAlphaF(0.16)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(bg)
+        p.drawRoundedRect(QRectF(0, 0, self._w, self.HEIGHT), 4, 4)
+        f = self.font()
+        f.setPointSizeF(7.6)
+        f.setWeight(QFont.Weight.DemiBold)
+        p.setFont(f)
+        p.setPen(QPen(color))
+        p.drawText(
+            QRectF(0, 0, self._w, self.HEIGHT),
+            Qt.AlignmentFlag.AlignCenter,
+            self._LABEL[self._level],
+        )
+        p.end()
+
+
+def derive_recovery_confidence(n_targets: int) -> str:
+    """UI-side mapping from candidate target count to a confidence
+    band. Pure display logic — no engine-side score is computed
+    here; this is the *displayed* read of an existing signal.
+
+      - >= 4 targets: high (a real multi-surface investigation)
+      - 2-3 targets:  medium (a partial but plausible thread)
+      - 0-1 targets:  low (a hint, not a recommendation)
+    """
+    if n_targets >= 4:
+        return "high"
+    if n_targets >= 2:
+        return "medium"
+    return "low"
 
 
 class _ResumePill(QWidget):
@@ -429,12 +646,22 @@ class RecoveryCard(CardBase):
     Phase 5I: a slightly taller row (top of the 56–64 band so it
     visually anchors the digest), a real *Resume* pill on the right,
     and an entrance animation that slides the pill in from the right
-    over 220ms the first time the card is shown. The animation runs
-    once per construction; if a card is hidden and re-shown (popup
-    closed + reopened) the launcher constructs a fresh card.
+    over 220ms the first time the card is shown.
+
+    Phase 6A: an inline *confidence* badge in the meta column above
+    the time label. Levels are *high* / *medium* / *low* and are
+    derived UI-side from the candidate's target count (see
+    `derive_recovery_confidence`) — no engine-side trust field.
+    The *low* band keeps the calmer `_StateDot` variant; *medium*
+    and *high* both render the full Resume pill because the user
+    has enough evidence to act.
     """
 
-    RECOVERY_HEIGHT = 64
+    # Phase 6A bumps this from 64 to 76 to fit the new
+    # *confidence badge* between the time label and the Resume
+    # pill in the meta column. Still inside the launcher's calm
+    # row band; the digest does not need to scroll because of it.
+    RECOVERY_HEIGHT = 76
 
     restore = pyqtSignal(str, str, int)
 
@@ -445,26 +672,38 @@ class RecoveryCard(CardBase):
         evidence: str,
         time_label: str,
         *,
-        high_trust: bool = True,
+        confidence: str = "high",
         n_targets: int = 0,
     ) -> None:
         super().__init__(height=self.RECOVERY_HEIGHT)
         self._cid = candidate_id
         self._title = title
         self._n = n_targets
+        self._confidence = confidence if confidence in _ConfidenceBadge._COLOR else "high"
 
         chip = _GlyphChip("recovery", ACCENT)
-        # The Resume pill replaces the tiny _StateDot label. For
-        # low-trust recoveries we keep the calmer state-dot variant -
-        # a Resume CTA on a hedged surface would over-promise.
+        # The Resume pill replaces the tiny _StateDot label for
+        # high/medium recoveries; low-confidence recoveries keep the
+        # quieter state-dot - a Resume CTA on a hedged surface would
+        # over-promise.
         right: QWidget
-        if high_trust:
-            self._pill = _ResumePill()
-            right = self._pill
-        else:
+        if self._confidence == "low":
             self._pill = None
             right = _StateDot(ACCENT, "Resume")
-        self.compose(chip, _middle(title, evidence), _meta(time_label, right))
+        else:
+            self._pill = _ResumePill()
+            right = self._pill
+        meta = _meta_with_confidence(time_label, self._confidence, right)
+        # Phase 6B - the evidence string is split into chip widgets
+        # so the row reads as `[2 tabs] [3 files] [2d gap]` rather
+        # than the prior dim text line. The split is pure parsing on
+        # `·`; if evidence is empty (a rare degenerate candidate)
+        # the chip row is dropped.
+        chips = _parse_evidence_chips(evidence)
+        if chips:
+            self.compose(chip, _middle_with_chips(title, chips), meta)
+        else:
+            self.compose(chip, _middle(title, evidence), meta)
 
         # Recovery's quiet left signature — a thin lavender rail.
         self.activated.connect(
@@ -610,13 +849,35 @@ class EmptyCard(CardBase):
     """A calm full-state card — empty, offline, or first-week. Not a
     row: it is taller, centered, and self-explaining. Construct via
     the `empty()` / `offline()` / `first_week()` classmethods so the
-    copy stays canonical."""
+    copy stays canonical.
 
-    def __init__(self, glyph: str, tint: str, title: str, body: str) -> None:
-        super().__init__(interactive=False, height=132)
+    Phase 6B grew an optional *Show example* button on the EMPTY
+    variant; Phase 6D pairs it with a quieter *Start normally*
+    secondary action so a user who'd rather wait for real data can
+    decline the demo cleanly. Both buttons fire dedicated signals
+    (`show_example` / `start_normally`); the live launcher owns the
+    actual demo-mode wiring, so this widget remains engine-free.
+    """
+
+    show_example = pyqtSignal()
+    start_normally = pyqtSignal()
+
+    def __init__(
+        self,
+        glyph: str,
+        tint: str,
+        title: str,
+        body: str,
+        *,
+        height: int = 132,
+        show_example_button: bool = False,
+    ) -> None:
+        super().__init__(interactive=False, height=height)
         wrap = QVBoxLayout(self)
-        wrap.setContentsMargins(28, 16, 28, 16)
-        wrap.setSpacing(6)
+        # Phase 6B - generous outer padding (24) per the directive's
+        # spacing rhythm; the empty surface should breathe.
+        wrap.setContentsMargins(28, 24, 28, 22)
+        wrap.setSpacing(10)
         wrap.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         chip = _GlyphChip(glyph, QColor(tint).name())
@@ -626,22 +887,55 @@ class EmptyCard(CardBase):
         chip_row.addStretch(1)
         wrap.addLayout(chip_row)
 
-        t = _text(title, size=10, color=TEXT, weight=600)
+        t = _text(title, size=11, color=TEXT, weight=600)
         t.setAlignment(Qt.AlignmentFlag.AlignCenter)
         wrap.addWidget(t)
 
-        b = _text(body, size=8.4, color=TEXT_DIM)
+        b = _text(body, size=9, color=TEXT_DIM)
         b.setAlignment(Qt.AlignmentFlag.AlignCenter)
         b.setWordWrap(True)
         wrap.addWidget(b)
 
+        if show_example_button:
+            from PyQt6.QtWidgets import QPushButton
+            primary = QPushButton("Show example")
+            primary.setObjectName("example_button")
+            primary.setCursor(Qt.CursorShape.PointingHandCursor)
+            primary.setFixedHeight(34)
+            primary.clicked.connect(self.show_example.emit)
+
+            # Phase 6D — the *Start normally* secondary action.
+            # Same height, transparent fill (styled by the new
+            # QSS `secondary_button` id) — a quiet decline that
+            # never reads louder than the primary.
+            secondary = QPushButton("Start normally")
+            secondary.setObjectName("secondary_button")
+            secondary.setCursor(Qt.CursorShape.PointingHandCursor)
+            secondary.setFixedHeight(34)
+            secondary.clicked.connect(self.start_normally.emit)
+
+            btn_row = QHBoxLayout()
+            btn_row.setSpacing(8)
+            btn_row.addStretch(1)
+            btn_row.addWidget(primary)
+            btn_row.addWidget(secondary)
+            btn_row.addStretch(1)
+            wrap.addSpacing(4)
+            wrap.addLayout(btn_row)
+
     @classmethod
     def empty(cls) -> "EmptyCard":
+        # Phase 6B - the launcher's identity surface. Headline says
+        # *what Recall does* in five words; body says *what the user
+        # does* in three short clauses. The Show example button is
+        # the only first-run CTA on the whole surface.
         return cls(
             "spark", ACCENT,
-            "Recall is ready.",
-            "Work a little, then come back later — the investigations "
-            "you can step back into will appear here.",
+            "Recall notices unfinished work.",
+            "Work normally.  Return later.\n"
+            "Recall fills itself.",
+            height=210,
+            show_example_button=True,
         )
 
     @classmethod
@@ -672,4 +966,5 @@ __all__ = [
     "TrustCard",
     "SkeletonCard",
     "EmptyCard",
+    "derive_recovery_confidence",
 ]

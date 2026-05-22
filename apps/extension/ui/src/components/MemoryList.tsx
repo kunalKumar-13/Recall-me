@@ -4,32 +4,56 @@ import { openTab } from "../lib/api";
 import type { MemoryItem, MemoryKind } from "../lib/types";
 import { Icon } from "./icons";
 
-const GROUPS: { kind: MemoryKind; label: string }[] = [
-  { kind: "search", label: "Searches" },
-  { kind: "tab", label: "Tabs" },
-  { kind: "chat", label: "Chats" },
-];
-
-function GlyphFor({ kind }: { kind: MemoryKind }) {
-  if (kind === "search") return <Icon.search size={14} />;
-  if (kind === "chat") return <Icon.chat size={14} />;
-  return <Icon.tab size={14} />;
-}
 
 /**
- * Recent browser memory, grouped by surface — searches, tabs, chats.
- * This is the quiet "what did I touch" layer, deliberately below the
- * investigation surfaces: it answers a smaller question. Each group
- * shows at most three rows so the popup never turns into a history
- * log.
+ * Phase 6C - kind glyph for the activity rail. Same vocabulary as
+ * the launcher digest: a small stroked icon, not a filled badge.
+ */
+function GlyphFor({ kind }: { kind: MemoryKind }) {
+  if (kind === "search") return <Icon.search size={12} />;
+  if (kind === "chat") return <Icon.chat size={12} />;
+  return <Icon.tab size={12} />;
+}
+
+
+function _kindLabel(kind: MemoryKind): string {
+  if (kind === "search") return "Search";
+  if (kind === "chat") return "Chat";
+  return "Tab";
+}
+
+
+/**
+ * Phase 6C — HH:MM time stamp in local time. Pure display: the API
+ * provides epoch seconds on `ts`; we never invent one. If `ts` is
+ * absent the row is dropped silently (no placeholder).
+ */
+function _hhmm(ts: number): string {
+  const d = new Date(ts * 1000);
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+
+/**
+ * Phase 6C Activity rail. A single chronological vertical timeline
+ * of the day's captured surfaces — searches, tabs, chats — sorted
+ * newest first. Replaces the prior grouped layout (Searches / Tabs
+ * / Chats). The timeline answers "what did I touch today?" in the
+ * same shape as the launcher digest: small marker, mono time stamp,
+ * one short label per row.
+ *
+ * Rows without a real timestamp are dropped — the popup never
+ * invents one.
  */
 export function MemoryList({ items }: { items: MemoryItem[] }) {
-  const groups = GROUPS.map((g) => ({
-    ...g,
-    rows: items.filter((it) => it.kind === g.kind).slice(0, 3),
-  })).filter((g) => g.rows.length > 0);
+  const dated = items
+    .filter((it) => typeof it.ts === "number")
+    .sort((a, b) => (b.ts ?? 0) - (a.ts ?? 0))
+    .slice(0, 8);
 
-  if (groups.length === 0) {
+  if (dated.length === 0) {
     return (
       <div
         className="card"
@@ -46,70 +70,101 @@ export function MemoryList({ items }: { items: MemoryItem[] }) {
 
   return (
     <div className="card" style={{ overflow: "hidden" }}>
-      {groups.map((g, gi) => (
-        <div key={g.kind}>
-          <div
+      <div style={{ position: "relative", padding: "8px 0 8px" }}>
+        {/* the vertical hairline that ties the rail together */}
+        <span
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: 22,
+            top: 8,
+            bottom: 8,
+            width: 1,
+            background: "var(--line)",
+          }}
+        />
+        {dated.map((it, i) => (
+          <motion.button
+            key={`${it.kind}-${i}-${it.ts}`}
+            className="row-button"
+            whileHover={{ x: 1 }}
+            transition={calmFast}
+            onClick={() => it.url && openTab(it.url)}
             style={{
-              padding: "9px 13px 5px",
-              fontSize: 10,
-              fontWeight: 600,
-              letterSpacing: "0.7px",
-              textTransform: "uppercase",
-              color: "var(--ink-4)",
-              borderTop: gi === 0 ? "none" : "1px solid var(--line)",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "6px 13px",
+              width: "100%",
+              textAlign: "left",
+              background: "transparent",
+              border: "none",
             }}
           >
-            {g.label}
-          </div>
-          {g.rows.map((it, i) => (
-            <motion.button
-              key={`${g.kind}-${i}`}
-              className="row-button"
-              whileHover={{ x: 1 }}
-              transition={calmFast}
-              onClick={() => it.url && openTab(it.url)}
+            <span
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "8px 13px",
+                flexShrink: 0,
+                width: 42,
+                fontSize: 10.5,
+                color: "var(--ink-4)",
+                fontFamily:
+                  "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
               }}
             >
-              <span style={{ flexShrink: 0, color: "var(--ink-3)" }}>
-                <GlyphFor kind={it.kind} />
+              {_hhmm(it.ts as number)}
+            </span>
+            <span
+              aria-hidden
+              style={{
+                flexShrink: 0,
+                width: 18,
+                height: 18,
+                borderRadius: 9,
+                background: "var(--surface-1)",
+                border: "1px solid var(--line)",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--ink-3)",
+                zIndex: 1,
+              }}
+            >
+              <GlyphFor kind={it.kind} />
+            </span>
+            <span style={{ minWidth: 0, flex: 1 }}>
+              <span
+                style={{
+                  display: "block",
+                  fontSize: 12.5,
+                  color: "var(--ink)",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                <span style={{ color: "var(--ink-3)", marginRight: 6 }}>
+                  {_kindLabel(it.kind)}
+                </span>
+                {it.label}
               </span>
-              <span style={{ minWidth: 0, flex: 1 }}>
+              {it.detail && (
                 <span
                   style={{
                     display: "block",
-                    fontSize: 12.5,
-                    color: "var(--ink)",
+                    fontSize: 10.5,
+                    color: "var(--ink-4)",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                   }}
                 >
-                  {it.label}
+                  {it.detail}
                 </span>
-                {it.detail && (
-                  <span
-                    style={{
-                      display: "block",
-                      fontSize: 10.5,
-                      color: "var(--ink-4)",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {it.detail}
-                  </span>
-                )}
-              </span>
-            </motion.button>
-          ))}
-        </div>
-      ))}
+              )}
+            </span>
+          </motion.button>
+        ))}
+      </div>
     </div>
   );
 }

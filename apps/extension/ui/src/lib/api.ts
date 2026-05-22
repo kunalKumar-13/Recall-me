@@ -1,5 +1,7 @@
 import {
   DEFAULT_SETTINGS,
+  type DemoPayload,
+  type DemoState,
   type Health,
   type Investigation,
   type MemoryItem,
@@ -104,12 +106,19 @@ export async function fetchMemory(): Promise<MemoryItem[]> {
     const e = raw as Record<string, unknown>;
     const kind = stringOf(e.kind);
     const payload = (e.payload ?? {}) as Record<string, unknown>;
+    // Phase 6A — read the event timestamp so the popup can paint a
+    // small "ago" label on each memory row. The API returns `ts`
+    // as an epoch float; absent => skipped (rendered as no label).
+    const ts = typeof e.ts === "number" && Number.isFinite(e.ts)
+      ? (e.ts as number)
+      : undefined;
     if (kind === "browser_search") {
       out.push({
         kind: "search",
         label: stringOf(payload.query) || "Search",
         detail: stringOf(payload.engine) || stringOf(payload.domain),
         url: stringOf(payload.url) || undefined,
+        ts,
       });
     } else if (kind === "chat_session") {
       out.push({
@@ -117,6 +126,7 @@ export async function fetchMemory(): Promise<MemoryItem[]> {
         label: stringOf(payload.title) || "Conversation",
         detail: stringOf(payload.platform) || stringOf(payload.domain),
         url: stringOf(payload.url) || undefined,
+        ts,
       });
     } else if (kind === "browser_visit") {
       out.push({
@@ -124,6 +134,7 @@ export async function fetchMemory(): Promise<MemoryItem[]> {
         label: stringOf(payload.title) || stringOf(payload.domain) || "Page",
         detail: stringOf(payload.domain),
         url: stringOf(payload.url) || undefined,
+        ts,
       });
     }
   }
@@ -243,6 +254,110 @@ export async function openRecall(): Promise<OpenRecallOutcome> {
 
 export function isOnline(): boolean {
   return typeof navigator === "undefined" ? true : navigator.onLine;
+}
+
+// ── Phase 6D — demo overlay ────────────────────────────────────────────
+
+/**
+ * Read the current demo-overlay state. Returns `null` only when the
+ * daemon is unreachable; otherwise the response always carries a
+ * named state (defaults to `available` on a fresh install). The
+ * `payload` field is present iff `state === "active"`.
+ */
+export async function fetchDemoState(): Promise<DemoState | null> {
+  const data = await getJSON<Record<string, unknown>>("/v1/demo/state");
+  if (!data) return null;
+  return _parseDemoState(data);
+}
+
+/**
+ * The user clicked *Show example*. POST the activation and return
+ * the new state + payload so the popup can render the overlay
+ * immediately without an extra round-trip.
+ */
+export async function activateDemo(): Promise<DemoState | null> {
+  return _postDemo("/v1/demo/activate");
+}
+
+/**
+ * The user clicked *Dismiss* on the demo banner — OR *Start
+ * normally* on the empty state. Either way, the overlay turns
+ * off.
+ */
+export async function dismissDemo(): Promise<DemoState | null> {
+  return _postDemo("/v1/demo/dismiss");
+}
+
+async function _postDemo(path: string): Promise<DemoState | null> {
+  try {
+    const r = await fetch(`${BASE}${path}`, {
+      method: "POST",
+      cache: "no-store",
+    });
+    if (!r.ok) return null;
+    return _parseDemoState(await r.json());
+  } catch {
+    return null;
+  }
+}
+
+function _parseDemoState(raw: Record<string, unknown>): DemoState {
+  const state = (raw.state as DemoState["state"]) ?? "available";
+  const payload = raw.payload as Record<string, unknown> | null;
+  if (!payload) return { state, payload: null };
+  return { state, payload: _parseDemoPayload(payload) };
+}
+
+function _parseDemoPayload(raw: Record<string, unknown>): DemoPayload {
+  const rec = raw.recovery as Record<string, unknown>;
+  const recovery: Recovery = {
+    id: stringOf(rec.id),
+    title: stringOf(rec.title),
+    caption: stringOf(rec.preview_caption),
+    chips: asArray(rec.chips).map((c) => stringOf(c)),
+    tabCount: numberOf(rec.tab_count),
+    fileCount: numberOf(rec.file_count),
+    urls: asArray(rec.urls).map((u) => stringOf(u)),
+  };
+  const investigations = asArray(raw.investigations).map(
+    (i): Investigation => {
+      const r = i as Record<string, unknown>;
+      return {
+        id: stringOf(r.id),
+        title: stringOf(r.title),
+        summary: stringOf(r.timeline_summary),
+        surfaces: asArray(r.surface_types).map((s) => stringOf(s)),
+      };
+    },
+  );
+  const timeline = asArray(raw.timeline).map((t): MemoryItem => {
+    const r = t as Record<string, unknown>;
+    const kindRaw = stringOf(r.kind);
+    const kind: MemoryItem["kind"] =
+      kindRaw === "browser_search"
+        ? "search"
+        : kindRaw === "chat_session"
+          ? "chat"
+          : "tab";
+    return {
+      kind,
+      label: stringOf(r.label),
+      detail: stringOf(r.detail),
+      ts: numberOf(r.ts),
+    };
+  });
+  const trust = raw.trust as Record<string, unknown>;
+  return {
+    recovery,
+    investigations,
+    timeline,
+    trust: {
+      bannerTitle: stringOf(trust?.banner_title) || "Example data",
+      bannerBody:
+        stringOf(trust?.banner_body) ||
+        "Nothing here came from your device.",
+    },
+  };
 }
 
 // ── helpers ─────────────────────────────────────────────────────────

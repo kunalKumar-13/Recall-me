@@ -30,7 +30,7 @@ touch.
 When a new issue lands, walk through these in order. The first
 one that matches is the right path; don't double-route.
 
-### 1. Is it a *stability bug* per [`STABILITY.md`](../STABILITY.md)?
+### 1. Is it a *stability bug* per [`STABILITY.md`](../docs/engineering/STABILITY.md)?
 
 A stability bug is anything that breaks one of the guarantees
 in `STABILITY.md`:
@@ -113,7 +113,7 @@ Walk through the [decision gate](../CLAUDE.md#global-engineering-rules):
 > why we're holding the line.
 
 **If all answers are yes**, apply `kind/feature` and read
-through the brief [`PHASE_4A_STATUS.md`](../PHASE_4A_STATUS.md)
+through the brief [`PHASE_4A_STATUS.md`](../docs/archive/old-docs/PHASE_4A_STATUS.md)
 deferred items — the request might already be queued. If not,
 it joins the roadmap.
 

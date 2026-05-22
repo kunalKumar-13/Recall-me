@@ -110,4 +110,14 @@ export const Icon = {
       size,
       className,
     ),
+  // Phase 6C - the header repair icon. Simple wrench glyph at the
+  // same stroke weight as the gear so the two sit cleanly together.
+  wrench: ({ size, className }: IconProps) =>
+    svg(
+      <>
+        <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4l-6.6 6.6 1.4 1.4 6.6-6.6a4 4 0 0 0 5.4-5.4L14 8.3l-2-2 2.7-2z" />
+      </>,
+      size,
+      className,
+    ),
 };

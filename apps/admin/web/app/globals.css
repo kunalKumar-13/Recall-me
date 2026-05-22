@@ -77,6 +77,249 @@ code {
   padding: 36px 28px 64px;
 }
 
+/* ── Phase 6H — operator shell (rail + main + actions) ──────────── */
+
+.shell {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 240px;
+  gap: 0;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+@media (max-width: 1180px) {
+  .shell { grid-template-columns: 200px minmax(0, 1fr); }
+  .actions { display: none; }
+}
+
+@media (max-width: 760px) {
+  .shell { grid-template-columns: 1fr; }
+  .rail { display: none; }
+}
+
+.rail {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  padding: 22px 16px 16px;
+}
+
+.rail-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 6px 16px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+.rail-mark {
+  width: 10px; height: 10px;
+  border-radius: 3px;
+  background: var(--accent);
+  display: inline-block;
+  align-self: center;
+}
+.rail-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: var(--ink);
+}
+.rail-sub {
+  font-size: 10px;
+  color: var(--ink-3);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.rail-groups { flex: 1; overflow-y: auto; }
+.rail-list { list-style: none; padding: 0; margin: 0 0 6px; }
+
+.rail-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-size: 13px;
+  text-decoration: none;
+  transition: background 120ms ease, color 120ms ease;
+}
+.rail-link:hover { background: var(--surface-sunken); color: var(--ink); }
+.rail-link.is-active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.rail-link-key {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  color: var(--ink-4);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0 5px;
+  line-height: 16px;
+}
+.rail-link.is-active .rail-link-key { color: var(--accent); border-color: var(--accent-line); }
+
+.rail-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 10px 6px;
+}
+
+.rail-foot {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rail-foot-line {
+  font-size: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--ink-4);
+}
+
+.actions {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  padding: 22px 16px 16px;
+  overflow-y: auto;
+}
+.actions-head { padding: 0 4px 12px; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+.actions-eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.actions-hint {
+  display: block;
+  font-size: 10px;
+  color: var(--ink-4);
+  margin-top: 2px;
+}
+.actions-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.actions-btn {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  cursor: pointer;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
+}
+.actions-btn:hover { background: var(--surface-sunken); border-color: var(--line-strong); }
+.actions-btn:active { transform: translateY(1px); }
+.actions-btn.is-copied { border-color: var(--accent-line); background: var(--accent-soft); }
+.actions-btn-label { font-size: 12.5px; font-weight: 600; }
+.actions-btn-hint {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.shell-main {
+  padding: 36px 32px 64px;
+  min-width: 0;
+}
+.shell-main .page { max-width: none; padding: 0; }
+.shell-main .page-header { margin-bottom: 20px; }
+
+/* ── Phase 6H — verdict pills + minimal heatmap ─────────────────── */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 18px;
+  padding: 0 8px;
+  border-radius: 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.pill.green  { background: var(--ok-soft);     color: var(--ok); }
+.pill.yellow { background: var(--warn-soft);   color: var(--warn); }
+.pill.red    { background: var(--danger-soft); color: var(--danger); }
+.pill.mute   { background: var(--surface-sunken); color: var(--ink-3); }
+
+.heatrow {
+  display: grid;
+  grid-template-columns: 72px repeat(7, minmax(20px, 1fr));
+  gap: 6px;
+  align-items: center;
+}
+.heatrow-label {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.heatcell {
+  height: 16px;
+  border-radius: 4px;
+  background: var(--surface-sunken);
+}
+.heatcell[data-v="0"] { background: var(--surface-sunken); }
+.heatcell[data-v="1"] { background: var(--accent-soft); }
+.heatcell[data-v="2"] { background: rgba(139, 127, 227, 0.45); }
+.heatcell[data-v="3"] { background: rgba(139, 127, 227, 0.75); }
+.heatcell[data-v="4"] { background: var(--accent); }
+
+.panel-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) minmax(0, 1fr) minmax(60px, auto);
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+  align-items: center;
+}
+.panel-row:first-of-type { border-top: none; }
+.panel-row-label { font-weight: 600; color: var(--ink); font-size: 13px; }
+.panel-row-detail { color: var(--ink-3); font-size: 12.5px; }
+
+.empty-note {
+  padding: 22px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink-3);
+  font-style: italic;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--surface-sunken);
+  color: var(--ink-3);
+}
+
 .page-header {
   display: flex;
   align-items: baseline;

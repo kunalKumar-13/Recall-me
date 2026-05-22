@@ -27,7 +27,11 @@ DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 DisableDirPage=auto
 OutputDir=..\..\..\dist\installer
-OutputBaseFilename=Recall-Setup
+; Phase 5J - lite variant. The previous Recall-Setup.exe (Phase 5F
+; full build, 260.8 MB, SHA-256 7AFA5349...75FD975) remains the
+; historical full artifact whose hash is recorded in
+; docs/trust/INSTALL_PROOF_WINDOWS.md.
+OutputBaseFilename=Recall-Setup-lite
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern

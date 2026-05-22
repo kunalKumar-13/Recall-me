@@ -4,9 +4,9 @@ about: Suggest an improvement
 labels: enhancement
 ---
 
-> Before filing, please read the [roadmap](../README.md#roadmap) and
+> Before filing, please read the [roadmap](../../README.md#roadmap) and
 > the "What we won't merge" section of
-> [CONTRIBUTING.md](../CONTRIBUTING.md). Recall is intentionally small;
+> [CONTRIBUTING.md](../../CONTRIBUTING.md). Recall is intentionally small;
 > feature requests that broaden scope (cloud sync, LLM chat,
 > multi-user, telemetry) are unlikely to be accepted.
 

@@ -106,10 +106,10 @@ export function Hero() {
                 text-ink-bright
               "
             >
-              Pick up exactly
+              Recall notices
               <br />
               <span className="italic font-normal lavender-underline">
-                where you left off.
+                unfinished work.
               </span>
             </motion.h1>
 
@@ -117,15 +117,11 @@ export function Hero() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease, delay: 0.18 }}
-              className="mt-6 text-[15px] md:text-[16px] text-ink leading-[1.65] max-w-[480px]"
+              className="mt-6 text-[18px] md:text-[20px] text-ink leading-[1.45] max-w-[480px]"
             >
-              Every interruption makes you rebuild context from scratch —
-              the open tabs, the right files, the line of thinking you
-              were chasing.
-              Recall restores that whole working state in one keystroke, so
-              you re-enter the work instead of reconstructing it. It all
-              stays{" "}
-              <span className="text-ink-bright font-medium">on your machine</span>.
+              Return later.
+              <br />
+              <span className="text-ink-bright font-medium">Continue instantly.</span>
             </motion.p>
 
             <motion.div
@@ -135,9 +131,7 @@ export function Hero() {
               className="mt-8 flex items-center gap-5 flex-wrap"
             >
               <a
-                href={LINKS.release}
-                target="_blank"
-                rel="noopener noreferrer"
+                href="#download"
                 className="
                   inline-flex items-center gap-2
                   h-11 px-5 rounded-lg
@@ -148,7 +142,7 @@ export function Hero() {
                 "
               >
                 <WindowsGlyph className="w-4 h-4" />
-                Download for Windows
+                Download alpha
               </a>
 
               <a
@@ -156,7 +150,7 @@ export function Hero() {
                 className="group inline-flex items-center gap-2.5 text-ink-bright text-[14px] font-medium transition-opacity duration-300 hover:opacity-75"
               >
                 <PlayCircle className="w-9 h-9 transition-transform duration-300 group-hover:scale-105" />
-                Watch 90s demo
+                Watch demo
               </a>
             </motion.div>
 

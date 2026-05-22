@@ -22,7 +22,7 @@ def _card() -> RecoveryCard:
         "WebSocket retry debugging",
         "2 tabs · 2 files · reopened after a 2-day gap",
         "2d ago",
-        high_trust=True,
+        confidence="high",
         n_targets=5,
     )
 
@@ -46,8 +46,9 @@ def main() -> None:
         ("recovery-card", False),
         ("recovery-card-focused", True),
     ):
-        path = render(_panel(focused), name)
-        print(f"  wrote {path.relative_to(path.parents[2])}")
+        # Phase 6B - write into assets/screenshots/launcher-v2/.
+        path = render(_panel(focused), name, subdir="launcher-v2")
+        print(f"  wrote {path.relative_to(path.parents[3])}")
 
 
 if __name__ == "__main__":

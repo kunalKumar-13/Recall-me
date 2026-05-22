@@ -139,7 +139,7 @@ hierarchy.
 13. **Maintenance is part of the role.** Refactor when systems
     drift. Delete dead code when it stops earning its weight. Tighten
     wording when terminology splits.
-    [AUDIT_REPORT.md](AUDIT_REPORT.md) tracks the standing list of
+    [AUDIT_REPORT.md](docs/engineering/AUDIT_REPORT.md) tracks the standing list of
     cleanups — work through it the same way you work through tickets.
 
 14. **Build like Recall could become critical cognitive
@@ -163,7 +163,7 @@ hierarchy.
       "Enable AI memory", always "Capture browser activity to
       ~/.recall/events".
     - The release ladder (stable / preview / nightly) lives in
-      [`RELEASE.md`](RELEASE.md). Don't ship a feature with
+      [`RELEASE.md`](docs/release/RELEASE.md). Don't ship a feature with
       undeclared rollout discipline.
 
 ---
@@ -365,20 +365,29 @@ Avoid: *AI memory*, *smart memory*, *intelligent recall*, *AI-powered*,
 
 ## Architecture pointers
 
-- [docs/architecture/events.mdx](docs/architecture/events.mdx)
-- [docs/architecture/sessions.mdx](docs/architecture/sessions.mdx)
-- [docs/architecture/micro-contexts.mdx](docs/architecture/micro-contexts.mdx)
-- [docs/architecture/retrieval-pipeline.mdx](docs/architecture/retrieval-pipeline.mdx)
-- [docs/architecture/threading.mdx](docs/architecture/threading.mdx)
-- [docs/architecture/evolution.mdx](docs/architecture/evolution.mdx)
-- [docs/architecture/recovery.mdx](docs/architecture/recovery.mdx)
-- [docs/architecture/visual-system.mdx](docs/architecture/visual-system.mdx)
-- [docs/troubleshooting.mdx](docs/troubleshooting.mdx)
-- [docs/faq.mdx](docs/faq.mdx)
-- [docs/install-validation.mdx](docs/install-validation.mdx)
-- [RELEASE.md](RELEASE.md), [VERSIONING.md](VERSIONING.md), [CHANGELOG.md](CHANGELOG.md)
-- [STABILITY.md](STABILITY.md) — guarantees + failure philosophy
-- [ROOT_ARCHITECTURE.md](ROOT_ARCHITECTURE.md), [REPO_STRUCTURE.md](REPO_STRUCTURE.md)
+- [docs/architecture/events.mdx](apps/docs/architecture/events.mdx)
+- [docs/architecture/sessions.mdx](apps/docs/architecture/sessions.mdx)
+- [docs/architecture/micro-contexts.mdx](apps/docs/architecture/micro-contexts.mdx)
+- [docs/architecture/retrieval-pipeline.mdx](apps/docs/architecture/retrieval-pipeline.mdx)
+- [docs/architecture/threading.mdx](apps/docs/architecture/threading.mdx)
+- [docs/architecture/evolution.mdx](apps/docs/architecture/evolution.mdx)
+- [docs/architecture/recovery.mdx](apps/docs/architecture/recovery.mdx)
+- [docs/architecture/visual-system.mdx](apps/docs/architecture/visual-system.mdx)
+- [docs/troubleshooting.mdx](apps/docs/troubleshooting.mdx)
+- [docs/faq.mdx](apps/docs/faq.mdx)
+- [docs/install-validation.mdx](apps/docs/install-validation.mdx)
+- [RELEASE.md](docs/release/RELEASE.md), [VERSIONING.md](docs/release/VERSIONING.md), [CHANGELOG.md](docs/release/CHANGELOG.md)
+- [STABILITY.md](docs/engineering/STABILITY.md) — guarantees + failure philosophy
+- [PERF.md](docs/engineering/PERF.md) — benchmark methodology, hot paths, cache model
+- [TRUST_FIXTURES.md](docs/trust/TRUST_FIXTURES.md) — continuity-trust calibration fixtures
+- [TRUST_FIXTURES_CONTINUITY.md](docs/trust/TRUST_FIXTURES_CONTINUITY.md) — investigation-grouping fixtures
+- [CONTINUITY_LANGUAGE.md](docs/product/CONTINUITY_LANGUAGE.md) — canonical user-facing vocabulary
+- [SURFACE_MAP.md](docs/product/SURFACE_MAP.md) — one job per surface
+- [MOTION.md](docs/product/MOTION.md) — the cross-surface motion contract
+- [PUBLIC_ALPHA.md](docs/founder/PUBLIC_ALPHA.md) — public-alpha readiness path
+- [TRUST_LEDGER.md](docs/engineering/TRUST_LEDGER.md) — what Recall sees / never sees / can export
+- [PHASE_TRACKER.md](docs/founder/PHASE_TRACKER.md), [ROADMAP_LIVE.md](docs/founder/ROADMAP_LIVE.md) — build state + roadmap
+- [ROOT_ARCHITECTURE.md](docs/engineering/ROOT_ARCHITECTURE.md), [REPO_STRUCTURE.md](docs/engineering/REPO_STRUCTURE.md)
 
 Each page documents its layer's lifecycle, signal table, decay
 model (where applicable), API, and performance budget. Read the page
