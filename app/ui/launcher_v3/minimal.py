@@ -1,6 +1,6 @@
 """Phase 7E — Launcher Final Product Pass · minimal surface.
 
-700 × 500 hard-clamped. Warm `#F5F2ED` page outside; one
+720 × 460 hard-clamped. Warm `#F5F2ED` page outside; one
 white inner card with radius 24 + 24-px padding inside. Five
 content regions stack inside the card with no nested chrome:
 
@@ -455,7 +455,7 @@ class MinimalShell(QWidget):
         outer = QVBoxLayout(self)
         # 7E directive: card padding 24. Tightened to 20-side /
         # 16-vertical so the five sections fit at the directive's
-        # 700×500 hard clamp.
+        # 720×460 hard clamp.
         outer.setContentsMargins(20, 16, 20, 14)
         outer.setSpacing(0)
 
@@ -474,12 +474,12 @@ class MinimalShell(QWidget):
 
 
 class MinimalWindow(QWidget):
-    """Top-level launcher. **700 × 500** hard clamp (no resize).
+    """Top-level launcher. **720 × 460** hard clamp (no resize).
     Warm `#F5F2ED` page outside; one white inner card with
     radius 24 inside a 12-px outer gutter; soft manual drop
     shadow."""
 
-    DEFAULT_SIZE = (700, 500)
+    DEFAULT_SIZE = (720, 460)
     OUTER_MARGIN = 12
     ROOT_RADIUS = 24
 

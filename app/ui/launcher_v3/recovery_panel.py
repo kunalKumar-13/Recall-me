@@ -44,7 +44,8 @@ from . import theme as T
 
 Signal = Literal["high", "med", "low"]
 
-_RESUME_WIDTH = 116
+_RESUME_WIDTH = 96
+_REVIEW_WIDTH = 80
 
 
 # ── evidence helper ──────────────────────────────────────────────
@@ -163,50 +164,80 @@ def _confidence_pill(signal: Signal) -> QLabel:
     return pill
 
 
-# ── Resume button ────────────────────────────────────────────────
+# ── Resume + Review buttons ─────────────────────────────────────
+#
+# Phase 9 — the recovery hero ships with a *pair* of buttons:
+# a filled `Resume` (primary action, lavender fill) and a flat
+# `Review` (secondary action, ghost outline). The pair sits in
+# the title row so the user can either commit (Resume) or open
+# the resume-preview overlay (Review) without leaving the hero.
 
 
-class _ResumeButton(QWidget):
-    HEIGHT = 32
-    WIDTH = _RESUME_WIDTH
+class _PillButton(QWidget):
+    """Shared pill geometry. Variant controls fill vs outline."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    HEIGHT = 30
+    clicked = pyqtSignal()
+
+    def __init__(
+        self,
+        label: str,
+        *,
+        width: int,
+        variant: Literal["filled", "ghost"] = "filled",
+        parent: Optional[QWidget] = None,
+    ) -> None:
         super().__init__(parent)
+        self._variant = variant
         self.setFixedHeight(self.HEIGHT)
-        self.setFixedWidth(self.WIDTH)
+        self.setFixedWidth(width)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(14, 0, 10, 0)
-        layout.setSpacing(8)
-        label = QLabel("Resume")
+        layout.setContentsMargins(12, 0, 12, 0)
+        layout.setSpacing(0)
+        lbl = QLabel(label)
         f = QFont()
         f.setPointSizeF(10.5)
-        f.setBold(True)
-        label.setFont(f)
-        label.setStyleSheet("color: white; background: transparent; padding: 0;")
-        layout.addWidget(label, 1)
-        chip = QLabel("1")
-        chip.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        chip.setFixedSize(18, 18)
-        chip.setStyleSheet(
-            "QLabel {"
-            "  background: rgba(255, 255, 255, 0.20);"
-            "  color: white;"
-            "  border-radius: 5px;"
-            "  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;"
-            "  font-size: 10px;"
-            "  font-weight: 600;"
-            "}"
-        )
-        layout.addWidget(chip, 0)
+        f.setBold(variant == "filled")
+        lbl.setFont(f)
+        if variant == "filled":
+            lbl.setStyleSheet(
+                "color: white; background: transparent; padding: 0;"
+            )
+        else:
+            lbl.setStyleSheet(
+                f"color: {T.INK_2}; background: transparent; padding: 0;"
+            )
+        lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(lbl, 1)
 
     def paintEvent(self, _e) -> None:  # type: ignore[override]
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         path = QPainterPath()
-        path.addRoundedRect(QRectF(self.rect()), 9, 9)
-        p.fillPath(path, QColor(T.ACCENT))
+        path.addRoundedRect(QRectF(self.rect()), 8, 8)
+        if self._variant == "filled":
+            p.fillPath(path, QColor(T.ACCENT))
+        else:
+            pen = QPen(QColor(T.HAIRLINE_STRONG))
+            pen.setWidthF(1.0)
+            p.setPen(pen)
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawPath(path)
         p.end()
+
+    def mouseReleaseEvent(self, e) -> None:  # type: ignore[override]
+        if e.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+
+
+def _ResumeButton() -> _PillButton:
+    return _PillButton("Resume", width=_RESUME_WIDTH, variant="filled")
+
+
+def _ReviewButton() -> _PillButton:
+    return _PillButton("Review", width=_REVIEW_WIDTH, variant="ghost")
 
 
 # ── card ─────────────────────────────────────────────────────────
@@ -219,10 +250,14 @@ class RecoveryCardV3(QWidget):
     the signal variant.
 
     Emits ``restore(candidate_id, title, n_targets)`` on Enter /
-    Space / `1` / click.
+    Space / `1` / Resume click. ``review(candidate_id)`` fires
+    when the user clicks the secondary `Review` button (the
+    Phase 9 hero pair) -- intended for the launcher to surface
+    the resume-preview overlay without committing to a restore.
     """
 
     restore = pyqtSignal(str, str, int)
+    review = pyqtSignal(str)
 
     HEIGHT = 110
     ACCENT_STRIP_W = 6
@@ -280,7 +315,17 @@ class RecoveryCardV3(QWidget):
         )
         title_lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         title_row.addWidget(title_lbl, 1)
-        title_row.addWidget(_ResumeButton(), 0, Qt.AlignmentFlag.AlignVCenter)
+        review_btn = _ReviewButton()
+        review_btn.clicked.connect(
+            lambda: self.review.emit(self._cid)
+        )
+        resume_btn = _ResumeButton()
+        resume_btn.clicked.connect(
+            lambda: self.restore.emit(self._cid, self._title, self._n)
+        )
+        title_row.addWidget(review_btn, 0, Qt.AlignmentFlag.AlignVCenter)
+        title_row.addSpacing(8)
+        title_row.addWidget(resume_btn, 0, Qt.AlignmentFlag.AlignVCenter)
         col.addLayout(title_row)
 
         col.addStretch(1)

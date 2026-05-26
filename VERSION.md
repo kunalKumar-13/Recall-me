@@ -23,7 +23,7 @@ change, no visual change without explicit re-cut.
 
 | Surface       | Frozen at                         | Source of truth                                  |
 |---------------|-----------------------------------|--------------------------------------------------|
-| Launcher      | Phase 7E.1 + 8B collapse          | [`AUDIT/LAUNCHER_FREEZE.md`](AUDIT/LAUNCHER_FREEZE.md), [`STABILITY/LAUNCHER.md`](STABILITY/LAUNCHER.md) |
+| Launcher      | Phase 9 visual refresh (720×460)  | [`AUDIT/LAUNCHER_FREEZE.md`](AUDIT/LAUNCHER_FREEZE.md), [`STABILITY/LAUNCHER.md`](STABILITY/LAUNCHER.md) |
 | Extension     | Phase 7A (6 fixed regions)        | [`STABILITY/EXTENSION.md`](STABILITY/EXTENSION.md) |
 | Capture       | Phase 7D pipeline (7 hops)        | [`AUDIT/CAPTURE_MAP.md`](AUDIT/CAPTURE_MAP.md), [`STABILITY/CAPTURE.md`](STABILITY/CAPTURE.md) |
 | Resume        | Phase 4E (≥0.55 trust gate)       | [`STABILITY/RESUME.md`](STABILITY/RESUME.md) |
@@ -160,7 +160,7 @@ import os; os.environ['QT_QPA_PLATFORM']='offscreen'
 from PyQt6.QtWidgets import QApplication
 QApplication([])
 from app.ui.launcher import Launcher
-print(Launcher(None).__class__.__name__, Launcher(None).size())
+print(Launcher(None).__class__.__name__, Launcher(None).size())  # LiveLauncher, 720x460
 "
 
 # Extension TypeScript + build

@@ -1,4 +1,16 @@
-# Launcher Contracts — Phase 7E.1
+# Launcher Contracts — Phase 7E.1 (Phase 9 amendment, 2026-05-26)
+
+> **Phase 9 amendment.** The visual refresh shipped on
+> 2026-05-26 *adds* a public signal to `RecoveryCardV3`
+> (`review = pyqtSignal(str)`) alongside the existing
+> `restore = pyqtSignal(str, str, int)`. Both signals
+> open the resume-preview overlay; the label difference
+> is affordance, not behaviour. The canvas changed from
+> `(700, 500)` to `(720, 460)`; the `MinimalSearchBar`
+> 5-signal contract is unchanged. The additive-only rule
+> is intact -- nothing was removed.
+
+# Launcher Contracts — Phase 7E.1 (original)
 
 The launcher's **frozen Python interface**. Every symbol
 listed below is consumed by code outside `app/ui/launcher_v3/`

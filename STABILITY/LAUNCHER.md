@@ -22,7 +22,7 @@ human in front of a monitor.
 ```python
 from app.ui.launcher import Launcher          # ✅ resolves
 Launcher(FakeEngine()).__class__.__name__      # 'LiveLauncher'
-Launcher(FakeEngine()).size()                  # 700 × 500
+Launcher(FakeEngine()).size()                  # 720 × 460
 ```
 
 The 8B collapse (`launcher.py` → 18 lines) preserves
@@ -53,7 +53,7 @@ cost.
 holds exactly this tree at construction:
 
 ```
-LiveLauncher                                     # 700×500 root
+LiveLauncher                                     # 720×460 root
 └─ QVBoxLayout
    ├─ MinimalShell                               # single root card
    │  └─ QVBoxLayout
@@ -178,7 +178,7 @@ up in `_install_shortcuts()`.
    time, at the public size.
 2. **The public import contract holds.**
    `from app.ui.launcher import Launcher` → 
-   `LiveLauncher` at `(700, 500)`. 8B's collapse did
+   `LiveLauncher` at `(720, 460)`. 8B's collapse did
    not break the surface.
 3. **The widget tree is frozen.** One root card,
    one search bar, one digest area, one trust row,

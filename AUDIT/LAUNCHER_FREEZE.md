@@ -1,4 +1,34 @@
-# Launcher Freeze — Phase 8B
+# Launcher Freeze — Phase 8B (Phase 9 amendment, 2026-05-26)
+
+> **Phase 9 amendment.** The 7E.1 / 8B canvas of
+> `(720, 460)` was retired by founder directive on
+> 2026-05-26. The launcher now ships at `(720, 460)`
+> -- slightly wider, slightly shorter, same single
+> root card. The `RecoveryCardV3` hero gains a
+> second public signal (`review`) alongside the
+> existing `restore`. The slow motion timing drops
+> from 260 ms to 240 ms.
+>
+> *Every other freeze rule below still holds.* No
+> second launcher tree. No `RECALL_LAUNCHER`
+> env-var. No file renames. No `QGraphicsDropShadowEffect`.
+> The `from app.ui.launcher import Launcher` import
+> contract still resolves to `LiveLauncher`. The
+> additive-signals rule is intact (Phase 9 *adds*
+> `review`; it does not remove any of the five
+> frozen 7E.1 signals).
+>
+> The "Allowed changes" + "Forbidden changes"
+> tables below are amended in place: the
+> `DEFAULT_SIZE = (720, 460)` clauses now read
+> `DEFAULT_SIZE = (720, 460)`. The `(720, 460)`
+> capture set under
+> `assets/screenshots/launcher-7e/` is the
+> *historical* visual record; the next live
+> capture run replaces it with a `(720, 460)`
+> set at the same paths (no new dir).
+
+# Launcher Freeze — Phase 8B (original)
 
 The launcher is now **one tree, one path, one contract**.
 This document is the final word — supersedes
@@ -95,7 +125,7 @@ Unchanged in 8B.
 
 ### Window size
 
-`MinimalWindow.DEFAULT_SIZE = (700, 500)` — hard clamp,
+`MinimalWindow.DEFAULT_SIZE = (720, 460)` — hard clamp,
 no resize. Frozen 7E.
 
 ### Keyboard shortcuts
@@ -114,7 +144,7 @@ Any change that satisfies **all** of these:
 
 - Adds a method or signal to one of the public classes —
   doesn't remove or rename one.
-- Keeps `DEFAULT_SIZE = (700, 500)`.
+- Keeps `DEFAULT_SIZE = (720, 460)`.
 - Keeps the `from app.ui.launcher import Launcher` import
   contract.
 - Touches **only files inside `app/ui/launcher_v3/`** (or
@@ -141,7 +171,7 @@ Any change that satisfies **all** of these:
 - **Reintroducing `RECALL_LAUNCHER=legacy`.** The
   collapsed adapter is final.
 - **Reverting the canvas to anything other than
-  `(700, 500)`.** Captures + visual contract assume this
+  `(720, 460)`.** Captures + visual contract assume this
   exact pinpoint.
 - **Adding `QGraphicsDropShadowEffect`** to any launcher
   surface. 7B replaced it with manual painted shadows for

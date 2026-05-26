@@ -260,11 +260,12 @@ class LiveLauncher(QWidget):
     request_settings = pyqtSignal()
     _request_search = pyqtSignal(str)
 
-    # Phase 7E — Launcher Final Product Pass. 700 × 500, hard
-    # clamp. Single warm page outside; one white inner card with
-    # radius 24 + 24-px padding holds search + Continue + Recent
-    # Memory + OTHER WORK + trust row, all on one surface.
-    DEFAULT_SIZE = (700, 500)
+    # Phase 9 — Launcher Visual Refresh. 720 × 460 -- slightly
+    # wider, slightly shorter than 7E.1 so the three-zone layout
+    # (search / hero / other work) reads as a utility column
+    # rather than a tall card. Hard clamp; single warm page
+    # outside; one white inner card holds the whole stack.
+    DEFAULT_SIZE = (720, 460)
 
     def __init__(
         self,
@@ -564,13 +565,24 @@ class LiveLauncher(QWidget):
         *,
         demo: bool,
     ) -> None:
-        """Bind the card's `restore` signal to the preview-open path.
-        Capture `title` + `targets` in the closure so the preview
-        opens with the right payload — and the plan execution doesn't
-        need to round-trip to the API just to enumerate steps."""
-        def _open_preview(cid: str, _t: str, _n: int) -> None:
+        """Bind the card's `restore` + `review` signals to the
+        preview-open path. Capture `title` + `targets` in the
+        closure so the preview opens with the right payload — and
+        the plan execution doesn't need to round-trip to the API
+        just to enumerate steps.
+
+        Phase 9 — both Resume (primary) and Review (secondary) open
+        the same ResumePreview overlay. The label difference is
+        affordance, not behaviour: Resume signals commitment intent;
+        Review signals "let me see first." Same modal opens; the
+        preview's own buttons are the actual restore commit.
+        """
+        def _open_preview_restore(cid: str, _t: str, _n: int) -> None:
             self._open_preview(cid, title, targets, demo=demo)
-        card.restore.connect(_open_preview)
+        def _open_preview_review(cid: str) -> None:
+            self._open_preview(cid, title, targets, demo=demo)
+        card.restore.connect(_open_preview_restore)
+        card.review.connect(_open_preview_review)
 
     def _thread_to_v3(self, t) -> InvestigationCardV3:
         # Phase 7E — the OTHER WORK row carries a `last_seen` caption
