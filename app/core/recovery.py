@@ -44,6 +44,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
+from . import bad_recoveries
 from .events import Event, EventStore, humanize_age
 from .evolution import EvolutionBuilder, EvolutionPhase, ThreadEvolution
 from .threads import Thread, ThreadBuilder
@@ -456,6 +457,13 @@ class RecoveryEngine:
             events, evo, abandonment, unresolved
         )
 
+        # Phase 6Q — surface the ledger flag in the candidate's
+        # signals dict so the launcher's promotion code (and the
+        # `recall inspect` CLI) can read it without a second pass
+        # over the ledger file. The flag is the *only* user-feedback
+        # input into ranking; everything else is derived.
+        ledger_flag = bad_recoveries.thread_is_flagged(thread.id, now=now)
+
         signals = {
             "recency":            round(s_recency, 3),
             "target_reuse":       round(s_targets, 3),
@@ -466,6 +474,7 @@ class RecoveryEngine:
             "revisit":            round(revisit, 3),
             "acceleration":       round(acceleration, 3),
             "unresolved_pattern": round(unresolved, 3),
+            "ledger_flagged":     1.0 if ledger_flag else 0.0,
         }
 
         why = self._explain(
@@ -894,6 +903,55 @@ class RecoveryEngine:
             lines.append("last phase was an acceleration (intensifying)")
         lines.append(f"{n_events} events in the thread")
         return lines
+
+
+# --------------------------------------------------------------- explanation
+
+
+def explain_signals(candidate: "RecoveryCandidate") -> List[str]:
+    """Pure, deterministic signal lines for the *Why this?* sheet
+    and the `recall inspect` CLI. Same candidate in → same lines
+    out. No prose generation, no LLM, no model.
+
+    Returns a list of short, observational lines drawn entirely
+    from the candidate's existing `signals` dict + `preview_caption`
+    + `unresolved_signals`. The launcher renders these verbatim.
+    """
+    lines: list[str] = []
+    s = candidate.signals or {}
+
+    # 1. The strongest single tell — abandonment + unfinished.
+    if any("went quiet" in u for u in candidate.unresolved_signals):
+        lines.append("unfinished work")
+    elif s.get("abandonment", 0.0) >= 0.4:
+        lines.append("unfinished work")
+
+    # 2. Return after gap — the strongest return-intent signal.
+    if "gap" in (candidate.preview_caption or ""):
+        lines.append("returned after a multi-day gap")
+    elif s.get("revisit", 0.0) >= 0.5:
+        lines.append("returned to old material")
+
+    # 3. Multi-target context.
+    n = len(candidate.suggested_targets)
+    if n >= 4:
+        lines.append(f"{n} targets involved")
+    elif n >= 2:
+        lines.append(f"{n} targets in play")
+
+    # 4. Surface breadth — the canonical "deep work" tell.
+    if s.get("surface_breadth", 0.0) >= 0.66:
+        lines.append("multiple surfaces engaged")
+
+    # 5. Repeated chasing — the unresolved pattern.
+    if s.get("unresolved_pattern", 0.0) >= 0.4:
+        lines.append("repeated search or reopen pattern")
+
+    # 6. Ledger feedback — if the user marked this wrong before, say so.
+    if s.get("ledger_flagged", 0.0) >= 1.0:
+        lines.append("flagged as wrong recovery within the last 14 days")
+
+    return lines
 
 
 # --------------------------------------------------------------- helpers
