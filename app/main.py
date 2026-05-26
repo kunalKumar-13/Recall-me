@@ -30,7 +30,6 @@ from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from .core import autostart
 from .core.config import CHROMA_DIR, CONFIG_DIR, Config
-from .core.demo_data import DemoSearchEngine
 from .core import demo_seed as _demo_seed
 from .core.embeddings import EmbeddingModel
 from .core.events import EventLogger
@@ -391,6 +390,7 @@ def main() -> int:
             indexer = Indexer(config, store, model)
             if DEMO_MODE:
                 _log("   DEMO_MODE active — using curated in-memory dataset")
+                from .core.demo_data import DemoSearchEngine
                 search_engine = DemoSearchEngine()
             else:
                 search_engine = SearchEngine(store, model)
