@@ -100,6 +100,17 @@ if len(sys.argv) > 1 and sys.argv[1] == "inspect":
         sys.exit(1)
     raise SystemExit(run_inspect_cli(sys.argv[2:]))
 
+# Phase 6Q — `recall trust review` prints the bad-recovery ledger
+# summary alongside the resume / silence rates. Local-only.
+if len(sys.argv) > 1 and sys.argv[1] == "trust":
+    try:
+        from app.core.trust_cli import run_trust_cli
+    except BaseException:
+        print("[boot] [FAIL] importing app.core.trust_cli", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(1)
+    raise SystemExit(run_trust_cli(sys.argv[2:]))
+
 # Phase 7D — `recall capture status` + `recall capture tail`. Two
 # read-only audit commands; verify the capture pipeline is actually
 # remembering events end-to-end. Local-only; daemon not required.
