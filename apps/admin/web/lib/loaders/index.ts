@@ -23,4 +23,13 @@ export type { ReleaseStatus } from "./release";
 export { loadSystemSnapshot } from "./system";
 export type { SystemCheck, SystemSnapshot } from "./system";
 
-export { RECALL_HOME, REPO_ROOT } from "./paths";
+export { loadLogSources, loadOneLog } from "./logs";
+export type { LogEntry, LogSource } from "./logs";
+
+export { loadScreenshots } from "./screenshots";
+export type { ScreenshotBucket } from "./screenshots";
+
+export { loadDesktop } from "./desktop";
+export type { AppAggregate, DesktopEvent, DesktopSnapshot } from "./desktop";
+
+export { RECALL_HOME, REPO_ROOT, SCREENSHOTS_DIR } from "./paths";

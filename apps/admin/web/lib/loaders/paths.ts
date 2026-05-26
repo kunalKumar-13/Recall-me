@@ -29,3 +29,9 @@ export const DAILY_LOOP_STATE = path.resolve(RECALL_HOME, "daily_loop_state.json
 export const DEMO_FILE = path.resolve(RECALL_HOME, "demo.json");
 export const EVENTS_DIR = path.resolve(RECALL_HOME, "events");
 export const CONFIG_FILE = path.resolve(RECALL_HOME, "config.json");
+
+// Phase 6J — screenshot manager + extension-pairing surfaces.
+export const SCREENSHOTS_DIR = path.resolve(REPO_ROOT, "assets", "screenshots");
+export const EXTENSION_DIR = path.resolve(REPO_ROOT, "apps", "extension");
+export const EXTENSION_MANIFEST = path.resolve(EXTENSION_DIR, "popup", "manifest.json");
+export const LAUNCHER_V3_DIR = path.resolve(REPO_ROOT, "app", "ui", "launcher_v3");
