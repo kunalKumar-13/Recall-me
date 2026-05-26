@@ -39,11 +39,23 @@ const SCHEME_BLOCKLIST = [
   "javascript:",
 ];
 
-// Domains we treat as chat platforms.
+// Domains we treat as chat platforms. Phase 8F-A: extended to the
+// modern AI surface — Gemini / Copilot / DeepSeek / Mistral / Grok /
+// Poe / t3.chat. Before this extension, conversations on any of these
+// hosts were captured as generic browser_visit events, which made the
+// chat_session count under-report what the user was actually doing.
 const CHAT_DOMAINS = new Set([
   "chatgpt.com",
   "chat.openai.com",
   "claude.ai",
+  "gemini.google.com",
+  "aistudio.google.com",
+  "copilot.microsoft.com",
+  "chat.deepseek.com",
+  "chat.mistral.ai",
+  "grok.com",
+  "poe.com",
+  "t3.chat",
 ]);
 
 // Search engines we recognise.
@@ -107,11 +119,29 @@ function classify(url, title) {
   const ts = new Date().toISOString();
 
   if (CHAT_DOMAINS.has(domain)) {
+    // Map the matching domain to a stable platform tag. Keep the
+    // existing "chatgpt" / "claude" tags so old data lines up; new
+    // platforms each get their own tag rather than collapsing into
+    // a generic "chat".
     let platform = "chat";
     if (domain.includes("openai") || domain.includes("chatgpt")) {
       platform = "chatgpt";
     } else if (domain.includes("claude")) {
       platform = "claude";
+    } else if (domain.includes("gemini") || domain.includes("aistudio")) {
+      platform = "gemini";
+    } else if (domain.includes("copilot")) {
+      platform = "copilot";
+    } else if (domain.includes("deepseek")) {
+      platform = "deepseek";
+    } else if (domain.includes("mistral")) {
+      platform = "mistral";
+    } else if (domain.includes("grok")) {
+      platform = "grok";
+    } else if (domain === "poe.com") {
+      platform = "poe";
+    } else if (domain === "t3.chat") {
+      platform = "t3";
     }
     return {
       endpoint: ENDPOINTS.chat_session,
@@ -162,14 +192,65 @@ async function sendEvent(endpoint, payload) {
   }
 }
 
-// Per-tab debounce — SPA navigations fire onUpdated multiple times
-// while the URL settles. Collapse near-duplicate hits within 800 ms.
-const recentByTab = new Map();
-const DEBOUNCE_MS = 800;
+// Phase 8F-A — title-settle defer.
+//
+// `chrome.tabs.onUpdated` fires when a tab loads (status=complete) AND
+// when SPAs later update their title (changeInfo.title). On
+// ChatGPT / Gemini / GitHub-PR / Notion etc., the title at load time
+// is usually a generic placeholder ("ChatGPT", "GitHub") that gets
+// rewritten to something specific ("ChatGPT — explain JWT auth flow")
+// within a second of the page settling. Sending the event at
+// load-complete time means we capture the generic title, not the
+// truthful one.
+//
+// Fix: when a tab completes loading or has its title updated, schedule
+// a single deferred send `SETTLE_MS` after the most recent change.
+// Cap the wait at `MAX_WAIT_MS` so a tab that keeps poking its title
+// still emits something. If the URL changes for the same tab before
+// the timer fires, emit the prior URL immediately (with whatever
+// title we last saw) and start a fresh timer for the new URL.
+const pending = new Map();
+const SETTLE_MS = 1500;
+const MAX_WAIT_MS = 4000;
+
+function _scheduleFire(tabId, url, title) {
+  const now = Date.now();
+  const prior = pending.get(tabId);
+
+  if (prior && prior.url !== url) {
+    // URL changed for this tab — fire the old URL now with its last
+    // known title, then start a fresh timer for the new URL.
+    if (prior.timer) clearTimeout(prior.timer);
+    const cls = classify(prior.url, prior.title || "");
+    if (cls) sendEvent(cls.endpoint, cls.payload);
+    pending.delete(tabId);
+  }
+
+  const existing = pending.get(tabId);
+  const startedAt = existing ? existing.startedAt : now;
+  const remaining = Math.max(0, MAX_WAIT_MS - (now - startedAt));
+  const delay = Math.min(SETTLE_MS, remaining);
+
+  if (existing && existing.timer) clearTimeout(existing.timer);
+
+  const timer = setTimeout(() => {
+    const entry = pending.get(tabId);
+    if (!entry || entry.url !== url) return;
+    pending.delete(tabId);
+    const cls = classify(entry.url, entry.title || "");
+    if (cls) sendEvent(cls.endpoint, cls.payload);
+  }, delay);
+
+  pending.set(tabId, {
+    url,
+    title: title || (existing && existing.url === url ? existing.title : ""),
+    startedAt,
+    timer,
+  });
+}
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (!enabled) return;
-  if (changeInfo.status !== "complete") return;
   if (!tab || !tab.url) return;
   if (tab.incognito) return;
   if (shouldSkipScheme(tab.url)) return;
@@ -177,16 +258,24 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   const domain = getDomain(tab.url);
   if (isExcluded(domain)) return;
 
-  const last = recentByTab.get(tabId);
-  if (last && last.url === tab.url && Date.now() - last.ts < DEBOUNCE_MS) {
-    return;
-  }
-  recentByTab.set(tabId, { url: tab.url, ts: Date.now() });
+  // We schedule on either (a) load completion, or (b) a title update.
+  // Both are signals that something meaningful happened on this tab.
+  // Anything else (favicon, audible, mutedInfo, pinned…) is ignored.
+  const isLoadComplete = changeInfo.status === "complete";
+  const isTitleUpdate = typeof changeInfo.title === "string";
+  if (!isLoadComplete && !isTitleUpdate) return;
 
-  const cls = classify(tab.url, tab.title || "");
-  if (cls) sendEvent(cls.endpoint, cls.payload);
+  _scheduleFire(tabId, tab.url, tab.title || "");
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-  recentByTab.delete(tabId);
+  // If a tab is closed before its timer fires, emit one final event
+  // so we don't silently lose work the user was looking at.
+  const entry = pending.get(tabId);
+  if (entry) {
+    if (entry.timer) clearTimeout(entry.timer);
+    const cls = classify(entry.url, entry.title || "");
+    if (cls) sendEvent(cls.endpoint, cls.payload);
+    pending.delete(tabId);
+  }
 });
