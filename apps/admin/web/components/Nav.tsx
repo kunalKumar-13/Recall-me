@@ -22,16 +22,23 @@ type NavRow = {
 };
 
 const NAV: NavRow[] = [
+  // Phase 6J — full directive order. 12 sections, four groups
+  // (overview · cohort · engine · ship). The accesskey hotkeys
+  // are 1-9 + 0 for the first ten; the last two (Experiments,
+  // Docs) are reachable via the command palette.
   { href: "/", label: "Overview", hotkey: "1" },
   { href: "/users", label: "Users", hotkey: "2", group: "cohort" },
-  { href: "/alpha", label: "Alpha", hotkey: "3", group: "cohort" },
-  { href: "/trust", label: "Trust", hotkey: "4", group: "cohort" },
+  { href: "/recovery", label: "Recovery", hotkey: "3", group: "engine" },
+  { href: "/replays", label: "Replay", hotkey: "4", group: "engine" },
   { href: "/daily-loop", label: "Daily Loop", hotkey: "5", group: "engine" },
-  { href: "/recovery", label: "Recovery", hotkey: "6", group: "engine" },
-  { href: "/replays", label: "Replays", hotkey: "7", group: "engine" },
-  { href: "/release", label: "Release", hotkey: "8", group: "ship" },
-  { href: "/system", label: "System", hotkey: "9", group: "ship" },
-  { href: "/docs", label: "Docs", hotkey: "0", group: "ship" },
+  { href: "/trust", label: "Trust", hotkey: "6", group: "engine" },
+  { href: "/release", label: "Release", hotkey: "7", group: "ship" },
+  { href: "/system", label: "System", hotkey: "8", group: "ship" },
+  { href: "/extension", label: "Extension", hotkey: "9", group: "ship" },
+  { href: "/launcher", label: "Launcher", hotkey: "0", group: "ship" },
+  { href: "/desktop", label: "Desktop", group: "ship" },
+  { href: "/experiments", label: "Experiments", group: "lab" },
+  { href: "/docs", label: "Docs", group: "lab" },
 ];
 
 function _isActive(pathname: string, href: string): boolean {

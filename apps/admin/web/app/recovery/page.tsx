@@ -4,24 +4,62 @@ import { VerdictPill } from "../../components/panels/Verdict";
 
 export const dynamic = "force-dynamic";
 
+const KINDS = [
+  "shown",
+  "accepted",
+  "ignored",
+  "correct_silence",
+  "bad_recovery",
+  "resume_ok",
+] as const;
+
 /**
- * `/recovery` — the Phase 6H Recovery Room.
+ * `/recovery` — the Phase 6J Recovery Lab.
  *
- * Per-entry view of the recovery ledger: every Resume decision the
- * cohort has reported, grouped by tester, with the 6E vocabulary
- * + the 6F return / time-to-resume fields. Click-through lands on
- * `/replays?tester=<handle>` (the per-tester timeline).
+ * Phase 6H built the ledger view; 6J extends it with directive-
+ * named filters, a return-after-gap heatmap, and the confidence
+ * distribution. Every value live-derived from
+ * `alpha/recovery_journal.json` and the per-tester records.
  *
  * No content. Per the recovery_journal contract, the `investigation`
  * field is the launcher *title* only; URLs / filenames / queries
  * never appear here.
  */
-export default async function RecoveryPage() {
-  const [alpha, entries] = await Promise.all([
+export default async function RecoveryPage({
+  searchParams,
+}: {
+  searchParams: { kind?: string };
+}) {
+  const [alpha, allEntries] = await Promise.all([
     loadAlpha(),
     loadJournalEntries(),
   ]);
   const t = alpha.trust;
+
+  const kindFilter = (searchParams.kind || "").toLowerCase();
+  const entries = kindFilter
+    ? allEntries.filter((e) => (e.kind || "").toLowerCase() === kindFilter)
+    : allEntries;
+
+  // Confidence distribution — derives from the per-tester
+  // `first_recovery` rows since `confidence` is a launcher-derived
+  // band (not a journal field). When the cohort grows, future ledger
+  // entries can include `confidence`; until then the *first
+  // recovery* count is the best signal we have.
+  const confidence = {
+    high: alpha.testers.filter((u) => u.first_resume_ok === "yes" && u.first_recovery && u.first_recovery !== "none yet").length,
+    medium: alpha.testers.filter((u) => u.first_resume_ok === "partial").length,
+    low: alpha.testers.filter((u) => u.first_resume_ok === "wrong work").length,
+  };
+
+  // 7-day return-after-gap heatmap — counts the journal entries
+  // with `return_after_gap = true` bucketed by date.
+  const returnByDay = new Map<string, number>();
+  for (const e of allEntries) {
+    if (e.return_after_gap === true && e.date) {
+      returnByDay.set(e.date, (returnByDay.get(e.date) || 0) + 1);
+    }
+  }
 
   return (
     <div className="page">
@@ -43,6 +81,50 @@ export default async function RecoveryPage() {
           <Stat label="bad_recovery" value={t.bad_recovery} variant="bad" />
           <Stat label="resume_ok" value={t.resume_ok} variant="ok" />
         </div>
+      </section>
+
+      <section className="section">
+        <div className="section-header">
+          <span className="section-title">Filter</span>
+          <span className="section-aside">
+            — {kindFilter ? `kind = ${kindFilter}` : "all kinds"} · {entries.length} of {allEntries.length}
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <FilterChip label="all" href="/recovery" active={!kindFilter} />
+          {KINDS.map((k) => (
+            <FilterChip
+              key={k}
+              label={k}
+              href={`/recovery?kind=${k}`}
+              active={kindFilter === k}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="section-header">
+          <span className="section-title">Confidence distribution</span>
+          <span className="section-aside">
+            — derived from per-tester `first_resume_ok`
+          </span>
+        </div>
+        <div className="grid grid-3">
+          <ConfidenceBar label="high" count={confidence.high} verdict="green" />
+          <ConfidenceBar label="medium" count={confidence.medium} verdict="yellow" />
+          <ConfidenceBar label="low" count={confidence.low} verdict="red" />
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="section-header">
+          <span className="section-title">Return-after-gap heatmap</span>
+          <span className="section-aside">
+            — {t.entries_with_return} entry/entries with `return_after_gap = true`
+          </span>
+        </div>
+        <ReturnHeatmap returnByDay={returnByDay} />
       </section>
 
       <section className="section">
@@ -164,6 +246,89 @@ function T2RSparkline({ entries }: { entries: Awaited<ReturnType<typeof loadJour
                 borderRadius: 2,
                 opacity: 0.85,
               }}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function FilterChip({
+  label, href, active,
+}: {
+  label: string;
+  href: string;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className="tag"
+      style={{
+        textDecoration: "none",
+        background: active ? "var(--accent-soft)" : undefined,
+        color: active ? "var(--accent)" : undefined,
+        borderColor: active ? "var(--accent-line)" : undefined,
+        cursor: "pointer",
+        padding: "2px 9px",
+        height: 22,
+      }}
+    >
+      {label}
+    </Link>
+  );
+}
+
+function ConfidenceBar({
+  label, count, verdict,
+}: {
+  label: string;
+  count: number;
+  verdict: "green" | "yellow" | "red" | "mute";
+}) {
+  return (
+    <div className="card" style={{ padding: 14 }}>
+      <div className="section-title" style={{ marginBottom: 0 }}>{label}</div>
+      <div style={{ marginTop: 6, fontSize: 22, fontWeight: 600 }}>{count}</div>
+      <div style={{ marginTop: 6 }}><VerdictPill value={verdict} /></div>
+    </div>
+  );
+}
+
+/**
+ * 7-day return heatmap, styled-div only (no charts library). Empty
+ * data renders an honest empty note rather than a flat grey row.
+ */
+function ReturnHeatmap({ returnByDay }: { returnByDay: Map<string, number> }) {
+  if (returnByDay.size === 0) {
+    return (
+      <div className="card empty-note">
+        No journal entries with <code>return_after_gap = true</code> yet.
+      </div>
+    );
+  }
+  const today = new Date();
+  const cells: { date: string; count: number }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const iso = d.toISOString().slice(0, 10);
+    cells.push({ date: iso, count: returnByDay.get(iso) || 0 });
+  }
+  const max = Math.max(1, ...cells.map((c) => c.count));
+  return (
+    <div className="card" style={{ padding: 14 }}>
+      <div className="heatrow">
+        <span className="heatrow-label">returns</span>
+        {cells.map((c) => {
+          const tier = c.count === 0 ? 0 : Math.min(4, Math.ceil((c.count / max) * 4));
+          return (
+            <span
+              key={c.date}
+              className="heatcell"
+              data-v={tier}
+              title={`${c.date}: ${c.count}`}
             />
           );
         })}
