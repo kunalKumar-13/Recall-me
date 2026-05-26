@@ -9,6 +9,70 @@ Pairs with [`engineering/DOC_HEALTH.md`](engineering/DOC_HEALTH.md)
 
 ---
 
+## `/AUDIT/` — Phase 8A repo-wide audit (newest)
+
+| Doc | Purpose | Phase | Status |
+|---|---|---|---|
+| [`AUDIT/SURFACES.md`](../AUDIT/SURFACES.md) | every runtime surface w/ entry point + owner + status (LIVE / LEGACY / ARCHIVE / REMOVE) | 8A | live |
+| [`AUDIT/DEAD_CODE.md`](../AUDIT/DEAD_CODE.md) | dead/duplicate/orphan code catalogue — evidence-based, no deletions | 8A | live |
+| [`AUDIT/LAUNCHER_MAP.md`](../AUDIT/LAUNCHER_MAP.md) | every signal, slot, public method + frozen anti-rules; freeze map | 8A | live |
+| [`AUDIT/CAPTURE_MAP.md`](../AUDIT/CAPTURE_MAP.md) | seven-hop capture pipeline with file + function per hop + diagnostic CLI table | 8A | live |
+| [`AUDIT/ASSETS.md`](../AUDIT/ASSETS.md) | screenshot / image inventory w/ unused + orphan flags | 8A | live |
+| [`AUDIT/DEPENDENCIES.md`](../AUDIT/DEPENDENCIES.md) | Python + 3 JS package.json files w/ runtime / dev / unused classification | 8A | live |
+| [`AUDIT/STATE.md`](../AUDIT/STATE.md) | the state-of-the-repo summary — what Recall is, what ships, what dies next | 8A | live |
+| [`AUDIT/DELETE_PLAN.md`](../AUDIT/DELETE_PLAN.md) | tier-1 cleanup execution log — what moved, what deleted, with verification per row | 8B | live |
+| [`AUDIT/LAUNCHER_FREEZE.md`](../AUDIT/LAUNCHER_FREEZE.md) | the official launcher path + public API + allowed/forbidden changes | 8B | live |
+| [`AUDIT/DEPENDENCY_DIFF.md`](../AUDIT/DEPENDENCY_DIFF.md) | before/after manifests + build impact for the dep cleanup | 8B | live |
+| [`AUDIT/ASSET_FREEZE.md`](../AUDIT/ASSET_FREEZE.md) | the frozen active asset surface + what moved to history + freeze rule | 8B | live |
+| [`engineering/PHASE_8B_STATUS.md`](engineering/PHASE_8B_STATUS.md) | tier-1 cleanup close-out — before/after metrics, all 8 verifications green, deferred items for 8C | 8B | live |
+
+## `/STABILITY/` — Phase 8C reality pass (newest)
+
+| Doc | Purpose | Phase | Status |
+|---|---|---|---|
+| [`STABILITY/PERF.md`](../STABILITY/PERF.md) | real wall-clock timings for launcher + CLI + daemon endpoints; reproducible recipe | 8C | live |
+| [`STABILITY/CAPTURE.md`](../STABILITY/CAPTURE.md) | 30d event-store coverage by site; ChatGPT/GitHub/Google verified, StackOverflow+Stitch flagged | 8C | live |
+| [`STABILITY/LAUNCHER.md`](../STABILITY/LAUNCHER.md) | frozen 7E.1 widget tree walked offscreen + cold-construct timing + state coverage | 8C | live |
+| [`STABILITY/RESUME.md`](../STABILITY/RESUME.md) | recovery pipeline reality + bad-recovery ledger state + restore plan invariant | 8C | live |
+| [`STABILITY/EXTENSION.md`](../STABILITY/EXTENSION.md) | 9-state machine + 7 captures + bundle health + keyboard shortcuts | 8C | live |
+| [`STABILITY/CONTROL.md`](../STABILITY/CONTROL.md) | 13 admin routes + 10 loaders + paths centralisation + tsc clean | 8C | live |
+| [`/BUGS_OPEN.md`](../BUGS_OPEN.md) | honest open-bug ledger (1 P0 fixed + 1 P0 open + 5 P1 + 4 P2) | 8C | live |
+| [`/RELEASE_READINESS.md`](../RELEASE_READINESS.md) | composite 0–100 readiness score (currently 87) + path to stable | 8C → 8D | live |
+
+## `/release/` + RC1 top-level — Phase 8D release candidate (newest)
+
+| Doc | Purpose | Phase | Status |
+|---|---|---|---|
+| [`/VERSION.md`](../VERSION.md) | v0.1.0-rc1 spec — 8 frozen surfaces + build artifacts + ship/known/blocked bugs | 8D | live |
+| [`/SCREEN_INDEX.md`](../SCREEN_INDEX.md) | frozen capture surface — 4 canonical directories + coverage map for required RC1 screens | 8D | live |
+| [`/DEMO_MODE.md`](../DEMO_MODE.md) | `recall demo run / reset / status` CLI reference + boundary guarantees | 8D | live |
+| [`/INSTALL_VERIFIED.md`](../INSTALL_VERIFIED.md) | honest install walk on the dev box — doctor / capture / daemon / demo all green | 8D | live |
+| [`release/README.md`](../release/README.md) | single front door for anyone holding an RC1 build | 8D | live |
+| [`release/CHANGELOG_RC1.md`](../release/CHANGELOG_RC1.md) | release notes for v0.1.0-rc1 | 8D | live |
+| [`release/INSTALL.md`](../release/INSTALL.md) | Windows + macOS + from-source install paths | 8D | live |
+| [`release/QUICKSTART.md`](../release/QUICKSTART.md) | 5-minute install → resume walkthrough | 8D | live |
+| [`release/DEMO_FLOW.md`](../release/DEMO_FLOW.md) | 3-minute screen-share demo script + anti-patterns | 8D | live |
+| [`release/KNOWN_ISSUES.md`](../release/KNOWN_ISSUES.md) | user-facing bug summary (P0 = 0) | 8D | live |
+| [`release/LANDING_CHECK.md`](../release/LANDING_CHECK.md) | marketing-site link + asset audit (zero dead links) | 8D | live |
+| [`engineering/PHASE_8D_STATUS.md`](engineering/PHASE_8D_STATUS.md) | RC1 capstone — before/after metrics + 12-line verification table | 8D | live |
+
+## `/alpha/` evidence loop + RC validation — Phase 8E alpha users (newest)
+
+| Doc | Purpose | Phase | Status |
+|---|---|---|---|
+| [`/RC_VALIDATION.md`](../RC_VALIDATION.md) | cross-link evidence index — all 6 RC1 claims backed by checked-in artifacts | 8E | live |
+| [`alpha/users_live.json`](../alpha/users_live.json) | 9-field PII-free cohort ledger; founder = alpha-001 baseline + 4 open seats | 8E | live |
+| [`alpha/pack/WELCOME.md`](../alpha/pack/WELCOME.md) | cohort front door — what we ask, what we promise | 8E | live |
+| [`alpha/pack/INSTALL.md`](../alpha/pack/INSTALL.md) | 10-minute install path for testers | 8E | live |
+| [`alpha/pack/DAY0.md`](../alpha/pack/DAY0.md) | first hour — browse normally | 8E | live |
+| [`alpha/pack/DAY1.md`](../alpha/pack/DAY1.md) | the real test — first unprompted launcher open | 8E | live |
+| [`alpha/pack/DAY3.md`](../alpha/pack/DAY3.md) | does it stick? self-survey + wow/failure checklists | 8E | live |
+| [`alpha/pack/FEEDBACK.md`](../alpha/pack/FEEDBACK.md) | open intake — three channels, no form | 8E | live |
+| [`alpha/pack/UNINSTALL.md`](../alpha/pack/UNINSTALL.md) | clean exit + the one sentence we want | 8E | live |
+| [`alpha/failures/README.md`](../alpha/failures/README.md) | failure-incident folder — one file per report, 5-field template | 8E | live |
+| [`alpha/wow/README.md`](../alpha/wow/README.md) | verbatim-only quote folder — anonymisation guide | 8E | live |
+| [`engineering/PHASE_8E_STATUS.md`](engineering/PHASE_8E_STATUS.md) | 8E capstone — alpha-evidence infrastructure built; cohort recruitment is 8F | 8E | live |
+
 ## Root — what stays at the front door
 
 | Doc | Purpose | Owner | Phase | Status |
@@ -95,6 +159,43 @@ Pairs with [`engineering/DOC_HEALTH.md`](engineering/DOC_HEALTH.md)
 | [`DOWNLOAD_GUIDE.md`](release/DOWNLOAD_GUIDE.md) | the four alpha download paths in detail (Win lite / Win full / macOS preview / extension) | 6G | live |
 | [`DEMO_VIDEO_SCRIPT.md`](release/DEMO_VIDEO_SCRIPT.md) | the 60-second placeholder demo storyboard — 6 beats, captions only | 6G | live, placeholder (recording pending) |
 | [`PHASE_6H_STATUS.md`](engineering/PHASE_6H_STATUS.md) | Phase 6H Control Room OS close-out — 8 live loaders, 3-column shell, 6 panels, 10 dynamic routes, no fake data | 6H | live |
+| [`PHASE_6I_STATUS.md`](engineering/PHASE_6I_STATUS.md) | Phase 6I Launcher Rebuild close-out — 12-module v3 package, 7 surface primitives, 3-column shell, 5 captures, live untouched | 6I | live |
+| [`PHASE_6J_STATUS.md`](engineering/PHASE_6J_STATUS.md) | Phase 6J Control Room V2 close-out — top/bottom bars, Ctrl+K palette, 5 new routes, 2 new loaders, no mock values | 6J | live |
+| [`CONTROL_ROOM_V2.md`](founder/CONTROL_ROOM_V2.md) | the founder's operating system — 14 routes, shell, palette, trust contract | 6J | live |
+| [`PHASE_6K_STATUS.md`](engineering/PHASE_6K_STATUS.md) | Phase 6K Launcher Promotion close-out — v3 LiveLauncher becomes default, legacy archived in place, `RECALL_LAUNCHER=legacy` escape hatch | 6K | live |
+| [`PHASE_6L_STATUS.md`](engineering/PHASE_6L_STATUS.md) | Phase 6L Launcher Simplification close-out — single floating surface, 3-column shell archived, 8 new minimal classes, 4 captures | 6L | live |
+| [`PHASE_6M_STATUS.md`](engineering/PHASE_6M_STATUS.md) | Phase 6M Desktop Memory Layer close-out — new `app/core/desktop/` capture package, `POST /v1/events/desktop`, `/desktop` control-room route, extension `⊞-N` badge | 6M | live |
+| [`DESKTOP_LAYER.md`](product/DESKTOP_LAYER.md) | what the desktop watcher captures (and what it doesn't); metadata-only contract + aggregator rules + engine join | 6M | live |
+| [`PHASE_6M.1_STATUS.md`](engineering/PHASE_6M.1_STATUS.md) | Phase 6M.1 Launcher Refinement close-out — paper-white solid cards, 28/20/12 spacing, 22/14/12 typography, equal-width pills + overflow chip, vertically-centred empty | 6M.1 | live |
+| [`LAUNCHER_REVIEW.md`](product/LAUNCHER_REVIEW.md) | per-refinement audit — what the 6M.1 refit removed / kept / why / future | 6M.1 | live |
+| [`PHASE_6M.2_STATUS.md`](engineering/PHASE_6M.2_STATUS.md) | Phase 6M.2 Launcher Geometry Recovery close-out — 720×520 window, 2×2 hero grid at 92 px, search capped 640, returns quieter, theme retuned 20/13/11/10 | 6M.2 | live |
+| [`LAUNCHER_REGRESSION.md`](product/LAUNCHER_REGRESSION.md) | regression audit — why old looked better / what 6M.1 changed / what 6M.2 fixed (13-token table + Raycast↔Notion axis narrative) | 6M.2 | live |
+| [`PHASE_6N_STATUS.md`](engineering/PHASE_6N_STATUS.md) | Phase 6N Recovery Precision close-out — 3 signal states (HIGH/MED/LOW), confidence sentence row, preview card on empty, investigation sort | 6N | live |
+| [`RECOVERY_VISUAL_AUDIT.md`](product/RECOVERY_VISUAL_AUDIT.md) | per-state visual contract — high / medium / low trust + silence + bad recovery + cross-cutting rules | 6N | live |
+| [`PHASE_6O_STATUS.md`](engineering/PHASE_6O_STATUS.md) | Phase 6O Launcher Reset close-out — 680×460 window, fixed 100-px hero, HIGH-only gate, 6 files archived to launcher-overbuild/ | 6O | live |
+| [`LAUNCHER_RESET.md`](product/LAUNCHER_RESET.md) | the product reset audit — what removed / why launcher failed / new philosophy (3 failure modes + 3 design rules) | 6O | live |
+| [`PHASE_6P_STATUS.md`](engineering/PHASE_6P_STATUS.md) | Phase 6P Resume Reality close-out — preview overlay + restore toast + real OS opens, missing files skipped not fatal | 6P | live |
+| [`RESUME_FLOW.md`](product/RESUME_FLOW.md) | end-to-end resume pipeline audit — source → decision → restore order → failure path | 6P | live |
+| [`SHOWCASE_RUN.md`](product/SHOWCASE_RUN.md) | scripted WebSocket demo run + failure-injection matrix for verifying Resume reality | 6P | live |
+| [`LAUNCHER_VISIBILITY.md`](product/LAUNCHER_VISIBILITY.md) | Phase 6P.1 launcher visibility recovery — warm page + layered cards + accent strip + window frame (problem · fix · before/after, 9-row table) | 6P.1 | live |
+| [`PHASE_6Q_STATUS.md`](engineering/PHASE_6Q_STATUS.md) | Phase 6Q Continuity Truth close-out — ledger + Why this? sheet + inspector CLI + trust CLI + showcase | 6Q | live |
+| [`INVESTIGATION_PRINCIPLES.md`](product/INVESTIGATION_PRINCIPLES.md) | the 7 rules behind a recovery candidate + the 9 anti-noise trust gates | 6Q | live |
+| [`PROMOTION_THRESHOLDS.md`](product/PROMOTION_THRESHOLDS.md) | LOW/MED/HIGH band rules + 5 overrides (unfinished/returned/duplicate/noise/ledger) + 4 worked examples | 6Q | live |
+| [`SHOWCASE_TRUTH.md`](product/SHOWCASE_TRUTH.md) | three-investigation scripted walk verifying *only one hero* + the *Why this?* contract + the ledger-demotion path | 6Q | live |
+| [`PHASE_6R_STATUS.md`](engineering/PHASE_6R_STATUS.md) | Phase 6R Launcher Finalization close-out — 680×440 hard clamp, 88-px hero with chips + HIGH + Resume 112, vertical OTHER WORK, footer, launcher frozen | 6R | live |
+| [`LAUNCHER_FINAL_AUDIT.md`](product/LAUNCHER_FINAL_AUDIT.md) | the frozen-product checklist — geometry · paint · hero/OTHER WORK/empty/footer contracts · 7-check visibility audit · the freeze rule | 6R | live |
+| [`PHASE_7A_STATUS.md`](engineering/PHASE_7A_STATUS.md) | Phase 7A Extension Product Surface close-out — 440×640 frozen popup, 6 fixed regions, search overlay, 7 captures | 7A | live |
+| [`EXTENSION_PRODUCT_AUDIT.md`](product/EXTENSION_PRODUCT_AUDIT.md) | the extension's frozen-product checklist — paint · motion · per-region contracts · 7-row state catalogue + capture-architecture table | 7A | live |
+| [`PHASE_7B_STATUS.md`](engineering/PHASE_7B_STATUS.md) | Phase 7B Launcher Production Freeze close-out — single root card, no per-section chrome, Ctrl+K, timing log, launcher frozen forever | 7B | live |
+| [`LAUNCHER_SHIP_AUDIT.md`](product/LAUNCHER_SHIP_AUDIT.md) | **superseded** by `LAUNCHER_VISUAL_MERGE.md` (7B.1) — 6R → 7B delta, paint/geometry/motion/per-region tables, visibility-pass, performance budgets | 7B | superseded |
+| [`PHASE_7B.1_STATUS.md`](engineering/PHASE_7B.1_STATUS.md) | Phase 7B.1 Launcher Visual Merge close-out — 740×500 single workspace, Continue document, infinity glyph empty, bottom strip, OTHER WORK removed | 7B.1 | live |
+| [`LAUNCHER_VISUAL_MERGE.md`](product/LAUNCHER_VISUAL_MERGE.md) | **superseded** by `LAUNCHER_FINAL.md` (7E) — 7B → 7B.1 delta + Stitch-document workspace contract | 7B.1 | superseded |
+| [`PHASE_7E_STATUS.md`](engineering/PHASE_7E_STATUS.md) | Phase 7E Launcher Final Product Pass close-out — 700×500 single surface w/ Continue + RECENT MEMORY + OTHER WORK + live trust row | 7E | live |
+| [`LAUNCHER_FINAL.md`](product/LAUNCHER_FINAL.md) | **supersedes** `LAUNCHER_VISUAL_MERGE.md` as the launcher's live contract — 7B.1 → 7E delta + frozen paint/geometry/typography/per-region tables + 5-row state catalogue + the removed-list | 7E | live |
+| [`PHASE_7E.1_STATUS.md`](engineering/PHASE_7E.1_STATUS.md) | Phase 7E.1 Launcher Stability close-out — restored `request_settings` + `request_close` signals dropped during 7E rewrite + froze the public interface | 7E.1 | live |
+| [`LAUNCHER_CONTRACTS.md`](product/LAUNCHER_CONTRACTS.md) | frozen Python interface for the launcher (`MinimalSearchBar` + `LiveLauncher` signals/methods + wiring map + freeze rule); no future phase may remove or rename these symbols | 7E.1 | live |
+| [`PHASE_7D_STATUS.md`](engineering/PHASE_7D_STATUS.md) | Phase 7D Capture Truth Audit close-out — `recall capture status` + `recall capture tail` CLIs + seven-hop flow doc | 7D | live |
+| [`CAPTURE_FLOW.md`](product/CAPTURE_FLOW.md) | seven-hop end-to-end capture pipeline (browser → extension → daemon → store → investigation → recovery → launcher) with per-hop file/function + verification CLIs + scripted 7-step verification walk | 7D | live |
 | [`ALPHA_MATRIX.md`](trust/ALPHA_MATRIX.md) | 5 install-validation slots × 7 columns (Windows ×3 / Mac Intel / Mac Silicon) | 5K | live, all `unknown` |
 | [`alpha/ALPHA_FEEDBACK_V2.md`](../alpha/ALPHA_FEEDBACK_V2.md) | tightened 6-row intake form (delight / confusion / wrong / missed / install pain / keep-remove) | 5K | live |
 | [`alpha/users/`](../alpha/users/) | per-tester records: 5 cohort folders + TEMPLATE + JSON schema (zero fake testers) | 5K | live |
