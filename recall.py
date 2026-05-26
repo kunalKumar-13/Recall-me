@@ -123,6 +123,18 @@ if len(sys.argv) > 1 and sys.argv[1] == "capture":
         sys.exit(1)
     raise SystemExit(run_capture_cli(sys.argv[2:]))
 
+# Phase 8D — `recall demo run / reset / status`. One-command demo
+# seed + reset; primes a fresh box without booting Qt. Writes only
+# to `~/.recall/events-demo/`, never the user's real event log.
+if len(sys.argv) > 1 and sys.argv[1] == "demo":
+    try:
+        from app.core.demo_cli import run_demo_cli
+    except BaseException:
+        print("[boot] [FAIL] importing app.core.demo_cli", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(1)
+    raise SystemExit(run_demo_cli(sys.argv[2:]))
+
 # Phase 5K cohort CLI. `recall alpha create / status / report` writes
 # to the repo-tracked `alpha/users/` tree; metadata only, never
 # content (boundary in `alpha/users/README.md`).
