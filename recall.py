@@ -88,6 +88,18 @@ if len(sys.argv) > 1 and sys.argv[1] in {"repair", "reset", "reinstall-check"}:
         raise SystemExit(cli_reset(_rest))
     raise SystemExit(cli_reinstall_check(_rest))
 
+# Phase 6Q — Continuity Truth. `recall inspect <id>` prints the
+# deterministic ASCII summary of why the engine surfaced (or didn't
+# surface) a given candidate. Read-only; no daemon required.
+if len(sys.argv) > 1 and sys.argv[1] == "inspect":
+    try:
+        from app.core.inspect_cli import run_inspect_cli
+    except BaseException:
+        print("[boot] [FAIL] importing app.core.inspect_cli", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(1)
+    raise SystemExit(run_inspect_cli(sys.argv[2:]))
+
 # Phase 7D — `recall capture status` + `recall capture tail`. Two
 # read-only audit commands; verify the capture pipeline is actually
 # remembering events end-to-end. Local-only; daemon not required.
