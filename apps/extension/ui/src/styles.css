@@ -9,37 +9,34 @@
  */
 
 :root {
-  /* ── Phase 5I visual tokens ────────────────────────────────────
-     Three surface elevations, two border weights, two shadow
-     weights, three motion speeds. Single source — every component
-     should reach for these names. Older `--surface` / `--line` /
-     `--shadow` aliases are retained for back-compat below. */
+  /* ── Phase 7A visual tokens ────────────────────────────────────
+     The extension's *frozen-product* paint. Warm-paper page
+     (#F5F2ED), pure-white cards, lavender accent, warm-grey
+     hairline (#E6DED4), single soft shadow `0 12 32 .06`. No
+     glass, no neon, no blur. */
 
-  /* Surfaces — warm off-white, cream not gray. Three elevation
-     tiers (0 background, 1 cards, 2 hover/elevated). */
-  --surface-0: #fbf7f4;
-  --surface-1: #ffffff;
-  --surface-2: #f4efea;
+  /* Surfaces. */
+  --surface-0: #f5f2ed;   /* page          */
+  --surface-1: #ffffff;   /* cards         */
+  --surface-2: #f0ece5;   /* sunken hover  */
 
-  /* Borders — two weights. */
-  --border-soft: rgba(24, 17, 45, 0.08);
-  --border-strong: rgba(24, 17, 45, 0.13);
+  /* Borders. */
+  --border-soft: #e6ded4;
+  --border-strong: #d9ceba;
 
-  /* Shadows — two weights. Soft = resting card; elevated = hover
-     / modal lift. */
-  --shadow-soft: 0 1px 2px rgba(24, 17, 45, 0.04),
-    0 6px 20px -12px rgba(24, 17, 45, 0.12);
-  --shadow-elevated: 0 2px 6px rgba(24, 17, 45, 0.06),
-    0 16px 40px -20px rgba(24, 17, 45, 0.22);
+  /* Shadows — single resting drop + a lift for the search overlay. */
+  --shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.06);
+  --shadow-elevated: 0 20px 56px rgba(0, 0, 0, 0.12);
 
-  /* Motion durations — single source for every transition. */
+  /* Motion durations — Phase 7A directive: 120 / 180 / 240. */
   --motion-fast: 120ms;
   --motion-normal: 180ms;
-  --motion-slow: 220ms;
+  --motion-slow: 240ms;
   --motion-ease: cubic-bezier(0.32, 0.72, 0, 1);
 
-  /* Aliases — keep old names live for components that haven't
-     migrated yet. Same values, indirected through the new tokens. */
+  /* Aliases — keep older component code paths live without
+     forcing migrations. Same values, indirected through the
+     new tokens. */
   --bg: var(--surface-0);
   --surface: var(--surface-1);
   --surface-sunken: var(--surface-2);
@@ -53,20 +50,25 @@
   --ink-3: #847b8e;
   --ink-4: #b3acbd;
 
-  /* Accent — lavender, used sparingly. One accent moment per zone. */
+  /* Accent — lavender, used sparingly. */
   --accent: #8b7fe3;
+  --accent-hover: #7a6fd4;
   --accent-soft: #ede9fb;
   --accent-line: rgba(139, 127, 227, 0.28);
 
   /* Status. */
   --ok: #4fa784;
+  --ok-soft: #e2f3eb;
   --warn: #c98a5e;
+  --warn-soft: #f8ede1;
 
-  --radius: 14px;
-  --radius-sm: 10px;
+  --radius-card: 20px;
+  --radius-row: 14px;
+  --radius-pill: 999px;
 
-  /* Spacing rhythm — multiples of 4, 24px section gap. */
-  --gap-section: 24px;
+  /* Spacing rhythm. */
+  --gap-section: 20px;
+  --pad-edge: 18px;
 }
 
 * {
@@ -87,16 +89,18 @@ body {
 }
 
 body {
-  /* 440px sits in the spec's 420–480 range — wide enough for a
-     ContinueCard to breathe, narrow enough to stay a companion. */
+  /* Phase 7A — frozen at 440 × 640. Resize disabled (Chrome
+     pins popup size to the body box). */
   width: 440px;
+  height: 640px;
+  overflow: hidden;
 }
 
 #root {
   display: flex;
   flex-direction: column;
-  min-height: 320px;
-  max-height: 600px;
+  width: 440px;
+  height: 640px;
 }
 
 button {

@@ -31,6 +31,9 @@ const OUT_V2 = resolve(OUT, "extension-v2");
 // Phase 6D — the demo overlay captures land here.
 const OUT_DEMO = resolve(OUT, "demo");
 
+// Phase 7A — premium extension surface captures land here.
+const OUT_7A = resolve(OUT, "extension-7a");
+
 // The popup is an ES-module bundle; Chromium refuses module scripts
 // over file://, so the built popup is served over HTTP for capture.
 const PORT = 8137;
@@ -87,9 +90,9 @@ const MOCK = {
   },
 };
 
-async function shot(browser, name, query, { mock = false, dir = OUT, mockData = null } = {}) {
+async function shot(browser, name, query, { mock = false, dir = OUT, mockData = null, height = 600 } = {}) {
   const page = await browser.newPage({
-    viewport: { width: 440, height: 600 },
+    viewport: { width: 440, height },
     deviceScaleFactor: 2,
   });
   if (mock || mockData) {
@@ -115,7 +118,13 @@ async function shot(browser, name, query, { mock = false, dir = OUT, mockData = 
   await page.screenshot({ path: `${dir}/${name}.png` });
   await page.close();
   const subdir =
-    dir === OUT_V2 ? "extension-v2/" : dir === OUT_DEMO ? "demo/" : "";
+    dir === OUT_V2
+      ? "extension-v2/"
+      : dir === OUT_DEMO
+        ? "demo/"
+        : dir === OUT_7A
+          ? "extension-7a/"
+          : "";
   console.log(`  wrote assets/screenshots/${subdir}${name}.png`);
 }
 
@@ -123,6 +132,7 @@ async function shot(browser, name, query, { mock = false, dir = OUT, mockData = 
 // Playwright's screenshot calls try to write into it.
 mkdirSync(OUT_V2, { recursive: true });
 mkdirSync(OUT_DEMO, { recursive: true });
+mkdirSync(OUT_7A, { recursive: true });
 
 // Serve the built popup over HTTP for the duration of the capture.
 const server = spawn(
@@ -167,9 +177,9 @@ const MOCK_CAPTURING = {
   },
 };
 
-async function shotWithMock(browser, name, mockData, { dir = OUT } = {}) {
+async function shotWithMock(browser, name, mockData, { dir = OUT, height = 600, postShot } = {}) {
   const page = await browser.newPage({
-    viewport: { width: 440, height: 600 },
+    viewport: { width: 440, height },
     deviceScaleFactor: 2,
   });
   await page.route("**/v1/**", (route) => {
@@ -183,10 +193,17 @@ async function shotWithMock(browser, name, mockData, { dir = OUT } = {}) {
   });
   await page.goto(POPUP, { waitUntil: "load" });
   await page.waitForTimeout(1100);
+  if (postShot) await postShot(page);
   await page.screenshot({ path: `${dir}/${name}.png` });
   await page.close();
   const subdir =
-    dir === OUT_V2 ? "extension-v2/" : dir === OUT_DEMO ? "demo/" : "";
+    dir === OUT_V2
+      ? "extension-v2/"
+      : dir === OUT_DEMO
+        ? "demo/"
+        : dir === OUT_7A
+          ? "extension-7a/"
+          : "";
   console.log(`  wrote assets/screenshots/${subdir}${name}.png`);
 }
 
@@ -342,6 +359,68 @@ const MOCK_RECOVERY_V2 = {
   "/v1/events/recent": { events: [] },
 };
 
+// ─────────────────────────────────────────────────────────────────────
+// Phase 7A — premium extension surface fixtures.
+//
+// The directive asks for an audit covering:
+//   empty · capturing · active · resume · offline · search · demo
+//
+// `active` = populated body without a recovery (investigations +
+//            timeline + activity). The hero slot is empty.
+// `resume` = populated body WITH a recovery hero. This is the
+//            *first opening of the popup after returning from
+//            elsewhere* picture.
+// `search` = the SearchOverlay open over a populated body.
+// ─────────────────────────────────────────────────────────────────────
+const MOCK_ACTIVE_NO_HERO = {
+  "/v1/health": { ingested_total: 41, events_today: 41, desktop_apps_today: 2 },
+  "/v1/recovery/recent": { candidates: [] },
+  "/v1/threads/recent": {
+    threads: [
+      { id: "t1", title: "WebSocket retries",
+        timeline_summary: "4 sessions - 3 days",
+        surface_types: ["browser_visit", "browser_search", "open"] },
+      { id: "t2", title: "Healthcare proposal",
+        timeline_summary: "3 sessions - 1 week",
+        surface_types: ["open", "browser_visit"] },
+      { id: "t3", title: "RLHF reward shaping",
+        timeline_summary: "3 sessions - 1 week",
+        surface_types: ["browser_search"] },
+    ],
+  },
+  "/v1/events/recent": {
+    events: [
+      { kind: "chat_session", ts: Date.now() / 1000 - 18 * 60,
+        payload: { title: "prompt engineering notes", platform: "ChatGPT" } },
+      { kind: "browser_visit", ts: Date.now() / 1000 - 55 * 60,
+        payload: { title: "backoff retry article", domain: "GitHub" } },
+      { kind: "browser_visit", ts: Date.now() / 1000 - 110 * 60,
+        payload: { title: "websocket reconnect", domain: "StackOverflow" } },
+      { kind: "browser_search", ts: Date.now() / 1000 - 175 * 60,
+        payload: { query: "websocket backoff jitter", engine: "Google" } },
+    ],
+  },
+};
+
+const MOCK_RESUME_7A = {
+  ...MOCK_ACTIVE_NO_HERO,
+  "/v1/recovery/recent": {
+    candidates: [
+      {
+        id: "rc_7a",
+        title: "WebSocket retry debugging",
+        preview_caption: "2 tabs - 2 files - returned after 2d",
+        suggested_targets: [
+          ["url", "https://stackoverflow.com/q/57294879"],
+          ["url", "https://developer.mozilla.org/WebSocket"],
+          ["path", "~/code/ws-retry/client.py"],
+          ["path", "~/code/ws-retry/backoff.py"],
+        ],
+      },
+    ],
+  },
+};
+
 try {
   const browser = await chromium.launch();
   // historical v1 outputs — preserved untouched for diffability
@@ -369,6 +448,23 @@ try {
   // dismissed the demo (or a real event arrived); the popup falls
   // back to the empty surface. Captured for FIRST_MAGIC.md.
   await shotWithMock(browser, "demo-extension-empty", MOCK_EMPTY, { dir: OUT_DEMO });
+
+  // Phase 7A — premium extension surface captures. Viewport bumps to
+  // 640 to match the directive's frozen 440 × 640 popup size.
+  const opt7a = { dir: OUT_7A, height: 640 };
+  await shotWithMock(browser, "empty", MOCK_EMPTY, opt7a);
+  await shotWithMock(browser, "capturing", MOCK_CAPTURING, opt7a);
+  await shotWithMock(browser, "active", MOCK_ACTIVE_NO_HERO, opt7a);
+  await shotWithMock(browser, "resume", MOCK_RESUME_7A, opt7a);
+  await shotWithMock(browser, "demo", MOCK_DEMO_ACTIVE, opt7a);
+  await shot(browser, "offline", "?state=offline", { dir: OUT_7A, height: 640 });
+  await shotWithMock(browser, "search", MOCK_RESUME_7A, {
+    ...opt7a,
+    postShot: async (page) => {
+      await page.keyboard.press("Control+K");
+      await page.waitForTimeout(360);
+    },
+  });
 
   await browser.close();
   console.log("done.");

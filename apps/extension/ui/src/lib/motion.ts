@@ -13,9 +13,11 @@ import type { Transition, Variants } from "framer-motion";
  */
 export const EASE = [0.32, 0.72, 0, 1] as const;
 
-// Mirrors `--motion-normal` (180ms) in styles.css. The token is in ms;
-// framer-motion takes seconds, hence the 1000x divisor at the source.
+// Phase 7A — *120 / 180 / 240*. Mirrors the `--motion-fast`,
+// `--motion-normal`, `--motion-slow` tokens in styles.css.
+const MOTION_FAST_S = 0.12;
 const MOTION_NORMAL_S = 0.18;
+const MOTION_SLOW_S = 0.24;
 
 export const fadeExpand: Variants = {
   hidden: { opacity: 0, y: 6 },
@@ -45,10 +47,11 @@ export const bodyState: Variants = {
   exit: { opacity: 0, y: -4 },
 };
 
-export const calm: Transition = { duration: 0.26, ease: EASE };
+export const calm: Transition = { duration: MOTION_SLOW_S, ease: EASE };
 export const calmFast: Transition = { duration: MOTION_NORMAL_S, ease: EASE };
+export const calmFastest: Transition = { duration: MOTION_FAST_S, ease: EASE };
 
 /** Stagger children of a section so the popup settles top-down. */
 export function staggered(index: number): Transition {
-  return { duration: 0.28, ease: EASE, delay: 0.04 + index * 0.05 };
+  return { duration: MOTION_SLOW_S, ease: EASE, delay: 0.03 + index * 0.04 };
 }

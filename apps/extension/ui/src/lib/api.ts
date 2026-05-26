@@ -46,6 +46,10 @@ export async function fetchHealth(): Promise<Health | null> {
     ok: true,
     ingestedTotal: numberOf(data.ingested_total),
     eventsToday: numberOf(data.events_today ?? data.ingested_today),
+    /* Phase 6M — desktop_apps_today is optional on the wire. The
+       daemon adds the field after the desktop watcher emits its
+       first event; older daemons (pre-6M) omit it. */
+    desktopApps: numberOf(data.desktop_apps_today),
   };
 }
 

@@ -51,6 +51,11 @@ export interface Health {
   ok: boolean;
   ingestedTotal: number;
   eventsToday: number;
+  /* Phase 6M — count of unique desktop_window apps observed in
+     the daemon's daily window. 0 when the watcher hasn't run /
+     no events captured / on a non-Windows host. Surfaced as the
+     popup header's ⊞-N badge. */
+  desktopApps?: number;
 }
 
 /** One restorable investigation — the ContinueCard's subject. */
