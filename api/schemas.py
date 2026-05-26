@@ -62,6 +62,32 @@ class FileOpenIn(_StrictModel):
     )
 
 
+class DesktopWindowIn(_StrictModel):
+    """Phase 6M — `desktop_window` event the watcher emits.
+
+    Metadata only — the schema rejects any field outside this
+    whitelist. No screenshot, no OCR text, no audio fragment.
+    """
+
+    app: str = Field(..., description="Process executable name (e.g. Code.exe).")
+    title: str = Field(..., description="The OS-exposed window title; never inferred.")
+    duration: int = Field(..., ge=0, description="Focus duration in seconds.")
+    focus_start: str = Field(..., description="ISO 8601 UTC timestamp.")
+    focus_end: str = Field(..., description="ISO 8601 UTC timestamp.")
+    switch_count: int = Field(default=1, ge=0)
+    path: Optional[str] = Field(
+        default=None,
+        description=(
+            "File path *if* the OS exposed one through the window title. "
+            "Never inferred from the EXE / command line / accessibility tree."
+        ),
+    )
+    process: Optional[dict] = Field(
+        default=None,
+        description="Informational: {pid, exe}. Never contains command line.",
+    )
+
+
 class LegacyEventIn(BaseModel):
     """The pre-2A shape: a generic `{kind, payload}` envelope.
     Kept so existing extension installs don't have to be reloaded

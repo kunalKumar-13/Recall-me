@@ -56,6 +56,7 @@ from .schemas import (
     EpisodicResultOut,
     EventOut,
     EvolutionPhaseOut,
+    DesktopWindowIn,
     FileOpenIn,
     HealthResponse,
     IngestResponse,
@@ -440,6 +441,28 @@ def create_app(deps: AppDeps) -> FastAPI:
             deps.ingestion.ingest_typed,
             kind,
             ev.model_dump(exclude={"reveal"}),
+        )
+        _post_ingest_hook(ok)
+        return IngestResponse(
+            received=1, ingested=1 if ok else 0, reason=reason,
+        )
+
+    @app.post(
+        "/v1/events/desktop",
+        response_model=IngestResponse,
+        tags=["ingestion"],
+        summary=(
+            "Phase 6M — ingest a `desktop_window` focus event. "
+            "Metadata only (app, title, duration, switch_count, "
+            "optional path/process). No screenshots, no OCR, no "
+            "pixel data; the schema rejects any other field."
+        ),
+    )
+    async def ingest_desktop(
+        ev: DesktopWindowIn, deps: AppDeps = Depends(get_deps)
+    ) -> IngestResponse:
+        ok, reason = await run_in_threadpool(
+            deps.ingestion.ingest_typed, "desktop_window", ev.model_dump(),
         )
         _post_ingest_hook(ok)
         return IngestResponse(

@@ -49,6 +49,10 @@ ALLOWED_KINDS: frozenset[str] = frozenset({
     "browser_visit",
     "browser_search",
     "chat_session",
+    # Phase 6M — desktop foreground capture. Metadata only; the
+    # schema lives in `api/schemas.py:DesktopWindowIn` and the
+    # watcher in `app/core/desktop/`.
+    "desktop_window",
 })
 
 # URL schemes we never store. Browsers expose plenty of internal
