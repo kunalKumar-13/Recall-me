@@ -88,6 +88,18 @@ if len(sys.argv) > 1 and sys.argv[1] in {"repair", "reset", "reinstall-check"}:
         raise SystemExit(cli_reset(_rest))
     raise SystemExit(cli_reinstall_check(_rest))
 
+# Phase 7D — `recall capture status` + `recall capture tail`. Two
+# read-only audit commands; verify the capture pipeline is actually
+# remembering events end-to-end. Local-only; daemon not required.
+if len(sys.argv) > 1 and sys.argv[1] == "capture":
+    try:
+        from app.core.capture_cli import run_capture_cli
+    except BaseException:
+        print("[boot] [FAIL] importing app.core.capture_cli", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(1)
+    raise SystemExit(run_capture_cli(sys.argv[2:]))
+
 # Phase 5K cohort CLI. `recall alpha create / status / report` writes
 # to the repo-tracked `alpha/users/` tree; metadata only, never
 # content (boundary in `alpha/users/README.md`).
