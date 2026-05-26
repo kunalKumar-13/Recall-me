@@ -839,6 +839,7 @@ def cmd_help(_argv: list[str]) -> int:
     print("    report [--cohort <name>]                   aggregate counts (human)")
     print("    export [--cohort <name>]                   same counts as JSON")
     print("    replay <handle> [--cohort <name>]          per-tester event timeline (no content)")
+    print("    review                                     Phase 8E daily evidence board")
     print()
     print("  Cohorts: " + ", ".join(COHORTS))
     print()
@@ -851,6 +852,116 @@ def cmd_help(_argv: list[str]) -> int:
     return 0
 
 
+def cmd_review(_argv: list[str]) -> int:
+    """`recall alpha review` - Phase 8E daily evidence board.
+
+    Read-only ASCII summary across three sources:
+
+      1. `alpha/users_live.json`         - 8E ledger (handle / status / used_days / recoveries).
+      2. `alpha/recovery_journal.json`   - 6E trust ledger (the same source `report` reads).
+      3. `alpha/wow/` + `alpha/failures/` - directories of per-incident files.
+
+    Six directive-named outputs: installs, active, recoveries, trust, wow,
+    failures. Never raises out; missing files become zero counts.
+    """
+    print()
+    print("  Recall - alpha review (Phase 8E)")
+    print()
+
+    # 1. Users ledger.
+    live_path = _REPO_ROOT / "alpha" / "users_live.json"
+    installs = 0
+    active = 0
+    recoveries_seen = 0
+    recoveries_used = 0
+    wow_users = 0
+    failure_users = 0
+    users_list: list[dict] = []
+    try:
+        live = json.loads(live_path.read_text(encoding="utf-8"))
+        users_list = list(live.get("users", []))
+    except (OSError, ValueError):
+        users_list = []
+    for u in users_list:
+        if not isinstance(u, dict):
+            continue
+        if u.get("install_date"):
+            installs += 1
+        if u.get("status") in ("active", "completed"):
+            active += 1
+        recoveries_seen += int(u.get("recoveries_seen") or 0)
+        recoveries_used += int(u.get("recoveries_used") or 0)
+        if u.get("wow") is True:
+            wow_users += 1
+        if u.get("failure") is True:
+            failure_users += 1
+
+    # 2. Trust ledger - reuse the same 6E aggregation as `report`.
+    trust = _compute_trust_pct()
+
+    # 3. Wow + failures directories. One file = one incident.
+    wow_dir = _REPO_ROOT / "alpha" / "wow"
+    fail_dir = _REPO_ROOT / "alpha" / "failures"
+    wow_count = _count_incident_files(wow_dir)
+    fail_count = _count_incident_files(fail_dir)
+
+    # Directive targets - the four-line success bar.
+    target_users = 5
+    target_recoveries = 3
+    target_wow = 1
+    target_failure = 1
+
+    def _status(actual: int, want: int) -> str:
+        return "OK" if actual >= want else "short"
+
+    # Render.
+    print(f"    installs                 {installs}")
+    print(f"    active                   {active}")
+    print(f"    recoveries seen          {recoveries_seen}")
+    print(f"    recoveries used          {recoveries_used}")
+    trust_pct = trust.get("pct_correct")
+    trust_render = f"{trust_pct}%" if trust_pct is not None else "n/a"
+    print(f"    trust (correct/shown)    {trust_render}   "
+          f"(resume_ok={trust.get('resume_ok', 0)}, "
+          f"bad={trust.get('bad_recovery', 0)}, "
+          f"silenced={trust.get('correct_silence', 0)})")
+    print(f"    wow incidents (files)    {wow_count}")
+    print(f"    failure incidents (files){fail_count}")
+    print(f"    wow users                {wow_users}")
+    print(f"    failure users            {failure_users}")
+    print()
+    print("    directive targets:")
+    print(f"      {_status(installs, target_users)} >={target_users} users         "
+          f"(have {installs})")
+    print(f"      {_status(recoveries_used, target_recoveries)} >={target_recoveries} recoveries  "
+          f"   (have {recoveries_used} used)")
+    print(f"      {_status(wow_count, target_wow)} >={target_wow} wow moment     "
+          f"(have {wow_count})")
+    print(f"      {_status(fail_count, target_failure)} >={target_failure} failure story  "
+          f"(have {fail_count})")
+    print()
+    return 0
+
+
+def _count_incident_files(folder: Path) -> int:
+    """Count per-incident markdown files in a directory, ignoring
+    READMEs and templates. Never raises."""
+    if not folder.exists():
+        return 0
+    n = 0
+    try:
+        for p in folder.iterdir():
+            if not p.is_file() or p.suffix.lower() != ".md":
+                continue
+            name = p.name.upper()
+            if name in ("README.MD", "TEMPLATE.MD", "_TEMPLATE.MD"):
+                continue
+            n += 1
+    except OSError:
+        return 0
+    return n
+
+
 _COMMANDS = {
     "create": cmd_create,
     "update": cmd_update,
@@ -858,6 +969,7 @@ _COMMANDS = {
     "report": cmd_report,
     "export": cmd_export,
     "replay": cmd_replay,
+    "review": cmd_review,
     "help": cmd_help,
     "--help": cmd_help,
     "-h": cmd_help,

@@ -1,0 +1,48 @@
+{
+  "schema": "alpha-users-live-v1",
+  "generated_for": "Phase 8E - Alpha Users + Evidence Loop",
+  "boundary": "metadata only. no PII. no URLs, no filenames, no queries, no chat content. handle is opaque (alpha-NNN). enforced by `recall alpha review` and the welcome pack.",
+  "field_definitions": {
+    "handle": "opaque cohort id, e.g. alpha-001. never the person's real name or email.",
+    "install_date": "YYYY-MM-DD, the day they ran the installer. null until they install.",
+    "platform": "one of: windows-11, windows-10, macos, linux. coarse OS tag only.",
+    "browser": "one of: chrome, edge, brave, arc, firefox, other. extension target browser.",
+    "used_days": "integer count of days the daemon saw any event after install_date. derived, not self-reported.",
+    "recoveries_seen": "integer count of recovery candidates the launcher rendered for them. local to their machine; reported by hand.",
+    "recoveries_used": "integer subset of recoveries_seen they actually clicked Continue on.",
+    "wow": "boolean. did they leave at least one quote in alpha/wow/?",
+    "failure": "boolean. did they file at least one report in alpha/failures/?",
+    "status": "one of: invited, installed, active, paused, dropped, completed."
+  },
+  "users": [
+    {
+      "handle": "alpha-001",
+      "install_date": "2026-05-24",
+      "platform": "windows-11",
+      "browser": "chrome",
+      "used_days": 14,
+      "recoveries_seen": 0,
+      "recoveries_used": 0,
+      "wow": false,
+      "failure": true,
+      "status": "active",
+      "_note": "founder; dogfood baseline. recoveries_seen=0 reflects the conservative recovery gate on a passive-browsing-heavy log. failure=true via the BUG-001 8B regression caught during 8C."
+    }
+  ],
+  "_provenance": {
+    "founder_baseline": "alpha-001 is the founder's own dogfood install on the dev box. The 4 other cohort slots are open as of 8E close; recruitment is the Phase 8F task.",
+    "directive_target": {
+      "users": 5,
+      "recoveries": 3,
+      "wow": 1,
+      "failure": 1
+    },
+    "actual_at_8e_close": {
+      "users": 1,
+      "recoveries": 0,
+      "wow": 0,
+      "failure": 1
+    },
+    "gap": "4 users short. 3 recoveries short. 1 wow short. failure target met (BUG-001)."
+  }
+}
