@@ -113,7 +113,7 @@ GAP_BTN = 8               # between buttons in a button row
 
 # ── typography sizes (px) ─────────────────────────────────────────
 
-FS_HERO_TITLE = 22        # Recovery hero title; Empty tagline
+FS_HERO_TITLE = 23        # Recovery hero title; Empty tagline (Phase 10D: 22 -> 23 — modest bump that doesn't clip the 1fr/220px hero+preview grid)
 FS_RESUME_TITLE = 17      # Resume state title
 FS_SEARCH_INPUT = 17      # SearchBar value/placeholder
 FS_ROW_TITLE = 13         # OtherRow + SearchRow title

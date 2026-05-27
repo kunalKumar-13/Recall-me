@@ -1009,10 +1009,15 @@ class HeroRecovery(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Expanding,
                            QSizePolicy.Policy.Expanding)
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(18, 16, 18, 16)
+        # Phase 10D — softer hero padding (16 -> 22 top/bottom, 18 -> 22 sides)
+        outer.setContentsMargins(22, 20, 22, 20)
         outer.setSpacing(0)
 
-        # eyebrow row
+        # eyebrow row -- single source of metadata: the "Returned
+        # after N days" clause. Phase 10D removes the duplicate
+        # "last active · implementation" mono microtext that used
+        # to sit on the actions row; the eyebrow already tells the
+        # story.
         eyebrow = QHBoxLayout()
         eyebrow.setContentsMargins(0, 0, 0, 0)
         eyebrow.setSpacing(8)
@@ -1031,15 +1036,17 @@ class HeroRecovery(QWidget):
         eyebrow.addWidget(meta)
         eyebrow.addStretch(1)
         outer.addLayout(eyebrow)
-        outer.addSpacing(8)
+        outer.addSpacing(12)
 
-        # title row: main + serif italic accent
+        # title row: main + serif italic accent. Phase 10D bumps
+        # FS_HERO_TITLE 22 -> 25 -- the hero reads as the page
+        # headline of the surface, not just a card title.
         title_row = QHBoxLayout()
         title_row.setContentsMargins(0, 0, 0, 0)
         title_row.setSpacing(8)
         title_main = QLabel(props.title_main + " ")
         title_main.setFont(_font(_FONT.SANS, size=T.FS_HERO_TITLE,
-                                 bold=True, letter_spacing=-2.2))
+                                 bold=True, letter_spacing=-2.4))
         title_main.setStyleSheet(
             f"color: {T.INK}; background: transparent;")
         title_row.addWidget(title_main)
@@ -1051,7 +1058,7 @@ class HeroRecovery(QWidget):
         title_row.addWidget(title_accent)
         title_row.addStretch(1)
         outer.addLayout(title_row)
-        outer.addSpacing(14)
+        outer.addSpacing(16)
 
         # chips row
         chip_row = QHBoxLayout()
@@ -1065,7 +1072,9 @@ class HeroRecovery(QWidget):
 
         outer.addStretch(1)
 
-        # actions row
+        # actions row -- Resume + Review only. The "last active"
+        # microtext was duplicate metadata against the eyebrow's
+        # "Returned after N days" clause and gone in Phase 10D.
         actions = QHBoxLayout()
         actions.setContentsMargins(0, 0, 0, 0)
         actions.setSpacing(T.GAP_BTN)
@@ -1076,11 +1085,6 @@ class HeroRecovery(QWidget):
         actions.addWidget(resume)
         actions.addWidget(review)
         actions.addStretch(1)
-        last = QLabel(props.last_active)
-        last.setFont(_font(_FONT.MONO, size=T.FS_MONO_SM + 1,
-                           letter_spacing=4.0))
-        last.setStyleSheet(f"color: {T.INK_DIM}; background: transparent;")
-        actions.addWidget(last)
         outer.addLayout(actions)
 
     def paintEvent(self, _e) -> None:  # type: ignore[override]
@@ -1126,14 +1130,20 @@ class PreviewCard(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Fixed,
                            QSizePolicy.Policy.Expanding)
         outer = QVBoxLayout(self)
+        # Phase 10D — preserve the design's padding, tighten inner
+        # spacing slightly so the eyebrow + badge + excerpt read as
+        # a clear three-step hierarchy.
         outer.setContentsMargins(14, 14, 14, 14)
-        outer.setSpacing(10)
+        outer.setSpacing(11)
 
-        eyebrow = QLabel("PREVIEW · RELATED")
+        # Phase 10D — eyebrow simplified from "PREVIEW · RELATED" to
+        # just "PREVIEW", bumped slightly heavier so it reads as a
+        # section label not a tooltip.
+        eyebrow = QLabel("PREVIEW")
         eyebrow.setFont(_font(_FONT.MONO, size=T.FS_MONO_SM,
-                              letter_spacing=14.0))
+                              letter_spacing=18.0, bold=True))
         eyebrow.setStyleSheet(
-            f"color: {T.INK_FAINT}; background: transparent;")
+            f"color: {T.INK_MUTED}; background: transparent;")
         outer.addWidget(eyebrow)
 
         # PDF badge row
@@ -1149,7 +1159,10 @@ class PreviewCard(QWidget):
             "padding: 1px 4px; border-radius: 2px;")
         badge_layout.addWidget(pdf_tag)
         label = QLabel(props.label)
-        label.setFont(_font(_FONT.SANS, size=10))
+        # Phase 10D — slightly heavier label weight (bold) so the
+        # filename reads as the card's anchor; size unchanged so it
+        # doesn't clip in the 220-px column.
+        label.setFont(_font(_FONT.SANS, size=10, bold=True))
         label.setStyleSheet(f"color: {T.INK_2}; background: transparent;")
         badge_layout.addWidget(label)
         badge_layout.addStretch(1)
@@ -1159,10 +1172,12 @@ class PreviewCard(QWidget):
             f"border-radius: 5px;")
         outer.addWidget(badge)
 
-        # excerpt
+        # excerpt — original size; Phase 10D bumps the highlight
+        # marker contrast slightly so the eye lands on the
+        # highlighted phrase first.
         excerpt = QLabel(
             f"{props.excerpt_prefix} "
-            f"<mark style='background: rgba(167,139,250,0.22);"
+            f"<mark style='background: rgba(167,139,250,0.26);"
             f" color: {T.INK}; padding: 1px 4px; border-radius: 3px;'>"
             f"{props.excerpt_highlight}</mark> "
             f"{props.excerpt_suffix}")
@@ -1175,7 +1190,7 @@ class PreviewCard(QWidget):
         excerpt.setTextFormat(Qt.TextFormat.RichText)
         outer.addWidget(excerpt, 1)
 
-        # footer
+        # footer divider
         footer_line = QWidget()
         footer_line.setFixedHeight(1)
         footer_line.setStyleSheet(f"background: {T.LINE};")
@@ -1354,7 +1369,10 @@ class RecoveryView(QWidget):
             f"color: {T.INK_FAINT}; background: transparent;")
         ow_head.addWidget(ow_lbl)
         ow_head.addStretch(1)
-        count = QLabel(f"{len(other_work)} of {len(other_work) * 5 - 1}")
+        # Phase 10D — drop the synthetic "of 14" denominator. The
+        # caller passes max 3 rows; the count is just "3 active"
+        # so the surface stops faking a larger queue.
+        count = QLabel(f"{len(other_work)} active")
         count.setFont(_font(_FONT.MONO, size=T.FS_EYEBROW,
                             letter_spacing=6.0))
         count.setStyleSheet(
