@@ -1,32 +1,94 @@
-# Launcher Freeze — Phase 8B (Phase 9 amendment, 2026-05-26)
+# Launcher Freeze — Phase 10A (active, 2026-05-27)
 
-> **Phase 9 amendment.** The 7E.1 / 8B canvas of
-> `(720, 460)` was retired by founder directive on
-> 2026-05-26. The launcher now ships at `(720, 460)`
-> -- slightly wider, slightly shorter, same single
-> root card. The `RecoveryCardV3` hero gains a
-> second public signal (`review`) alongside the
-> existing `restore`. The slow motion timing drops
-> from 260 ms to 240 ms.
+> **Phase 10A amendment — supersedes Phase 9 + 8B.**
 >
-> *Every other freeze rule below still holds.* No
-> second launcher tree. No `RECALL_LAUNCHER`
-> env-var. No file renames. No `QGraphicsDropShadowEffect`.
-> The `from app.ui.launcher import Launcher` import
-> contract still resolves to `LiveLauncher`. The
-> additive-signals rule is intact (Phase 9 *adds*
-> `review`; it does not remove any of the five
-> frozen 7E.1 signals).
+> The active launcher surface is `DarkLauncher`
+> (`app/ui/launcher_v3/darkframe.py`) at
+> `(760, 520)`. Dark cinematic palette per the
+> design pack at
+> `api.anthropic.com/v1/design/h/owqos4Wz0Vg_6mMaKfPcmw`.
+> Four canonical states, each with its own
+> deterministic capture in
+> [`assets/screenshots/launcher-final/`](../assets/screenshots/launcher-final/):
 >
-> The "Allowed changes" + "Forbidden changes"
-> tables below are amended in place: the
-> `DEFAULT_SIZE = (720, 460)` clauses now read
-> `DEFAULT_SIZE = (720, 460)`. The `(720, 460)`
-> capture set under
-> `assets/screenshots/launcher-7e/` is the
-> *historical* visual record; the next live
-> capture run replaces it with a `(720, 460)`
-> set at the same paths (no new dir).
+> | State            | Capture                  | Renders                              |
+> |------------------|--------------------------|--------------------------------------|
+> | Empty            | `empty.png`              | bloom mark + serif-italic gradient + Show example / Start working |
+> | Recovery         | `recovery.png`           | Continue hero + side preview card + 3 Other-work rows |
+> | Search           | `search.png`             | grouped result list (Investigation / Files / Returns / Events) + mini preview pane |
+> | Resume preview   | `resume-preview.png`     | check disc + RESTORED header + restored item list + Undo / Done |
+>
+> The Phase 9 `(760, 520)` warm-paper canvas + the
+> 7E.1 / 8B `(700, 500)` canvas are now historical
+> visual records. The Phase 9 capture set under
+> `assets/screenshots/launcher-7e/` stays in tree
+> as the historical record; the Phase 10A active
+> surface lives under
+> `assets/screenshots/launcher-final/`.
+>
+> **Public contract preserved.**
+> `from app.ui.launcher import Launcher` still
+> resolves; `LiveLauncher`'s engine wiring is
+> untouched in this phase (see
+> [`LAUNCHER_MIGRATION.md`](../docs/engineering/LAUNCHER_MIGRATION.md)
+> for the slot-in plan). The 5 frozen 7E.1 search
+> signals (`query_changed`, `searchChanged`,
+> `submit`, `request_settings`, `request_close`)
+> are preserved on `DarkLauncher.SearchBar`. The
+> Phase 9 `review` signal is preserved on the
+> recovery hero (now `darkframe.HeroRecovery`).
+> Additive-only rule intact: Phase 10A *adds*
+> 4 explicit named states + a public footer
+> surface; it does not remove or rename any prior
+> signal.
+>
+> *Every other freeze rule below still holds.*
+> No second launcher tree (DarkLauncher *replaces*
+> the prior visual surface; both live inside
+> `app/ui/launcher_v3/`). No `RECALL_LAUNCHER`
+> env-var. No file renames of `app/ui/launcher.py`
+> or `app/ui/launcher_v3/`. No
+> `QGraphicsDropShadowEffect`.
+>
+> Migration of the production tray-icon boot path
+> from `LiveLauncher`'s Phase 9 composition to
+> `DarkLauncher` is sheet-only in 10A and lives at
+> [`LAUNCHER_MIGRATION.md`](../docs/engineering/LAUNCHER_MIGRATION.md).
+> No runtime wiring is changed here.
+
+---
+
+## Active launcher path (Phase 10A)
+
+```
+app/main.py
+    │
+    └─►  from app.ui.launcher import Launcher
+              │
+              └─►  LiveLauncher         (app/ui/launcher_v3/live.py)
+                       │
+                       └─►  DarkLauncher         (darkframe.py)        ← Phase 10A slot
+                                │
+                                ├─►  Frame              760 × 520 root
+                                ├─►  SearchBar          60 px top row
+                                ├─►  Footer             30 px bottom row
+                                │
+                                └─►  one of:
+                                       EmptyView
+                                       RecoveryView   (HeroRecovery + PreviewCard + OtherRow×N)
+                                       SearchView     (SearchGroup×N + _MiniPreviewPane)
+                                       ResumeView     (_CheckDisc + _RestoredListContainer + Undo/Done)
+```
+
+Token surface: `theme.py` — dark cinematic
+palette (`BG #08070C`, `SURFACE #0F0D16`,
+`CARD #15131F` → `CARD_HI #1B1827`,
+`ACCENT #A78BFA`, six-step ink ladder).
+
+Animation timings unchanged from Phase 9:
+fast 120 ms · normal 180 ms · slow 240 ms.
+
+---
 
 # Launcher Freeze — Phase 8B (original)
 
@@ -125,7 +187,7 @@ Unchanged in 8B.
 
 ### Window size
 
-`MinimalWindow.DEFAULT_SIZE = (720, 460)` — hard clamp,
+`MinimalWindow.DEFAULT_SIZE = (760, 520)` — hard clamp,
 no resize. Frozen 7E.
 
 ### Keyboard shortcuts
@@ -144,7 +206,7 @@ Any change that satisfies **all** of these:
 
 - Adds a method or signal to one of the public classes —
   doesn't remove or rename one.
-- Keeps `DEFAULT_SIZE = (720, 460)`.
+- Keeps `DEFAULT_SIZE = (760, 520)`.
 - Keeps the `from app.ui.launcher import Launcher` import
   contract.
 - Touches **only files inside `app/ui/launcher_v3/`** (or
@@ -171,7 +233,7 @@ Any change that satisfies **all** of these:
 - **Reintroducing `RECALL_LAUNCHER=legacy`.** The
   collapsed adapter is final.
 - **Reverting the canvas to anything other than
-  `(720, 460)`.** Captures + visual contract assume this
+  `(760, 520)`.** Captures + visual contract assume this
   exact pinpoint.
 - **Adding `QGraphicsDropShadowEffect`** to any launcher
   surface. 7B replaced it with manual painted shadows for

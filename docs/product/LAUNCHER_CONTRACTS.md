@@ -1,14 +1,191 @@
-# Launcher Contracts — Phase 7E.1 (Phase 9 amendment, 2026-05-26)
+# Launcher Contracts — Phase 10A (active, 2026-05-27)
 
-> **Phase 9 amendment.** The visual refresh shipped on
-> 2026-05-26 *adds* a public signal to `RecoveryCardV3`
-> (`review = pyqtSignal(str)`) alongside the existing
-> `restore = pyqtSignal(str, str, int)`. Both signals
-> open the resume-preview overlay; the label difference
-> is affordance, not behaviour. The canvas changed from
-> `(700, 500)` to `(720, 460)`; the `MinimalSearchBar`
-> 5-signal contract is unchanged. The additive-only rule
-> is intact -- nothing was removed.
+> **Phase 10A amendment — supersedes Phase 9.** The
+> active launcher is `DarkLauncher`
+> (`app/ui/launcher_v3/darkframe.py`) at
+> `(760, 520)`. The Phase 7E.1 frozen public surface
+> is preserved -- this section documents the
+> additions, not replacements.
+
+## DarkLauncher — public surface
+
+Import:
+
+```python
+from app.ui.launcher_v3.darkframe import (
+    DarkLauncher,
+    STATE_EMPTY, STATE_RECOVERY, STATE_SEARCH, STATE_RESUME,
+    SearchBar, Footer, Frame,
+    EmptyView, RecoveryView, SearchView, ResumeView,
+    HeroRecovery, PreviewCard, OtherRow,
+    RecoveryProps, PreviewProps, OtherWorkRow,
+    SearchGroupSpec, SearchResultRow,
+    RestoredItem,
+    PrimaryBtn, GhostBtn, Chip, Kbd, Glyph,
+    FRAME_W, FRAME_H,
+)
+```
+
+### `DarkLauncher(QWidget)` — root window
+
+| Member                                              | Kind   | Notes                                  |
+|-----------------------------------------------------|--------|----------------------------------------|
+| `DarkLauncher()`                                    | ctor   | No args. Fixed 760×520. Starts in Empty state. |
+| `state_changed = pyqtSignal(str)`                   | signal | Emits the new state slug on every `set_state` call. |
+| `set_state(state: str, *, recovery, preview, other_work, search_groups, restored_items)` | method | Swap the content surface. ``state`` must be one of the `STATE_*` slugs. All keyword args are optional fixtures for the chosen state. |
+| `state() -> str`                                    | method | Current state slug.                    |
+| `search_bar() -> SearchBar`                         | method | Access the current SearchBar instance — its 5 frozen signals + 3 frozen methods (below) are the launcher's public input surface. |
+
+### `SearchBar` — Phase 7E.1 frozen surface preserved
+
+The five signals + three methods from
+`MinimalSearchBar` are preserved verbatim on the
+new dark search bar so the host
+(`app/main.py`, the tray, the global hotkey)
+sees no surface break:
+
+| Signal                                | Payload    | Behaviour                            |
+|---------------------------------------|------------|--------------------------------------|
+| `query_changed = pyqtSignal(str)`     | new text   | Every text change.                   |
+| `searchChanged = pyqtSignal(str)`     | new text   | Alias of `query_changed`. Both fire. |
+| `submit = pyqtSignal(str)`            | text       | Enter pressed.                       |
+| `request_settings = pyqtSignal()`     | —          | Settings affordance — wired by host. |
+| `request_close = pyqtSignal()`        | —          | Close affordance.                    |
+
+| Method                  | Returns | Notes                            |
+|-------------------------|---------|----------------------------------|
+| `focus()`               | —       | Move keyboard focus to the input.|
+| `clear()`               | —       | Empty the input text.            |
+| `selectAll()`           | —       | Select the current input value.  |
+| `text() -> str`         | str     | Read the current value.          |
+| `setText(value: str)`   | —       | Write the value programmatically. |
+
+### `HeroRecovery` — Phase 9 `review` preserved
+
+The Phase 9 addition is preserved:
+
+| Signal                          | Payload  | Behaviour                             |
+|---------------------------------|----------|---------------------------------------|
+| `resume_clicked = pyqtSignal()` | —        | Primary action ("Resume" pill).       |
+| `review_clicked = pyqtSignal()` | —        | Secondary action ("Review" pill).     |
+
+The card consumes a `RecoveryProps` dataclass:
+
+```python
+@dataclass
+class RecoveryProps:
+    title_main: str = "WebSocket retry"
+    title_accent: str = "debugging."
+    eyebrow_meta: str = "Returned after 2 days"
+    n_files: int = 2
+    n_tabs: int = 2
+    n_searches: int = 1
+    last_active: str = "last active · implementation"
+```
+
+### `RecoveryView` — Continue surface
+
+Builds the recovery-state composition: hero +
+side preview + a stack of `OtherRow` widgets.
+
+| Signal                              | Payload | Behaviour                       |
+|-------------------------------------|---------|---------------------------------|
+| `resume = pyqtSignal()`             | —       | Forwarded from HeroRecovery.    |
+| `review = pyqtSignal()`             | —       | Forwarded from HeroRecovery.    |
+| `row_clicked = pyqtSignal(int)`     | row idx | Which OtherRow was activated.   |
+
+### `SearchView` — grouped result list
+
+Composition: `SearchGroupSpec[]` → vertical
+column of mono labels + selectable rows, plus a
+fixed-width `_MiniPreviewPane` on the right.
+
+| Signal                              | Payload | Behaviour                       |
+|-------------------------------------|---------|---------------------------------|
+| `selection_changed = pyqtSignal(int)` | row idx | Which row is currently focused. |
+| `open_selected = pyqtSignal()`      | —       | Enter pressed on the focused row. |
+
+### `ResumeView` — restoration confirmation
+
+`RestoredItem[]` rows + check disc + Undo/Done.
+
+| Signal                            | Payload | Behaviour                            |
+|-----------------------------------|---------|--------------------------------------|
+| `undo_clicked = pyqtSignal()`     | —       | Reverse the restore.                 |
+| `done_clicked = pyqtSignal()`     | —       | Dismiss the confirmation.            |
+
+### `PreviewCard` — Recovery state's right column
+
+The side preview card that sits next to
+`HeroRecovery` in the Recovery state. Reads a
+`PreviewProps` dataclass:
+
+```python
+@dataclass
+class PreviewProps:
+    label: str = "pitch_healthcare_v3.pdf"
+    excerpt_prefix: str = "Our vision is to build AI agents that"
+    excerpt_highlight: str = "assist healthcare teams"
+    excerpt_suffix: str = "by triaging patient queries…"
+    meta: str = "~/notes · 4d"
+```
+
+| Signal                              | Payload | Behaviour                       |
+|-------------------------------------|---------|---------------------------------|
+| `open_clicked = pyqtSignal()`       | —       | "Open ↗" link in the footer.    |
+
+## Boot path
+
+Production tray-icon entry — unchanged in 10A:
+
+```
+app/main.py  ─►  from app.ui.launcher import Launcher
+              ─►  app/ui/launcher_v3/live.py :: LiveLauncher
+                       ↓
+              (Phase 10A slot-in pending; see LAUNCHER_MIGRATION.md)
+                       ↓
+              ─►  app/ui/launcher_v3/darkframe.py :: DarkLauncher
+```
+
+`LiveLauncher`'s engine wiring (API client,
+recovery flow, recent-memory loader, keyboard
+shortcuts) is untouched in 10A. The 10A
+migration sheet
+([`LAUNCHER_MIGRATION.md`](../engineering/LAUNCHER_MIGRATION.md))
+enumerates what moves into `DarkLauncher` and
+what stays in `LiveLauncher`.
+
+## Search flow
+
+`SearchBar.query_changed` →
+`LiveLauncher._on_query_changed` →
+`SearchEngine.search` →
+`DarkLauncher.set_state(STATE_SEARCH,
+search_groups=...)`. The pre-10A flow already
+swapped between digest + empty surfaces; 10A
+extends it with explicit `STATE_SEARCH`.
+
+## Resume flow
+
+`HeroRecovery.resume_clicked` →
+`LiveLauncher._open_preview` →
+`DarkLauncher.set_state(STATE_RESUME,
+restored_items=...)` → on `done_clicked`,
+revert to `STATE_RECOVERY`. Replaces the
+pre-10A `ResumePreview` overlay + `RestoreToast`
+pair with a single in-frame state.
+
+## Preview pane
+
+The Recovery state's right-column `PreviewCard`
+takes a `PreviewProps` dataclass at construction
+time. The Search state's `_MiniPreviewPane` is
+narrower (224 px) and renders an investigation
+summary instead of a file excerpt; it does not
+take props yet -- intentionally fixed until a
+real engine signal feeds it (Phase 10B).
+
+---
 
 # Launcher Contracts — Phase 7E.1 (original)
 

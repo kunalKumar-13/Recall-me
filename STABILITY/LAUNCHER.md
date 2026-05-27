@@ -1,4 +1,112 @@
-# Phase 8C — Launcher Reality
+# Phase 8C — Launcher Reality (Phase 10A amendment, 2026-05-27)
+
+> **Phase 10A amendment.** The launcher visual
+> surface was rebuilt in commit `3ae52e2`
+> ([`app/ui/launcher_v3/darkframe.py`](../app/ui/launcher_v3/darkframe.py),
+> 1996 LOC). Canvas is `(760, 520)` (was 720×460
+> at the close of Phase 9). Four canonical states:
+> Empty / Recovery / Search / Resume preview, each
+> with a deterministic capture in
+> [`assets/screenshots/launcher-final/`](../assets/screenshots/launcher-final/).
+>
+> This document is amended in two places:
+> (1) the **render-timing table** below is now sourced
+> from `DarkLauncher` instead of the Phase 9
+> `LiveLauncher`; (2) the **state-coverage table**
+> enumerates the four named states + their captures.
+> The Phase 8C body — frozen-contract resolution,
+> widget-tree walk, gap inventory — still holds.
+
+## Phase 10A render timings
+
+Five runs each, offscreen Qt, system fonts loaded
+via `QFontDatabase.addApplicationFont` (the
+production tray-icon path doesn't need the
+bootstrap; live Qt populates the font database
+from the OS):
+
+| Operation                              | Median   | Min      | Max      |
+|----------------------------------------|---------:|---------:|---------:|
+| Cold construct (single sample)         |  110.9 ms|        — |        — |
+| `DarkLauncher()` (warm)                |   1.4 ms |   1.1 ms |   2.0 ms |
+| `set_state(STATE_EMPTY)`               |   2.9 ms |   2.2 ms |   6.5 ms |
+| `set_state(STATE_RECOVERY)`            |   8.2 ms |   5.0 ms |  14.2 ms |
+| `set_state(STATE_SEARCH)`              |   7.7 ms |   4.8 ms |   8.9 ms |
+| `set_state(STATE_RESUME)`              |   4.1 ms |   3.6 ms |   6.9 ms |
+| `render()` to 760×520 pixmap           |  19.3 ms |  15.0 ms |  66.8 ms |
+
+Cold construct includes module import + Qt
+backbone init + the system-font bootstrap.
+Warm path is dominated by widget allocation +
+the gradient bloom paint. State swaps stay
+under one frame at 60 Hz (16.7 ms) for every
+state except the worst-case recovery max
+(14.2 ms — composition of HeroRecovery +
+PreviewCard + three OtherRow widgets).
+
+## Phase 10A state coverage
+
+| State name (slug) | Composition                                                            | Capture                                                                                                            |
+|-------------------|------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| `empty`           | bloom mark + serif-italic gradient + sub copy + Show example / Start working | [`assets/screenshots/launcher-final/empty.png`](../assets/screenshots/launcher-final/empty.png)                     |
+| `recovery`        | `HeroRecovery` (eyebrow + title + chips + Resume/Review) + `PreviewCard` (PDF badge + excerpt + Open ↗) + 3 × `OtherRow` (strength dot + glyph + title + when) | [`assets/screenshots/launcher-final/recovery.png`](../assets/screenshots/launcher-final/recovery.png)               |
+| `search`          | 4 `SearchGroup` (Investigation / Files / Returns / Events) × N `SearchResultRow` + `_MiniPreviewPane` | [`assets/screenshots/launcher-final/search.png`](../assets/screenshots/launcher-final/search.png)                   |
+| `resume`          | `_CheckDisc` + RESTORED header + 5 × `_RestoredRow` + Undo/Done             | [`assets/screenshots/launcher-final/resume-preview.png`](../assets/screenshots/launcher-final/resume-preview.png)   |
+
+All four captures are deterministic — re-running
+the offscreen capture script produces
+byte-similar PNGs modulo subpixel anti-aliasing
+noise.
+
+## Phase 10A widget tree
+
+```
+DarkLauncher (760 × 520)
+  └── Frame
+        ├── SearchBar       (60 px top row)
+        │     ├── Glyph "search"
+        │     ├── QLineEdit (placeholder | value)
+        │     ├── [optional] N results mono label
+        │     └── Kbd ⌃ + Kbd K
+        ├── <one of four state widgets>
+        │     ├── EmptyView      (_BloomMark + headline + serif accent + sub + button row)
+        │     ├── RecoveryView   (HeroRecovery + PreviewCard | OTHER WORK + OtherRow × N)
+        │     ├── SearchView     (_SearchGroupLabel + _SearchResultRow × N + _MiniPreviewPane)
+        │     └── ResumeView     (_CheckDisc + RESTORED title + _RestoredListContainer + Undo/Done)
+        └── Footer          (30 px bottom row)
+              ├── _StatusDot  (5 px green halo)
+              └── microtext
+```
+
+## Frozen contract — Phase 10A still holds
+
+```python
+from app.ui.launcher import Launcher          # still resolves
+Launcher(FakeEngine()).__class__.__name__      # 'LiveLauncher'
+Launcher(FakeEngine()).size()                  # 720 × 460 (LiveLauncher pre-migration)
+
+from app.ui.launcher_v3.darkframe import DarkLauncher
+DarkLauncher().size()                          # 760 × 520
+```
+
+The `LiveLauncher` size still reads 720×460
+*because the production tray-icon boot path
+hasn't been migrated yet* — see
+[`LAUNCHER_MIGRATION.md`](../docs/engineering/LAUNCHER_MIGRATION.md).
+After the migration (Phase 10B target),
+`Launcher(...).size()` reads 760×520 + the
+visual surface matches the four captures above.
+
+The 5 frozen 7E.1 search-bar signals
+(`query_changed`, `searchChanged`, `submit`,
+`request_settings`, `request_close`) are
+preserved on the new `darkframe.SearchBar`.
+The Phase 9 `review` signal on the recovery
+hero is preserved on `darkframe.HeroRecovery`.
+
+---
+
+# Phase 8C — Launcher Reality (original)
 
 **Question:** does the frozen 7E.1 launcher actually
 construct, layout, and render at a believable cost
