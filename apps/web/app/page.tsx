@@ -1,57 +1,44 @@
-import { AmbientBackground } from "./components/AmbientBackground";
-import { Download } from "./components/Download";
-import { FAQ } from "./components/FAQ";
-import { Features } from "./components/Features";
-import { FinalCTA } from "./components/FinalCTA";
-import { Footer } from "./components/Footer";
-import { Hero } from "./components/Hero";
-import { HowItWorks } from "./components/HowItWorks";
-import { Nav } from "./components/Nav";
-import { Privacy } from "./components/Privacy";
-import { Problem } from "./components/Problem";
-import { Screens } from "./components/Screens";
-import { Story } from "./components/Story";
-import { ThreadConstellation } from "./components/ThreadConstellation";
+"use client";
 
-/**
- * Page narrative — one calm scroll, Phase 6G alpha-public order:
- *
- *     Hero                  the launcher + the promise
- *     Problem               the context-loss tax this fixes
- *     HowItWorks            capture → group → ask → restore
- *     Story                 three real-shape investigations
- *                           (WebSocket / Proposal / Research)
- *     Features              what the system actually exposes
- *     ThreadConstellation   threads, connected — no metaphor
- *     Screens               launcher + extension v2 captures
- *     Privacy               trust — local / no cloud / no telemetry /
- *                           counts only / export only
- *     Download              four artifacts, one calm grid
- *     FAQ                   the open questions
- *     FinalCTA              calm close
- *
- * Each section is its own act. The page does not loop animations,
- * does not parallax, does not glow. Motion exists only on entrance.
- */
+// Recall landing v2 — page composition.
+// Nav + 9 sections + Footer + Watch-demo modal.
+// Anchors: #v2-hero, #v2-window, #v2-continuity, #v2-privacy,
+// #v2-timeline, #v2-search-surface, #v2-demo, #v2-final.
+
+import * as React from "react";
+import { Nav } from "./components/v2/Nav";
+import { Hero } from "./components/v2/Hero";
+import { MemoryOSWindow } from "./components/v2/MemoryOSWindow";
+import { ContinuityAnimation } from "./components/v2/ContinuityAnimation";
+import { RecoveryFlow } from "./components/v2/RecoveryFlow";
+import { BrowserCapture } from "./components/v2/BrowserCapture";
+import { PrivacyGrid } from "./components/v2/PrivacyGrid";
+import { ResumeTimeline } from "./components/v2/ResumeTimeline";
+import { SearchSurface } from "./components/v2/SearchSurface";
+import { DemoBand } from "./components/v2/DemoBand";
+import { FinalCTA } from "./components/v2/FinalCTA";
+import { Footer } from "./components/v2/Footer";
+import { ModalHost } from "./components/v2/ModalHost";
+
 export default function Page() {
+  const [demoOpen, setDemoOpen] = React.useState(false);
   return (
-    <>
-      <AmbientBackground />
+    <div className="v2-root" style={{ position: "relative" }}>
       <Nav />
-      <main className="relative">
-        <Hero />
-        <Problem />
-        <HowItWorks />
-        <Story />
-        <Features />
-        <ThreadConstellation />
-        <Screens />
-        <Privacy />
-        <Download />
-        <FAQ />
+      <main>
+        <Hero onOpenDemo={() => setDemoOpen(true)} />
+        <MemoryOSWindow />
+        <ContinuityAnimation />
+        <RecoveryFlow />
+        <BrowserCapture />
+        <PrivacyGrid />
+        <ResumeTimeline />
+        <SearchSurface />
+        <DemoBand onOpen={() => setDemoOpen(true)} />
         <FinalCTA />
       </main>
       <Footer />
-    </>
+      <ModalHost open={demoOpen} onClose={() => setDemoOpen(false)} />
+    </div>
   );
 }
