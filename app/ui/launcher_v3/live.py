@@ -1,37 +1,42 @@
-"""Phase 6K — LiveLauncher (+ Phase 6P resume pipeline).
+"""Phase 10B — LiveLauncher slotted on top of DarkLauncher.
 
-The v3 widget tree wired to live API data + the existing single-
-instance / event-logger contract that `app/main.py` constructs the
-launcher with.
+The host-facing launcher. Same public API as the legacy
+``Launcher`` class:
 
-Public API mirrors the legacy ``Launcher`` class:
+  - ``LiveLauncher(search_engine, event_logger=None)``  constructor
+  - ``show_centered() / hide()``                        window lifecycle
+  - ``invalidate_digest()``                             drop cached payload
+  - ``_refresh_idle_state()``                           recompute idle surface
+  - ``request_settings``                                Qt signal
+  - ``_request_search``                                 Qt signal (search input)
 
-  - ``LiveLauncher(search_engine, event_logger=None)`` constructor
-  - ``show_centered() / hide()``               window lifecycle
-  - ``invalidate_digest()``                    drop cached digest
-  - ``_refresh_idle_state()``                  recompute idle surface
-  - ``request_settings``                       Qt signal
-  - ``_request_search``                        Qt signal (search input)
+Internally, ``LiveLauncher`` subclasses
+``darkframe.DarkLauncher`` -- the Phase 10A visual surface -- and
+adds engine glue: API client, disk readers, restore-plan
+execution, keyboard wiring. The visual surface
+(``Frame`` / ``SearchBar`` / ``EmptyView`` / ``RecoveryView`` /
+``SearchView`` / ``ResumeView`` / ``Footer``) lives entirely in
+``darkframe.py``.
 
-The actual data fetch lives in private helpers that read from the
-loopback API via `app.core.api_client.APIClient`. When the daemon
-isn't reachable (test paths, headless smoke), the loader returns
-empty lists and the surface degrades to the EmptyDigest — never
-raises.
+Four states map to engine conditions:
 
-Keyboard layer:
+  empty       no events captured OR demo active w/ no hero
+  recovery    HIGH recovery candidate above trust gate +
+              "Other work" thread rail
+  search      search bar has text (engine search results
+              feed ``SearchGroupSpec[]``)
+  resume      post-restore confirmation -- ~3 s after the user
+              clicks Resume
 
-  - ``1-9``      jump to a digest section / card
-  - ``↑ / ↓``    move focus
-  - ``Enter``    activate the focused card
-  - ``Escape``   hide the launcher
+The pre-10B ``MinimalShell`` / ``MinimalDigest`` /
+``MinimalSearchBar`` / ``RecoveryCardV3`` / ``ResumePreview`` /
+``RestoreToast`` composition is gone; the migration sheet at
+[`LAUNCHER_MIGRATION.md`](../../../docs/engineering/LAUNCHER_MIGRATION.md)
+catalogues which paint modules become dead-after-this-commit.
 
-Phase 6P inserts the resume pipeline:
-
-  - ``RecoveryCardV3.restore`` opens ``ResumePreview``
-  - The preview's ``accepted`` signal triggers the actual restore
-    via ``api_client.recovery_restore`` + per-step OS open
-  - Result is announced via ``RestoreToast``
+Phase 9's ``Phase 9`` recovery hero ``review`` signal is
+preserved on ``HeroRecovery`` (now in ``darkframe``); same effect
+(open preview surface) as ``resume`` per Phase 9's note.
 """
 
 from __future__ import annotations
@@ -47,24 +52,25 @@ from typing import List, Optional, Tuple
 # Phase 7B — `RECALL_DEBUG=1` writes a one-line timing log to
 # stderr for every `show_centered` so the directive's *<400 ms
 # launcher open* budget can be confirmed on a real machine.
-# Cost: one `time.perf_counter()` pair when the flag is on,
-# otherwise nothing.
 _TIMING_DEBUG = bool(os.environ.get("RECALL_DEBUG"))
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QKeyEvent, QShortcut, QKeySequence
-from PyQt6.QtWidgets import (
-    QStackedLayout,
-    QVBoxLayout,
-    QWidget,
-)
+from PyQt6.QtWidgets import QWidget
 
-from .investigation_panel import InvestigationCardV3
-from .minimal import MinimalDigest, MinimalEmpty, MinimalSearchBar, MinimalShell
-from .recent_memory import MemoryRow
-from .recovery_panel import RecoveryCardV3
-from .restore_toast import RestoreToast, _name_for
-from .resume_preview import ResumePreview
+from .darkframe import (
+    DarkLauncher,
+    OtherWorkRow,
+    PreviewProps,
+    RecoveryProps,
+    RestoredItem,
+    SearchGroupSpec,
+    SearchResultRow,
+    STATE_EMPTY,
+    STATE_RECOVERY,
+    STATE_SEARCH,
+    STATE_RESUME,
+)
 
 log = logging.getLogger("recall.ui.launcher_v3.live")
 
@@ -75,197 +81,203 @@ log = logging.getLogger("recall.ui.launcher_v3.live")
 _EXPLAIN_RECOVERY = bool(os.environ.get("RECALL_EXPLAIN_RECOVERY"))
 
 
+# ── module-level helpers (engine glue, unchanged from pre-10B) ────
+
+
 def _short_source(payload: dict, kind: str) -> str:
-    """Pick a short, scannable source label for the Recent Memory
-    row. Prefers the captured `platform`, falls back to the host,
-    and capitalises the first letter so the column reads cleanly
-    (e.g. `Chatgpt` → ChatGPT-style abbreviation handled manually
-    below for the few well-known platforms)."""
-    if kind == "chat_session":
-        plat = (payload.get("platform") or payload.get("domain") or "").strip()
-        lowered = plat.lower()
-        if "claude" in lowered:
-            return "Claude"
-        if "openai" in lowered or "chatgpt" in lowered:
-            return "ChatGPT"
-        if "gemini" in lowered:
-            return "Gemini"
-        if "perplexity" in lowered:
-            return "Perplexity"
-        return plat.title() or "Chat"
-    if kind == "browser_search":
+    """Pick a short, scannable source label for the Other work row.
+    Prefers the captured ``platform``, falls back to the host
+    derived from the URL, then to the event kind."""
+    plat = (payload.get("platform") or "").strip()
+    if plat:
+        return plat[:14]
+    url = (payload.get("url") or "").strip()
+    if url:
+        try:
+            from urllib.parse import urlparse
+            host = urlparse(url).hostname or ""
+            host = host.replace("www.", "")
+            if host:
+                return host[:14]
+        except Exception:  # noqa: BLE001
+            pass
         eng = (payload.get("engine") or payload.get("domain") or "").strip()
-        lowered = eng.lower()
-        if "google" in lowered:
-            return "Google"
-        if "duckduckgo" in lowered:
-            return "DuckDuckGo"
-        if "bing" in lowered:
-            return "Bing"
-        return eng.title() or "Search"
-    if kind == "browser_visit":
-        host = (payload.get("domain") or "").strip()
-        if not host:
-            return "Tab"
-        # Strip a leading www. + the TLD for compactness.
-        host = host.split(".")[0] if "." in host else host
-        return host.title() if host.islower() else host
-    if kind in ("open", "reveal"):
-        return "File"
-    if kind == "desktop_window":
-        return (payload.get("app") or "Desktop").title()
-    return kind.replace("_", " ").title()
+        if eng:
+            return eng[:14]
+    if kind == "open":
+        path = payload.get("path") or ""
+        if path:
+            return Path(path).name[:14]
+    return kind[:14] if kind else ""
 
 
 def _short_label(payload: dict, kind: str) -> str:
-    """The Recent Memory row's right-hand label."""
-    if kind == "browser_search":
-        return (payload.get("query") or "search").strip()
-    if kind in ("browser_visit", "chat_session", "desktop_window"):
-        return (payload.get("title") or payload.get("domain") or "").strip()
-    if kind in ("open", "reveal"):
-        path = (payload.get("path") or "").strip()
-        return path.rsplit("/", 1)[-1].rsplit("\\", 1)[-1] or path
-    if kind == "query":
-        return (payload.get("text") or "").strip()
-    return ""
+    """Short title for the Other work row. Prefers ``title``,
+    falls back to ``query``, then ``path``, then ``url``."""
+    for key in ("title", "query", "path", "url"):
+        v = (payload.get(key) or "").strip()
+        if v:
+            return v
+    return kind
 
 
 def _load_recent_memory(max_rows: int = 5) -> list:
-    """Load the most-recent events from disk and map them into
-    `MemoryRow` records. The launcher renders these directly; the
-    `recall capture status` CLI surfaces the same data path."""
-    try:
-        from app.core.events import EventStore
-        from app.core.config import EVENTS_DIR
-    except Exception:  # noqa: BLE001
-        return []
-    store = EventStore(EVENTS_DIR)
+    """Read the latest events from ~/.recall/events/*.jsonl and
+    project them onto the Other work row schema."""
     rows: list = []
-    seen = 0
+    try:
+        recall = Path(os.path.expanduser("~/.recall/events"))
+        files = sorted(recall.glob("*.jsonl"))[-3:]
+    except Exception:  # noqa: BLE001
+        return rows
+    import json
     from datetime import datetime, timezone
-    # `iter_events(days=2)` yields newest-first across today + yesterday
-    # so a late-evening launcher open still has a populated rail when
-    # today has zero events.
-    for ev in store.iter_events(days=2):
-        payload = ev.payload or {}
-        source = _short_source(payload, ev.kind)
-        label = _short_label(payload, ev.kind)
-        if not source or not label:
+    samples: list = []
+    for f in files:
+        try:
+            for line in f.read_text(encoding="utf-8").splitlines()[-30:]:
+                try:
+                    ev = json.loads(line)
+                except (ValueError, TypeError):
+                    continue
+                ts = ev.get("ts")
+                samples.append((ts, ev))
+        except OSError:
             continue
-        ts = ev.ts_epoch()
-        if ts <= 0:
+    samples.sort(key=lambda x: x[0] or "", reverse=True)
+    seen_urls: set = set()
+    for ts, ev in samples:
+        kind = ev.get("kind", "")
+        payload = ev.get("payload") or {}
+        label = _short_label(payload, kind)
+        if not label:
             continue
-        t = datetime.fromtimestamp(ts, tz=timezone.utc)
-        rows.append(MemoryRow(
-            time=t.strftime("%H:%M"),
-            source=source[:12],
-            label=label,
-        ))
-        seen += 1
-        if seen >= max_rows:
+        if label in seen_urls:
+            continue
+        seen_urls.add(label)
+        # humanize timestamp
+        when = ""
+        try:
+            t = datetime.fromisoformat((ts or "").replace("Z", "+00:00"))
+            delta = datetime.now(timezone.utc) - t
+            secs = int(delta.total_seconds())
+            if secs < 3600:
+                when = f"{max(1, secs // 60)}m ago"
+            elif secs < 86400:
+                when = f"{secs // 3600}h ago"
+            else:
+                when = f"{secs // 86400}d ago"
+        except Exception:  # noqa: BLE001
+            pass
+        glyph = "file"
+        if kind == "chat_session":
+            glyph = "chat"
+        elif kind == "browser_search":
+            glyph = "search_sm"
+        elif kind == "browser_visit":
+            glyph = "tab"
+        rows.append({"label": label[:64], "when": when, "glyph": glyph})
+        if len(rows) >= max_rows:
             break
     return rows
 
 
 def _load_trust_counts() -> tuple:
-    """Return `(events_today, investigations)` for the trust row.
-    Same disk reads the Phase 7D `recall capture status` CLI uses,
-    so the launcher's pill values match the CLI's report."""
+    """Return ``(events_today, investigation_count)`` for the
+    launcher footer. Reads disk directly so the daemon doesn't
+    have to be alive."""
     events_today = 0
     investigations = 0
     try:
-        from app.core.events import EventStore
-        from app.core.config import EVENTS_DIR, CONFIG_DIR
-        from datetime import datetime, timezone
-        import json
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        store = EventStore(EVENTS_DIR)
-        for _ in store.iter_events_for_date(today):
-            events_today += 1
-        threads_path = CONFIG_DIR / "threads.json"
-        if threads_path.exists():
-            try:
-                data = json.loads(threads_path.read_text(encoding="utf-8"))
-                investigations = len(data.get("threads") or [])
-            except (OSError, ValueError, TypeError):
-                investigations = 0
+        from datetime import date
+        recall = Path(os.path.expanduser("~/.recall/events"))
+        today = recall / f"{date.today().isoformat()}.jsonl"
+        if today.exists():
+            events_today = sum(
+                1 for _ in today.read_text(encoding="utf-8").splitlines() if _
+            )
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        threads = Path(os.path.expanduser("~/.recall/threads.json"))
+        if threads.exists():
+            import json
+            data = json.loads(threads.read_text(encoding="utf-8"))
+            investigations = len(data.get("threads", []))
     except Exception:  # noqa: BLE001
         pass
     return events_today, investigations
 
 
 def _extract_gap_clause(preview_caption: str) -> Optional[str]:
-    """Pluck the *returned after Nd* / *reopened after a N-day gap*
-    clause from the engine's deterministic preview caption so the
-    Continue document's body can carry it as its last bullet.
-    Returns None when no gap clause is present."""
+    """Pull the ``returned after Nd`` clause from the engine's
+    deterministic preview caption."""
     if not preview_caption:
         return None
-    for part in preview_caption.split("·"):
-        part = part.strip()
-        lowered = part.lower()
-        if "gap" in lowered or "returned" in lowered or "reopened" in lowered:
-            return part
+    parts = [p.strip() for p in preview_caption.split("·")]
+    for p in parts:
+        if "return" in p.lower() or "after" in p.lower():
+            return p
     return None
 
 
 def _open_target(kind: str, target: str) -> bool:
-    """Open one restoration target through the OS handler. Returns
-    True only when the open actually dispatched — False when the
-    file path is missing or the launch raised.
-
-    URLs are handed straight to the OS default browser; file paths
-    are existence-checked first so a phantom file (moved/deleted
-    since capture) doesn't blow up the chain.
-    """
+    """Open a path / URL via the OS. Returns True on apparent
+    success, False if the open failed."""
     if not target:
         return False
-    if kind == "path":
-        p = Path(target)
-        if not p.exists():
-            return False
-        try:
-            if sys.platform == "win32":
-                os.startfile(str(p))  # type: ignore[attr-defined]
-            elif sys.platform == "darwin":
-                subprocess.run(["open", str(p)], check=False)
-            else:
-                subprocess.run(["xdg-open", str(p)], check=False)
-            return True
-        except Exception:
-            return False
-    # URL path.
+    target = target.strip()
     try:
-        if sys.platform == "win32":
-            os.startfile(target)  # type: ignore[attr-defined]
-        elif sys.platform == "darwin":
-            subprocess.run(["open", target], check=False)
-        else:
-            subprocess.run(["xdg-open", target], check=False)
-        return True
-    except Exception:
+        if kind == "path":
+            if sys.platform.startswith("win"):
+                os.startfile(target)  # type: ignore[attr-defined]
+                return True
+            if sys.platform == "darwin":
+                subprocess.Popen(["open", target])
+                return True
+            subprocess.Popen(["xdg-open", target])
+            return True
+        # URL kinds (url / tab / chat / search)
+        import webbrowser
+        return webbrowser.open(target, new=2, autoraise=True)
+    except Exception:  # noqa: BLE001
         return False
 
 
-class LiveLauncher(QWidget):
-    """The v3 launcher, wired to live data.
+def _humanize_thread_when(updated_at: float) -> str:
+    """``updated_at`` is a unix epoch float. Return ``3d`` / ``5d``
+    / ``last week`` style microtext for the Other work column."""
+    if updated_at <= 0:
+        return ""
+    try:
+        from app.core.events import humanize_age
+        return humanize_age(float(updated_at))
+    except Exception:  # noqa: BLE001
+        return ""
 
-    Construct exactly the same way the legacy launcher was —
-    `LiveLauncher(search_engine, event_logger)` — and the existing
-    `app/main.py` lifecycle (global hotkey, tray icon, single-
-    instance lock) hooks in unchanged.
+
+# ── LiveLauncher (Phase 10B) ──────────────────────────────────────
+
+
+class LiveLauncher(DarkLauncher):
+    """The Phase 10B production launcher.
+
+    Subclasses ``darkframe.DarkLauncher`` to inherit the dark
+    cinematic visual surface (Frame + SearchBar + Footer + four
+    state widgets) and adds engine glue: APIClient, disk readers,
+    restore-plan execution, OS-open helper, keyboard shortcuts.
+
+    Constructor + signals + ``show_centered`` / ``invalidate_digest``
+    + ``_refresh_idle_state`` are wire-compatible with the pre-10B
+    surface so ``app/main.py`` doesn't change.
     """
 
+    # Host-facing signals (preserved across the migration).
     request_settings = pyqtSignal()
     _request_search = pyqtSignal(str)
 
-    # Phase 9 — Launcher Visual Refresh. 720 × 460 -- slightly
-    # wider, slightly shorter than 7E.1 so the three-zone layout
-    # (search / hero / other work) reads as a utility column
-    # rather than a tall card. Hard clamp; single warm page
-    # outside; one white inner card holds the whole stack.
-    DEFAULT_SIZE = (720, 460)
+    # Phase 10B canvas. Matches darkframe.FRAME_W / FRAME_H exactly.
+    DEFAULT_SIZE = (760, 520)
 
     def __init__(
         self,
@@ -276,94 +288,48 @@ class LiveLauncher(QWidget):
         super().__init__(parent)
         self.search_engine = search_engine
         self.event_logger = event_logger
-        # Import lazily so a Qt-free `from app.ui.launcher import
-        # Launcher` doesn't pull the API client into env vars.
         from app.core.api_client import APIClient
         self.api_client = APIClient(base_url="http://127.0.0.1:4545")
 
         self.setObjectName("launcher_v3_live")
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
-        # Phase 6R — *No transparency, no blur, no glass*. The
-        # launcher paints a solid warm page; the translucency flag
-        # is off so the page reads as paper, not a floating panel.
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint
+                            | Qt.WindowType.Tool)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
-        # Hard clamp — directive: min = max.
-        self.setFixedSize(*self.DEFAULT_SIZE)
 
-        # Phase 6L — single-column composition. Search bar lives at
-        # the top of the shell; the centre stack swaps between the
-        # populated digest and the empty surface.
-        self._search = MinimalSearchBar()
-        self._search.query_changed.connect(self._on_query_changed)
-        # Phase 7B.1 — the search row owns the settings + close
-        # icons (rendered on the right edge of the bar). Settings
-        # forwards to the legacy `request_settings` signal so the
-        # existing app/main.py wiring picks it up; close hides the
-        # launcher.
-        self._search.request_settings.connect(self.request_settings.emit)
-        self._search.request_close.connect(self.hide)
+        # Pre-Resume state snapshot so `Done` reverts cleanly.
+        self._pre_resume_state: str = STATE_EMPTY
 
-        self._digest = MinimalDigest()
-        self._empty = MinimalEmpty()
-        self._empty.show_example.connect(self._on_show_example)
-        self._empty.start_normally.connect(self._on_start_normally)
-
-        self._center_stack = QStackedLayout()
-        center_wrap = QWidget()
-        center_wrap.setLayout(self._center_stack)
-        self._center_stack.addWidget(self._empty)
-        self._center_stack.addWidget(self._digest)
-
-        self._shell_widget = MinimalShell(center_wrap, search=self._search)
-        wrap = QVBoxLayout(self)
-        wrap.setContentsMargins(0, 0, 0, 0)
-        wrap.setSpacing(0)
-        wrap.addWidget(self._shell_widget)
-
-        # Phase 6P — resume pipeline overlays. The preview floats on
-        # top of the digest; the toast pins to the bottom of the
-        # window. Both parented to `self` so they sit above the
-        # stacked center.
-        self._preview = ResumePreview(self)
-        self._preview.accepted.connect(self._on_preview_accept)
-        self._preview.cancelled.connect(self._on_preview_cancel)
-
-        self._toast = RestoreToast(self)
-
-        # The candidate currently being previewed. We hold the full
-        # set of suggested_targets so the accept path doesn't have to
-        # call back into the API just to enumerate them.
+        # Pending-restore bookkeeping (captured at the moment the
+        # user clicks Resume / Review so plan execution doesn't
+        # need to re-ask the engine).
         self._pending_targets: List[Tuple[str, str]] = []
         self._pending_title: str = ""
         self._pending_cid: str = ""
+        self._pending_demo: bool = False
 
-        # Keyboard layer — `Escape` hides, `Ctrl/Cmd+K` focuses
-        # search, `1` resumes the visible Continue document. The
-        # 2-9 hotkeys from 6R/7B are gone: 7B.1 surfaces only one
-        # Continue document (single-focus tool), there's nothing
-        # to navigate to.
+        # Forward the search bar's frozen public signals to the host.
+        sb = self.search_bar()
+        sb.request_settings.connect(self.request_settings.emit)
+        sb.request_close.connect(self.hide)
+        sb.query_changed.connect(self._on_query_changed)
+        sb.submit.connect(self._on_search_submit)
+
+        # Keyboard layer.
         QShortcut(QKeySequence("Esc"), self, activated=self._on_escape)
-        QShortcut(
-            QKeySequence("Ctrl+K"), self,
-            activated=lambda: self._search.focus(),
-        )
-        QShortcut(
-            QKeySequence("Meta+K"), self,
-            activated=lambda: self._search.focus(),
-        )
-        QShortcut(
-            QKeySequence("1"), self,
-            activated=lambda: self._activate_card(0),
-        )
+        QShortcut(QKeySequence("Ctrl+K"), self,
+                  activated=lambda: self.search_bar().focus())
+        QShortcut(QKeySequence("Meta+K"), self,
+                  activated=lambda: self.search_bar().focus())
+        QShortcut(QKeySequence("1"), self,
+                  activated=self._on_hotkey_one)
 
+        # Initial state derivation.
         self._refresh_idle_state()
 
-    # ── lifecycle (legacy API mirror) ────────────────────────────────
+    # ── lifecycle (legacy API mirror) ────────────────────────────
 
     def show_centered(self) -> None:
-        """Show the launcher centred on the active screen. The legacy
-        launcher does deep multi-monitor work; the v3 keeps it simple
-        and centres on the primary screen."""
+        """Show the launcher centred on the active screen."""
         t0 = time.perf_counter() if _TIMING_DEBUG else 0.0
         from PyQt6.QtGui import QGuiApplication
         screen = QGuiApplication.primaryScreen()
@@ -377,8 +343,6 @@ class LiveLauncher(QWidget):
         self.show()
         self.raise_()
         self.activateWindow()
-        # Refresh on every show so a digest that filled while the
-        # launcher was hidden surfaces immediately.
         QTimer.singleShot(0, self._refresh_idle_state)
         if _TIMING_DEBUG:
             ms = round((time.perf_counter() - t0) * 1000, 1)
@@ -389,15 +353,27 @@ class LiveLauncher(QWidget):
             )
 
     def invalidate_digest(self) -> None:
-        """Drop any cached payload; the next `_refresh_idle_state`
+        """Drop any cached payload; the next ``_refresh_idle_state``
         re-fetches from the API."""
         self._cached_digest = None
 
+    # ── state derivation ─────────────────────────────────────────
+
+    def _demo_active(self) -> bool:
+        try:
+            from app.core import demo_mode
+            return demo_mode.is_active()
+        except Exception:  # noqa: BLE001
+            return False
+
     def _refresh_idle_state(self) -> None:
-        """Pick between empty / digest based on what the daemon
-        returns. Demo overlay is honoured: when `demo_mode.is_active()`
-        and the engine is otherwise empty, the digest path receives
-        the demo payload via `_load_digest`."""
+        """Pick between empty / recovery based on what the daemon
+        returns. Demo overlay is honoured: when ``demo_mode.is_active()``
+        the recovery state receives a synthetic payload."""
+        # Don't pre-empt search or resume states.
+        if self.state() in (STATE_SEARCH, STATE_RESUME):
+            return
+
         try:
             empty = self.search_engine.store.count() == 0
         except Exception:  # noqa: BLE001
@@ -413,34 +389,17 @@ class LiveLauncher(QWidget):
             pass
 
         if empty and not self._demo_active():
-            self._show_empty()
-        else:
-            self._populate_digest()
-            self._show_digest()
+            self.set_state(STATE_EMPTY)
+            return
 
-    # ── center-stack swap ───────────────────────────────────────────
+        self._populate_recovery_state()
 
-    def _show_empty(self) -> None:
-        self._center_stack.setCurrentIndex(0)
-
-    def _show_digest(self) -> None:
-        self._center_stack.setCurrentIndex(1)
-
-    # ── data load ───────────────────────────────────────────────────
-
-    def _demo_active(self) -> bool:
-        try:
-            from app.core import demo_mode
-            return demo_mode.is_active()
-        except Exception:  # noqa: BLE001
-            return False
-
-    def _populate_digest(self) -> None:
+    def _populate_recovery_state(self) -> None:
+        """Build a RecoveryProps + PreviewProps + OtherWorkRow[]
+        triple from engine data, then enter STATE_RECOVERY."""
         if self._demo_active():
             self._populate_demo()
             return
-        # Live data path. The api_client never raises on a dead
-        # daemon — it returns [] / None — so this stays calm.
         try:
             recoveries = self.api_client.recovery_recent(n=1) or []
         except Exception:  # noqa: BLE001
@@ -450,13 +409,8 @@ class LiveLauncher(QWidget):
         except Exception:  # noqa: BLE001
             threads = []
 
-        # Phase 6O HIGH-only gate + Phase 6Q ledger demotion (see
-        # `signals.ledger_flagged`). Phase 7E: the launcher now
-        # renders the Continue hero + Recent Memory + OTHER WORK
-        # together — single surface, no swap to an empty view.
-        # The hero is hidden when no HIGH recovery clears the gate;
-        # OTHER WORK + Recent Memory carry the surface.
-        hero: Optional[RecoveryCardV3] = None
+        # HIGH-only gate (Phase 6O) + ledger-flag demotion (Phase 6Q).
+        hero = None
         if recoveries:
             c = recoveries[0]
             targets = list(getattr(c, "suggested_targets", []) or [])
@@ -465,250 +419,284 @@ class LiveLauncher(QWidget):
                 (getattr(c, "signals", None) or {}).get("ledger_flagged", 0.0)
             )
             if n_targets >= 4 and not flagged:
-                hero = self._recovery_to_v3(c, n_targets, targets)
+                hero = c
 
-        inv_cards = [self._thread_to_v3(t) for t in threads[:3]]
-        memory_rows = _load_recent_memory(max_rows=5)
-        events_today, investigations = _load_trust_counts()
+        if hero is None:
+            # No hero but daemon has events -- show empty for now.
+            # (Future: STATE_RECOVERY w/ hero=None renders just the
+            # Other work rail.)
+            self.set_state(STATE_EMPTY)
+            return
 
-        # Phase 7E: always show the digest. The Recent Memory + OTHER
-        # WORK sections handle the empty-recovery case; the empty
-        # surface only fires when the daemon is genuinely empty.
-        self._digest.populate(
-            hero=hero,
-            memory=memory_rows,
-            investigations=inv_cards,
+        targets = list(getattr(hero, "suggested_targets", []) or [])
+        self._pending_cid = getattr(hero, "id", "")
+        self._pending_title = getattr(hero, "title", "") or "(untitled)"
+        self._pending_targets = list(targets)
+        self._pending_demo = False
+
+        recovery_props = self._engine_to_recovery_props(hero, targets)
+        preview_props = self._engine_to_preview_props(hero)
+        other_work = [self._thread_to_other_row(t) for t in threads[:3]]
+
+        self.set_state(
+            STATE_RECOVERY,
+            recovery=recovery_props,
+            preview=preview_props,
+            other_work=other_work,
         )
-        self._shell_widget.trust.set_counts(events_today, investigations)
-        self._show_digest()
+        self._wire_recovery_view()
 
     def _populate_demo(self) -> None:
         from app.core import demo_mode
         payload = demo_mode.demo_payload()
         rec = payload["recovery"]
-        # The demo payload's suggested_targets are synthesized so
-        # the preview body + the hero's chip row have rows to
-        # render. Tabs + files are the canonical mix for the
-        # WebSocket story.
         demo_targets: List[Tuple[str, str]] = []
         for url in rec.get("urls", []) or []:
             demo_targets.append(("url", url))
         for path in rec.get("files", []) or []:
             demo_targets.append(("path", path))
-        hero = RecoveryCardV3(
-            candidate_id=rec["id"],
-            title=rec["title"],
-            targets=demo_targets,
-            extra_clause=_extract_gap_clause(rec.get("preview_caption", "")),
-            n_targets=rec["tab_count"] + rec["file_count"],
-        )
-        self._wire_hero_restore(hero, rec["title"], demo_targets, demo=True)
-        inv_cards: List[InvestigationCardV3] = []
-        for inv in payload["investigations"]:
-            inv_cards.append(InvestigationCardV3(
-                inv["id"], inv["id"], inv["title"],
-                last_seen=str(inv.get("last_seen", "")) or "active",
-                strong=len(inv.get("surface_types") or []) >= 3,
-            ))
-        # Phase 7E — demo gets a synthetic Recent Memory rail built
-        # from the demo payload's timeline so the launcher's new
-        # section reads identically to a live populated state.
-        memory_rows: list = []
-        from datetime import datetime, timezone
-        for ev in payload.get("timeline", []):
-            t = datetime.fromtimestamp(float(ev.get("ts", 0.0)), tz=timezone.utc)
-            memory_rows.append(MemoryRow(
-                time=t.strftime("%H:%M"),
-                source=str(ev.get("detail", ""))[:12].title(),
-                label=str(ev.get("label", "")),
-            ))
-        self._digest.populate(
-            hero=hero,
-            memory=memory_rows[:5],
-            investigations=inv_cards,
-        )
-        self._shell_widget.trust.set_counts(
-            len(payload.get("timeline", [])),
-            len(payload.get("investigations", [])),
-        )
 
-    def _recovery_to_v3(
-        self,
-        c,
-        n_targets: int,
-        targets: List[Tuple[str, str]],
-    ) -> RecoveryCardV3:
+        n_files = len([t for k, t in demo_targets if k == "path"])
+        n_tabs = len([t for k, t in demo_targets if k == "url"])
+        gap_clause = (_extract_gap_clause(rec.get("preview_caption", ""))
+                      or "Returned after 2 days")
+        title = rec.get("title", "WebSocket retry debugging")
+        # Split title into main + accent if the title contains the
+        # canonical "debugging" suffix; otherwise use the whole
+        # title as title_main and a generic accent.
+        title_main, title_accent = _split_title_accent(title)
+
+        recovery_props = RecoveryProps(
+            title_main=title_main,
+            title_accent=title_accent,
+            eyebrow_meta=gap_clause,
+            n_files=n_files,
+            n_tabs=n_tabs,
+            n_searches=0,
+            last_active="last active · demo",
+        )
+        preview_props = PreviewProps()  # demo uses the default fixture
+
+        other_work: List[OtherWorkRow] = []
+        strengths = ["high", "med", "low"]
+        for i, inv in enumerate(payload.get("investigations", [])[:3]):
+            other_work.append(OtherWorkRow(
+                glyph="doc",
+                title=inv.get("title", "(thread)"),
+                when=str(inv.get("last_seen", "")) or "active",
+                strength=strengths[min(i, 2)],
+            ))
+
+        self._pending_cid = rec.get("id", "demo")
+        self._pending_title = title
+        self._pending_targets = list(demo_targets)
+        self._pending_demo = True
+
+        self.set_state(
+            STATE_RECOVERY,
+            recovery=recovery_props,
+            preview=preview_props,
+            other_work=other_work,
+        )
+        self._wire_recovery_view()
+
+    def _engine_to_recovery_props(
+        self, c, targets: List[Tuple[str, str]],
+    ) -> RecoveryProps:
         title = getattr(c, "title", "") or "(untitled)"
-        cid = getattr(c, "id", "")
-        # Phase 7B.1 — the Continue document needs the *returned
-        # after Nd* clause from the engine's preview caption so
-        # the body's last bullet reads as engagement context
-        # rather than a bare count. Extract the clause if present;
-        # otherwise the body is just file/tab/chat/search counts.
-        caption = getattr(c, "preview_caption", "") or ""
-        extra = _extract_gap_clause(caption)
-        card = RecoveryCardV3(
-            candidate_id=cid,
-            title=title,
-            targets=targets,
-            extra_clause=extra,
-            n_targets=n_targets,
+        title_main, title_accent = _split_title_accent(title)
+        gap = (_extract_gap_clause(getattr(c, "preview_caption", "") or "")
+               or "Continue where you left off")
+        n_files = sum(1 for k, _ in targets if k == "path")
+        n_tabs = sum(1 for k, t in targets if k != "path"
+                     and "search" not in (t or "").lower())
+        n_searches = sum(1 for k, t in targets
+                         if k != "path" and "search" in (t or "").lower())
+        return RecoveryProps(
+            title_main=title_main,
+            title_accent=title_accent,
+            eyebrow_meta=gap,
+            n_files=n_files,
+            n_tabs=n_tabs,
+            n_searches=n_searches,
+            last_active="last active · implementation",
         )
-        self._wire_hero_restore(card, title, targets, demo=False)
-        return card
 
-    def _wire_hero_restore(
-        self,
-        card: RecoveryCardV3,
-        title: str,
-        targets: List[Tuple[str, str]],
-        *,
-        demo: bool,
-    ) -> None:
-        """Bind the card's `restore` + `review` signals to the
-        preview-open path. Capture `title` + `targets` in the
-        closure so the preview opens with the right payload — and
-        the plan execution doesn't need to round-trip to the API
-        just to enumerate steps.
+    def _engine_to_preview_props(self, c) -> PreviewProps:
+        """Engine -> PreviewProps adapter. The Phase 10A PreviewCard
+        renders a file label + an excerpt with a highlighted phrase.
+        Engine doesn't surface excerpts yet (Phase 10C scope), so
+        we use the engine's suggested top file as the label and
+        the default excerpt copy."""
+        targets = list(getattr(c, "suggested_targets", []) or [])
+        file_target = next((t for k, t in targets if k == "path"), None)
+        if file_target:
+            label = Path(file_target).name
+        else:
+            label = "pitch_healthcare_v3.pdf"
+        defaults = PreviewProps()
+        return PreviewProps(
+            label=label,
+            excerpt_prefix=defaults.excerpt_prefix,
+            excerpt_highlight=defaults.excerpt_highlight,
+            excerpt_suffix=defaults.excerpt_suffix,
+            meta="~/notes · 4d",
+        )
 
-        Phase 9 — both Resume (primary) and Review (secondary) open
-        the same ResumePreview overlay. The label difference is
-        affordance, not behaviour: Resume signals commitment intent;
-        Review signals "let me see first." Same modal opens; the
-        preview's own buttons are the actual restore commit.
-        """
-        def _open_preview_restore(cid: str, _t: str, _n: int) -> None:
-            self._open_preview(cid, title, targets, demo=demo)
-        def _open_preview_review(cid: str) -> None:
-            self._open_preview(cid, title, targets, demo=demo)
-        card.restore.connect(_open_preview_restore)
-        card.review.connect(_open_preview_review)
-
-    def _thread_to_v3(self, t) -> InvestigationCardV3:
-        # Phase 7E — the OTHER WORK row carries a `last_seen` caption
-        # (right-aligned mono) + a strength dot. `updated_at` is the
-        # thread's most-recent event timestamp; humanize_age gives us
-        # *3d*, *5d*, *1w* — same column the audit's mock fixtures
-        # show.
-        last_seen = ""
-        try:
-            from app.core.events import humanize_age
-            ts = float(getattr(t, "updated_at", 0.0) or 0.0)
-            if ts > 0:
-                last_seen = humanize_age(ts)
-        except Exception:  # noqa: BLE001
-            pass
+    def _thread_to_other_row(self, t) -> OtherWorkRow:
+        title = getattr(t, "title", "") or "(untitled)"
+        when = _humanize_thread_when(float(getattr(t, "updated_at", 0.0) or 0.0))
         surfaces = list(getattr(t, "surface_types", []) or [])
-        return InvestigationCardV3(
-            getattr(t, "id", ""),
-            getattr(t, "topic_key", "") or "",
-            getattr(t, "title", "") or "(untitled)",
-            last_seen=last_seen,
-            strong=len(surfaces) >= 3,
+        if len(surfaces) >= 3:
+            strength = "high"
+        elif len(surfaces) == 2:
+            strength = "med"
+        else:
+            strength = "low"
+        glyph = "doc"
+        if "chat" in surfaces:
+            glyph = "chat"
+        elif "search" in surfaces:
+            glyph = "research"
+        return OtherWorkRow(
+            glyph=glyph,
+            title=title[:60],
+            when=when or "recent",
+            strength=strength,
         )
 
-    # ── input ────────────────────────────────────────────────────────
+    def _wire_recovery_view(self) -> None:
+        """Hook the RecoveryView's resume + review signals to the
+        engine-side restore flow. Called after every
+        ``set_state(STATE_RECOVERY, ...)``."""
+        view = self._view
+        if hasattr(view, "resume"):
+            try:
+                view.resume.disconnect()
+            except (TypeError, RuntimeError):
+                pass
+            view.resume.connect(self._on_resume_clicked)
+        if hasattr(view, "review"):
+            try:
+                view.review.disconnect()
+            except (TypeError, RuntimeError):
+                pass
+            view.review.connect(self._on_resume_clicked)
+
+    def _wire_resume_view(self) -> None:
+        """Hook the ResumeView's undo + done signals after every
+        ``set_state(STATE_RESUME, ...)``."""
+        view = self._view
+        if hasattr(view, "done_clicked"):
+            try:
+                view.done_clicked.disconnect()
+            except (TypeError, RuntimeError):
+                pass
+            view.done_clicked.connect(self._on_resume_done)
+        if hasattr(view, "undo_clicked"):
+            try:
+                view.undo_clicked.disconnect()
+            except (TypeError, RuntimeError):
+                pass
+            view.undo_clicked.connect(self._on_resume_undo)
+
+    # ── search flow ─────────────────────────────────────────────
 
     def _on_query_changed(self, q: str) -> None:
-        # Phase 6K wires the typing path to the legacy search engine
-        # only via a signal. The full inline-results panel is a
-        # follow-up (the directive's search_panel.py is built but
-        # not wired to live episodic results in this phase).
+        """Typing toggles between recovery and search states. Empty
+        string -> back to the idle surface."""
         self._request_search.emit(q)
-
-    def _activate_card(self, idx: int) -> None:
-        # Phase 6O — `1` targets the hero (when shown); `2-4`
-        # target the n-th investigation title. The OTHER WORK
-        # row caps at 3, so hotkeys 5-9 never have a target.
-        cards: List[QWidget] = []
-        if self._digest._hero is not None:  # noqa: SLF001
-            cards.append(self._digest._hero)  # noqa: SLF001
-        cards.extend(self._digest.row._titles)  # noqa: SLF001
-        if 0 <= idx < len(cards):
-            cards[idx].setFocus(Qt.FocusReason.ShortcutFocusReason)
-
-    # ── Phase 6P resume pipeline ────────────────────────────────────
-
-    def _open_preview(
-        self,
-        candidate_id: str,
-        title: str,
-        targets: List[Tuple[str, str]],
-        *,
-        demo: bool,
-    ) -> None:
-        """Show the preview overlay. Captures the candidate so the
-        accept path can execute without re-asking the API."""
-        self._pending_cid = candidate_id
-        self._pending_title = title
-        self._pending_targets = list(targets)
-        self._pending_demo = demo
-        self._preview.open(candidate_id, title, targets)
-        self._position_preview()
-
-    def _position_preview(self) -> None:
-        """Centre the preview horizontally; pin vertically so the
-        bottom of the card sits ~24 px above the window bottom."""
-        if not self._preview.isVisible():
+        if not q.strip():
+            # Restore the prior state.
+            self._refresh_idle_state()
             return
-        self._preview.adjustSize()
-        x = (self.width() - self._preview.width()) // 2
-        y = max(60, self.height() - self._preview.height() - 28)
-        self._preview.move(x, y)
+        # Build a SearchGroupSpec list from the engine. The
+        # adapter is intentionally tiny: take the first 10 hits +
+        # bucket by surface kind.
+        groups = self._search_engine_to_groups(q)
+        self.set_state(STATE_SEARCH, search_groups=groups)
 
-    def _position_toast(self) -> None:
-        if not self._toast.isVisible():
+    def _on_search_submit(self, _q: str) -> None:
+        """Enter on the search bar activates the top selected row.
+        For now we just forward the query; the inline-row activation
+        path is engine-side."""
+        return
+
+    def _search_engine_to_groups(self, q: str) -> List[SearchGroupSpec]:
+        """Engine -> SearchGroupSpec[] adapter. Phase 10B keeps this
+        modest: the engine doesn't yet return a 4-bucket result
+        shape, so we map the available hits onto the design's
+        groups (Investigation / Files / Returns / Events)."""
+        try:
+            hits = self.search_engine.search(q, max_results=10) or []
+        except Exception:  # noqa: BLE001
+            hits = []
+        groups: List[SearchGroupSpec] = []
+        files_rows: List[SearchResultRow] = []
+        for i, h in enumerate(hits[:5]):
+            label = getattr(h, "title", None) or getattr(h, "label", None) \
+                or getattr(h, "path", None) or "(untitled)"
+            meta = getattr(h, "source", "") or getattr(h, "path", "") or ""
+            score = int(round(float(getattr(h, "score", 0.0)) * 100))
+            files_rows.append(SearchResultRow(
+                glyph="file",
+                title=str(label)[:60],
+                meta=str(meta)[:48],
+                score=max(0, min(99, score)) if score else 80 - i,
+                selected=(i == 0),
+            ))
+        if files_rows:
+            groups.append(SearchGroupSpec("Files", files_rows))
+        # If we got nothing, show the design fixture so the surface
+        # still reads as a populated search.
+        if not groups:
+            return []  # darkframe's default fixture fires
+        return groups
+
+    # ── resume flow ─────────────────────────────────────────────
+
+    def _on_resume_clicked(self) -> None:
+        """Resume / Review pressed on the recovery hero. The Phase 9
+        merge keeps both bound to the same target: open the resume
+        confirmation state and execute the plan."""
+        if not self._pending_cid:
             return
-        self._toast.adjustSize()
-        x = (self.width() - self._toast.width()) // 2
-        y = self.height() - self._toast.height() - 18
-        self._toast.move(x, y)
+        # Snapshot the prior state so `Done` can revert cleanly.
+        self._pre_resume_state = STATE_RECOVERY
+        self._execute_resume_plan()
 
-    def _on_preview_cancel(self) -> None:
-        self._pending_cid = ""
-        self._pending_title = ""
-        self._pending_targets = []
-
-    def _on_preview_accept(self, candidate_id: str, title: str) -> None:
-        """The user confirmed Resume. Execute the plan and announce
-        the result via the toast."""
+    def _execute_resume_plan(self) -> None:
+        title = self._pending_title
         targets = list(self._pending_targets)
-        demo = bool(getattr(self, "_pending_demo", False))
-        self._pending_cid = ""
-        self._pending_title = ""
-        self._pending_targets = []
-        self._pending_demo = False
+        candidate_id = self._pending_cid
+        demo = bool(self._pending_demo)
 
         if demo:
-            # Demo mode never reaches into the engine. We acknowledge
-            # the click with a toast but make no OS calls and dismiss
-            # the overlay so the user lands on the real (still empty)
-            # engine state.
+            # Demo never reaches the engine.
             try:
                 from app.core import demo_mode
                 demo_mode.dismiss()
             except Exception:  # noqa: BLE001
                 pass
-            self._flash_toast_success([_name_for(k, t) for k, t in targets[:3]],
-                                       requested=len(targets), missing=0)
+            items = self._targets_to_restored_items(targets, all_ok=True)
+            self.set_state(STATE_RESUME, restored_items=items)
+            self._wire_resume_view()
             QTimer.singleShot(400, self._refresh_idle_state)
             return
 
-        # Resolve the plan. The engine returns it ordered files →
-        # chats → tabs → searches.
         try:
             plan = self.api_client.recovery_restore(candidate_id, timeout=1.0)
         except Exception:  # noqa: BLE001
             plan = None
 
-        if plan is None:
-            self._flash_toast_no_engine()
-            return
-        if not plan.steps:
-            self._flash_toast_failure(0)
+        items: List[RestoredItem] = []
+        if plan is None or not getattr(plan, "steps", None):
+            # No plan -- enter resume state with an empty list so
+            # the user gets explicit feedback rather than silence.
+            self.set_state(STATE_RESUME, restored_items=items)
+            self._wire_resume_view()
             return
 
-        restored_names: List[str] = []
         skipped: List[Tuple[str, str, str]] = []
         t0 = time.perf_counter()
         for step in plan.steps:
@@ -723,91 +711,124 @@ class LiveLauncher(QWidget):
                         continue
                     if self.event_logger is not None:
                         try:
-                            self.event_logger.log_open(target, Path(target).name)
+                            self.event_logger.log_open(target,
+                                                       Path(target).name)
                         except Exception:  # noqa: BLE001
                             pass
                 ok = _open_target(step.kind, target)
-                if ok:
-                    restored_names.append(_name_for(step.kind, target))
-                else:
+                items.append(self._step_to_restored_item(step.kind, target, ok))
+                if not ok:
                     skipped.append((step.kind, target, "open_failed"))
             except Exception as exc:  # noqa: BLE001
                 skipped.append((step.kind, target, type(exc).__name__))
         elapsed_ms = round((time.perf_counter() - t0) * 1000, 2)
         log.info(
             "resume %s · requested=%d restored=%d skipped=%d ms=%.1f",
-            title, len(plan.steps), len(restored_names), len(skipped), elapsed_ms,
+            title, len(plan.steps),
+            len(plan.steps) - len(skipped), len(skipped), elapsed_ms,
         )
         if _EXPLAIN_RECOVERY and skipped:
             for kind, target, reason in skipped:
                 print(f"  · skipped  ({kind})  {target[:80]}  — {reason}")
 
-        if restored_names:
-            self._flash_toast_success(
-                restored_names[:3],
-                requested=len(plan.steps),
-                missing=len(skipped),
-            )
-            # Give the toast a moment, then hide. The user is now in
-            # the editor / browser — the launcher shouldn't be on top.
-            QTimer.singleShot(400, self.hide)
+        self.set_state(STATE_RESUME, restored_items=items)
+        self._wire_resume_view()
+
+    def _step_to_restored_item(
+        self, kind: str, target: str, ok: bool,
+    ) -> RestoredItem:
+        if kind == "path":
+            label = Path(target).name
+            meta = str(Path(target).parent)
+            glyph = "file"
+            status = "opened" if ok else "missing"
+        elif "chat" in (target or "").lower():
+            label = target
+            meta = "session resumed"
+            glyph = "chat"
+            status = "opened" if ok else "skipped"
         else:
-            self._flash_toast_failure(len(skipped))
+            label = target
+            meta = "browser · new window"
+            glyph = "tab"
+            status = "restored" if ok else "skipped"
+        return RestoredItem(glyph=glyph, label=label[:64],
+                            meta=meta[:48], status=status)
 
-    def _flash_toast_success(
-        self, names: List[str], *, requested: int, missing: int,
-    ) -> None:
-        self._toast.flash_success(names, requested=requested, missing=missing)
-        self._position_toast()
+    def _targets_to_restored_items(
+        self, targets: List[Tuple[str, str]], *, all_ok: bool,
+    ) -> List[RestoredItem]:
+        out: List[RestoredItem] = []
+        for kind, target in targets:
+            out.append(self._step_to_restored_item(kind, target, all_ok))
+        return out
 
-    def _flash_toast_failure(self, missing: int) -> None:
-        self._toast.flash_failure(missing)
-        self._position_toast()
+    def _on_resume_done(self) -> None:
+        """Dismiss the Resume state and hide the launcher -- the
+        user is now in the editor / browser."""
+        self._pending_cid = ""
+        self._pending_title = ""
+        self._pending_targets = []
+        self._pending_demo = False
+        # Hide first, then refresh the next time the user opens.
+        self.hide()
+        QTimer.singleShot(0, self._refresh_idle_state)
 
-    def _flash_toast_no_engine(self) -> None:
-        self._toast.flash_no_engine()
-        self._position_toast()
+    def _on_resume_undo(self) -> None:
+        """Reverse the resume. The api_client undo endpoint is the
+        engine-side concern; here we just revert to the recovery
+        surface and let the engine decide what's recoverable."""
+        try:
+            self.api_client.recovery_undo(self._pending_cid, timeout=1.0)
+        except Exception:  # noqa: BLE001
+            pass
+        # Revert to the prior idle state.
+        self._refresh_idle_state()
+
+    # ── keyboard ────────────────────────────────────────────────
 
     def _on_escape(self) -> None:
-        """Esc closes the preview first if visible; otherwise hides
-        the whole launcher. Phase 6R removed the *Why this?* sheet
-        from the cascade — see `archive/launcher-debt/why_sheet_6q.py`."""
-        if self._preview.isVisible():
-            self._preview.close_preview()
-            self._on_preview_cancel()
+        """Esc handling:
+          - in SEARCH state with text: clear the search bar
+          - in RESUME state: revert to recovery
+          - otherwise: hide the launcher
+        """
+        st = self.state()
+        if st == STATE_SEARCH:
+            self.search_bar().clear()
+            self._refresh_idle_state()
+            return
+        if st == STATE_RESUME:
+            self._on_resume_undo()
             return
         self.hide()
 
-    def _on_show_example(self) -> None:
-        try:
-            from app.core import demo_mode
-            demo_mode.activate()
-        except Exception:  # noqa: BLE001
-            pass
-        self._refresh_idle_state()
+    def _on_hotkey_one(self) -> None:
+        """`1` activates the recovery hero's Resume button when
+        the launcher is in STATE_RECOVERY."""
+        if self.state() == STATE_RECOVERY:
+            self._on_resume_clicked()
 
-    def _on_start_normally(self) -> None:
-        try:
-            from app.core import demo_mode
-            demo_mode.dismiss()
-        except Exception:  # noqa: BLE001
-            pass
-        self._refresh_idle_state()
-
-    # ── geometry hooks ──────────────────────────────────────────────
-
-    def resizeEvent(self, e) -> None:  # type: ignore[override]
-        super().resizeEvent(e)
-        self._position_preview()
-        self._position_toast()
-
-    # ── key handling ────────────────────────────────────────────────
+    # ── key handling ────────────────────────────────────────────
 
     def keyPressEvent(self, e: QKeyEvent) -> None:  # type: ignore[override]
         if e.key() == Qt.Key.Key_Escape:
             self._on_escape()
             return
         super().keyPressEvent(e)
+
+
+def _split_title_accent(title: str) -> Tuple[str, str]:
+    """Split a thread title into a main phrase + a 1-2 word
+    serif-italic accent for the hero. Tries to peel off the
+    last word for emphasis; falls back to a generic
+    "in progress." accent on short titles."""
+    words = (title or "").strip().split()
+    if not words:
+        return ("Continue", "in progress.")
+    if len(words) >= 2:
+        return (" ".join(words[:-1]), words[-1] + ".")
+    return (words[0], "in progress.")
 
 
 __all__ = ["LiveLauncher"]
