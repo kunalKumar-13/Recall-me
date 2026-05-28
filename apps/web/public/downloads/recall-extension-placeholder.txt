@@ -1,0 +1,29 @@
+Recall Chrome extension — placeholder
+=====================================
+
+This file is a stand-in for the unpacked extension zip
+while the landing page is wired before the real bundle
+ships.
+
+The extension source + built popup live under
+`apps/extension/` in the repo:
+
+  apps/extension/manifest.json     manifest_v3
+  apps/extension/background.js     service worker
+  apps/extension/popup/            built React popup (296 KB)
+
+To sideload it today (Chrome / Edge / Brave / Arc):
+
+  1. Open chrome://extensions
+  2. Toggle Developer mode (top right)
+  3. Click "Load unpacked"
+  4. Pick the apps/extension/ folder
+  5. Pin the Recall icon to the toolbar
+
+The extension talks only to 127.0.0.1:4545. No outbound
+traffic. Confirmed by the manifest's host_permissions list.
+
+Once a packaged zip is published to the Chrome Web Store or
+attached to a release, this placeholder gets swapped.
+
+— Phase 11B placeholder · 2026-05-27

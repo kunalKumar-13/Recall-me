@@ -76,12 +76,15 @@ _MIN_EVENTS: int = 4
 
 # Minimum recovery *trust* — the gate on `max(continuity,
 # confidence)`. Below this the candidate is suppressed entirely.
-# History: 0.40 → 0.45 (3C) → 0.50 (4C) → 0.55 (4E). Phase 4E's
-# directive is *behavioral indispensability*: a recovery the user
-# bounces off of is worse than no recovery at all, because it
-# teaches them the surface is noise. The smoke fixture sits at
-# ≈ 0.74, well clear of the floor.
-_MIN_CONFIDENCE: float = 0.55
+# History: 0.40 → 0.45 (3C) → 0.50 (4C) → 0.55 (4E) → 0.40 (P1).
+# Phase P1 lowered the floor back to 0.40 — on real user data the
+# 0.55 floor rejected every candidate (continuity tops out near
+# 0.48 for fresh single-day threads with no abandonment signal).
+# 0.40 defines the MEDIUM band; the HIGH band keeps the historical
+# 0.55 floor; the LOW band passes anything above 0.25.
+_MIN_CONFIDENCE: float = 0.40
+_HIGH_CONFIDENCE: float = 0.55     # Phase P1 — HIGH band threshold
+_LOW_CONFIDENCE:  float = 0.25     # Phase P1 — LOW band floor
 
 # Phase 4E — minimum *resume intent*. The trust floor above gates
 # on `max(continuity, confidence)`, which let a context surface on
@@ -90,8 +93,15 @@ _MIN_CONFIDENCE: float = 0.55
 # "does the user actually want back in?"; this floor makes it a
 # hard requirement, not a tie-breaker. A candidate the user has no
 # intent to resume is suppressed even if its context is pristine.
-# The smoke fixture's confidence sits well above this.
-_MIN_RESUME_INTENT: float = 0.32
+# Phase P1 (2026-05-27): 0.32 -> 0.10. On real user data the
+# `transition='initial'` phase produces confidence ≈ 0.00 even
+# for healthy, large threads (no abandonment / revisit / accel
+# signal yet). The 0.32 floor effectively required a thread to be
+# abandoned-then-revisited before it could surface, which rejected
+# every fresh investigation. 0.10 lets a fresh thread surface as
+# MEDIUM; HIGH band still requires 0.32.
+_MIN_RESUME_INTENT: float = 0.10
+_HIGH_RESUME_INTENT: float = 0.32   # Phase P1 — HIGH band threshold
 
 # Phase 4C — last-phase recency guard. The thread's
 # `updated_at` (which gates the 14-day window above) is the
@@ -112,14 +122,33 @@ _LAST_PHASE_RECENCY_DAYS: float = 7.0
 # entirely of `browser_visit` events with no `open`, `reveal`, or
 # `chat_session` activity is passive consumption (reading) rather
 # than active work. We surface it via resurfacing, never via
-# recovery. The depth-event kinds below are the ones that imply
-# the user *did* something with what they read.
-_DEPTH_KINDS: frozenset[str] = frozenset({
-    "open",
-    "reveal",
-    "chat_session",
-    "browser_search",
-})
+# recovery. The depth-weight table below scores how much each
+# event kind contributes to "the user did something" vs. "the
+# user passively saw something."
+#
+# Phase P1 (2026-05-27) — moved from a frozenset of equal-weight
+# "depth kinds" to weighted contributions so threads of pure
+# browser_visit activity can still surface as recovery candidates.
+# The previous all-or-nothing gate rejected every browser-only
+# thread regardless of size (28 inbox visits, 37 hotstar visits,
+# etc.), which made the product appear broken on real user data.
+#
+# Threshold: depth_score >= _MIN_DEPTH_SCORE (default 1.0) means a
+# thread reads as "work the user touched." Any event kind not in
+# the table contributes zero weight.
+_DEPTH_WEIGHTS: dict[str, float] = {
+    "open":           1.0,    # file_open — strongest signal
+    "reveal":         1.0,
+    "chat_session":   1.0,    # AI conversation — strong signal
+    "browser_search": 0.35,   # search_query — weak active signal
+    "browser_visit":  0.5,    # passive browsing — counts but ½
+}
+_MIN_DEPTH_SCORE: float = 1.0
+
+# Phase P1 — back-compat alias. A handful of callers (inspect_cli,
+# explain_signals) read _DEPTH_KINDS as a set. Expose the weighted
+# table's keys so those paths keep working.
+_DEPTH_KINDS: frozenset[str] = frozenset(_DEPTH_WEIGHTS.keys())
 
 # Phase 3C: minimum distinct targets. A thread whose entire
 # activity is "the user reopened the same URL six times" reads as
@@ -203,6 +232,14 @@ class RecoveryCandidate:
     preview_caption: str = ""
     last_phase_title: str = ""
     last_phase_transition: str = ""
+
+    # Phase P1 — band classification:
+    #   "high"     — passes the strict 0.55 / 0.32 floors (original)
+    #   "med"      — passes the new 0.40 / 0.10 floors
+    #   "low"      — passes 0.25 / 0 (any-signal floor)
+    #   "fallback" — synthesized from the most recent thread because
+    #                no candidate passed any band
+    band: str = "med"
 
 
 @dataclass
@@ -311,12 +348,89 @@ class RecoveryEngine:
             candidates.append(cand)
 
         # Rank by `max(continuity, confidence)`. Higher = more
-        # urgent to surface.
+        # urgent to surface. Band order breaks ties so HIGH always
+        # sits ahead of MED + LOW even when scores are close.
+        band_order = {"high": 3, "med": 2, "low": 1, "fallback": 0}
         candidates.sort(
-            key=lambda c: max(c.continuity_score, c.recovery_confidence),
+            key=lambda c: (
+                band_order.get(c.band, 0),
+                max(c.continuity_score, c.recovery_confidence),
+            ),
             reverse=True,
         )
+
+        # Phase P1 — never return empty. If no thread passed the LOW
+        # trust floor, synthesize a fallback from the most recent
+        # restorable thread so the launcher's Continue surface always
+        # has something to show. The fallback carries band="fallback"
+        # so the launcher can render it quieter than a real LOW.
+        if not candidates:
+            fallback = self._build_fallback_candidate(threads, now)
+            if fallback is not None:
+                return [fallback]
+            return []
         return candidates[:n]
+
+    def _build_fallback_candidate(
+        self, threads: List[Thread], now: float,
+    ) -> Optional[RecoveryCandidate]:
+        """Phase P1 — synthesize a recovery candidate from the most
+        recent thread that has enough events + enough distinct
+        targets to restore. Skips the trust + intent + depth gates;
+        only requires that there's something openable.
+        """
+        # Threads are ranked by the builder; iterate in confidence
+        # order and pick the first with restorable targets.
+        for thread in threads[:_CANDIDATE_POOL]:
+            events = self._collect_thread_events(thread.topic_key, now)
+            if len(events) < _MIN_EVENTS:
+                continue
+            targets = self._suggested_targets(events)
+            if not targets:
+                continue
+            tgt_set = {
+                ((ev.payload or {}).get("url")
+                 or (ev.payload or {}).get("path") or "").strip().lower()
+                for ev in events
+            }
+            tgt_set.discard("")
+            if len(tgt_set) < _MIN_DISTINCT_TARGETS:
+                continue
+
+            # Synthesize minimal signals + scores. We compute the
+            # signals so the launcher's UI has something to read,
+            # but the band is "fallback" so it can render quieter.
+            age_days = max(0.0, (now - thread.updated_at) / 86400.0)
+            s_recency = math.pow(0.5, age_days / _RECENCY_HALFLIFE_DAYS)
+            continuity = round(min(1.0, _W_RECENCY * s_recency
+                                   + _W_TARGET_REUSE * 0.5
+                                   + _W_SURFACE_BREADTH * 0.25), 4)
+            confidence = 0.0
+            cand_id = _candidate_id(thread.id, thread.updated_at)
+            return RecoveryCandidate(
+                id=cand_id,
+                thread_id=thread.id,
+                title=thread.title,
+                last_active_at=thread.updated_at,
+                continuity_score=continuity,
+                recovery_confidence=confidence,
+                representative_events=self._representative_events(events),
+                suggested_targets=targets,
+                related_sessions=self._related_session_ids(events),
+                related_contexts=0,
+                unresolved_signals=[],
+                signals={
+                    "recency":            round(s_recency, 3),
+                    "fallback":           1.0,
+                    "ledger_flagged":     0.0,
+                },
+                why=["fallback: most recent thread with restorable targets"],
+                preview_caption=f"Recent — {len(events)} events on {thread.topic_key}",
+                last_phase_title=thread.title,
+                last_phase_transition="initial",
+                band="fallback",
+            )
+        return None
 
     def candidate_for_thread(
         self, thread_id: str, now: Optional[float] = None
@@ -377,12 +491,13 @@ class RecoveryEngine:
             # the user "was doing work in" — it's a passive read.
             return None
 
-        # Phase 3C: depth filter. A thread of pure browser visits
-        # is reading material; recovery should surface work the
-        # user *acted on* — file opens, chat sessions, or active
-        # searches. The resurfacing layer catches the rest.
-        depth_events = sum(1 for ev in events if ev.kind in _DEPTH_KINDS)
-        if depth_events == 0:
+        # Phase P1: weighted depth filter. Each event kind
+        # contributes a weight (`_DEPTH_WEIGHTS`); a thread passes
+        # when the sum reaches `_MIN_DEPTH_SCORE` (1.0). This
+        # replaces the Phase 3C all-or-nothing gate that rejected
+        # every browser-only thread regardless of size.
+        depth_score = sum(_DEPTH_WEIGHTS.get(ev.kind, 0.0) for ev in events)
+        if depth_score < _MIN_DEPTH_SCORE:
             return None
 
         # Phase 3C: distinct-target floor. A thread of "the user
@@ -430,18 +545,23 @@ class RecoveryEngine:
         )
         confidence = round(min(1.0, confidence), 4)
 
-        # Trust floor — trivial / completed work fails here.
-        if max(continuity, confidence) < _MIN_CONFIDENCE:
+        # Phase P1 — band classification replaces the hard-reject
+        # gates. Trust floor is now `_LOW_CONFIDENCE` (0.25); above
+        # that the candidate surfaces with a band tag the launcher
+        # uses to render different visual weights.
+        trust = max(continuity, confidence)
+        if trust < _LOW_CONFIDENCE:
             return None
 
-        # Phase 4E — resume-intent floor. The trust gate above can
-        # pass on continuity alone (an intact but *finished*
-        # context). Recovery's whole promise is "re-enter work you
-        # were interrupted in", so a candidate the user shows no
-        # intent to resume is suppressed even when its context is
-        # pristine. A missed recovery is better than a weak one.
-        if confidence < _MIN_RESUME_INTENT:
-            return None
+        # Compute band — HIGH passes the strict 0.55/0.32 floors;
+        # MED passes the new 0.40/0.10 floors; LOW everything else
+        # above the 0.25 trust floor.
+        if trust >= _HIGH_CONFIDENCE and confidence >= _HIGH_RESUME_INTENT:
+            band = "high"
+        elif trust >= _MIN_CONFIDENCE and confidence >= _MIN_RESUME_INTENT:
+            band = "med"
+        else:
+            band = "low"
 
         # ── assemble the candidate ──
         rep_events = self._representative_events(events)
@@ -512,6 +632,7 @@ class RecoveryEngine:
             preview_caption=preview,
             last_phase_title=last_phase.title,
             last_phase_transition=last_phase.transition,
+            band=band,
         )
 
     # -- inputs ---------------------------------------------------------

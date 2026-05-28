@@ -409,6 +409,11 @@ def _recovery_from(d: dict) -> RecoveryCandidate:
         preview_caption=d.get("preview_caption", ""),
         last_phase_title=d.get("last_phase_title", ""),
         last_phase_transition=d.get("last_phase_transition", ""),
+        # Phase P1 — band lives in the engine but the schema may
+        # or may not surface it depending on `api/schemas.py`
+        # version. Default to "med" so legacy daemons read the
+        # same as the new band ladder's middle tier.
+        band=d.get("band", "med"),
     )
 
 

@@ -325,6 +325,21 @@ class Glyph(QWidget):
         p.end()
 
 
+# ── Clickable label (Phase P0) ────────────────────────────────────
+
+
+class _ClickableLabel(QLabel):
+    """A QLabel that emits ``clicked`` on left-mouse release.
+    Used by the preview card's "Open ↗" link so the host can route
+    the click to the OS open helper."""
+
+    clicked = pyqtSignal()
+
+    def mouseReleaseEvent(self, e) -> None:  # type: ignore[override]
+        if e.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+
+
 # ── Kbd pill ──────────────────────────────────────────────────────
 
 
@@ -1205,11 +1220,12 @@ class PreviewCard(QWidget):
         meta.setStyleSheet(f"color: {T.INK_DIM}; background: transparent;")
         foot.addWidget(meta)
         foot.addStretch(1)
-        open_lbl = QLabel("Open  ↗")
+        open_lbl = _ClickableLabel("Open  ↗")
         open_lbl.setFont(_font(_FONT.SANS, size=11, bold=True))
         open_lbl.setStyleSheet(
             f"color: {T.ACCENT}; background: transparent;")
         open_lbl.setCursor(Qt.CursorShape.PointingHandCursor)
+        open_lbl.clicked.connect(self.open_clicked.emit)
         foot.addWidget(open_lbl)
         outer.addLayout(foot)
 
@@ -1325,6 +1341,10 @@ class RecoveryView(QWidget):
     resume = pyqtSignal()
     review = pyqtSignal()
     row_clicked = pyqtSignal(int)
+    # Phase P0 — forward the PreviewCard's Open ↗ click so the
+    # launcher can route it to the OS open helper. Additive: existing
+    # `resume` / `review` / `row_clicked` signals unchanged.
+    preview_open = pyqtSignal()
 
     def __init__(self,
                  *,
@@ -1355,7 +1375,11 @@ class RecoveryView(QWidget):
         hero.resume_clicked.connect(self.resume.emit)
         hero.review_clicked.connect(self.review.emit)
         row1.addWidget(hero, 1)
-        row1.addWidget(PreviewCard(preview))
+        # Phase P0 — capture the preview card so its Open ↗ link
+        # forwards through this view's `preview_open` signal.
+        preview_card = PreviewCard(preview)
+        preview_card.open_clicked.connect(self.preview_open.emit)
+        row1.addWidget(preview_card)
         outer.addLayout(row1, 1)
 
         # other work header

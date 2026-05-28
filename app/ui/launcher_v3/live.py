@@ -182,6 +182,130 @@ def _load_recent_memory(max_rows: int = 5) -> list:
     return rows
 
 
+# ── Phase P2 — Recent activity rail ────────────────────────────────
+
+
+def _humanize_when_iso(ts: str) -> str:
+    """Render an ISO timestamp as the same micro-time the rail uses."""
+    if not ts:
+        return ""
+    try:
+        from datetime import datetime, timezone
+        t = datetime.fromisoformat((ts or "").replace("Z", "+00:00"))
+        secs = int((datetime.now(timezone.utc) - t).total_seconds())
+        if secs < 60:
+            return "just now"
+        if secs < 3600:
+            return f"{max(1, secs // 60)}m ago"
+        if secs < 86400:
+            return f"{secs // 3600}h ago"
+        return f"{secs // 86400}d ago"
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def _glyph_for_event(kind: str) -> str:
+    """Pick the launcher glyph for one event-row in the rail."""
+    if kind in ("open", "reveal"):
+        return "file"
+    if kind == "chat_session":
+        return "chat"
+    if kind == "browser_search":
+        return "research"
+    if kind == "browser_visit":
+        return "tab"
+    return "doc"
+
+
+def _strength_for_event(kind: str, idx: int) -> str:
+    """Rail strength dot. Newer + active-signal events read brighter.
+
+    Phase P2 — the strength ladder is purely visual; the rail is
+    sorted newest-first and the first row reads HIGH so the eye
+    lands there, then steps down. `chat_session` always reads
+    HIGH because it's the strongest active signal we have."""
+    if kind == "chat_session":
+        return "high"
+    if idx == 0:
+        return "high"
+    if idx <= 2:
+        return "med"
+    return "low"
+
+
+def _event_to_row_target(ev_payload: dict, kind: str) -> Optional[Tuple[str, str]]:
+    """Pick the openable `(kind, target)` for one event payload.
+    Returns None when the event has nothing the OS can open
+    (so the row stays clickable but the launcher swallows it
+    instead of misfiring)."""
+    pl = ev_payload or {}
+    if kind in ("open", "reveal"):
+        path = (pl.get("path") or "").strip()
+        if path:
+            return ("path", path)
+        return None
+    url = (pl.get("url") or "").strip()
+    if url:
+        return ("url", url)
+    return None
+
+
+def _load_recent_activity(max_rows: int = 4) -> List[dict]:
+    """Phase P2 — read the latest events off disk and project each
+    onto a dict carrying the OtherWorkRow fields plus a
+    `(target_kind, target)` tuple so the row's click handler has
+    something to open.
+
+    Caps at `max_rows` projected rows but considers up to ~120
+    raw events so dedupe by `(kind, label)` lands on the freshest
+    surface per topic.
+    """
+    rows: List[dict] = []
+    try:
+        recall = Path(os.path.expanduser("~/.recall/events"))
+        files = sorted(recall.glob("*.jsonl"))[-3:]
+    except Exception:  # noqa: BLE001
+        return rows
+    import json
+    samples: list = []
+    for f in files:
+        try:
+            for line in f.read_text(encoding="utf-8").splitlines()[-60:]:
+                try:
+                    ev = json.loads(line)
+                except (ValueError, TypeError):
+                    continue
+                samples.append((ev.get("ts") or "", ev))
+        except OSError:
+            continue
+    samples.sort(key=lambda x: x[0] or "", reverse=True)
+    seen: set = set()
+    idx = 0
+    for ts, ev in samples:
+        kind = ev.get("kind", "")
+        payload = ev.get("payload") or {}
+        label = _short_label(payload, kind)
+        if not label:
+            continue
+        dedupe_key = (kind, label.lower())
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+        when = _humanize_when_iso(ts)
+        target = _event_to_row_target(payload, kind)
+        rows.append({
+            "label": label[:60],
+            "when": when or "recent",
+            "glyph": _glyph_for_event(kind),
+            "strength": _strength_for_event(kind, idx),
+            "target": target,  # Optional[(kind, target)]
+        })
+        idx += 1
+        if len(rows) >= max_rows:
+            break
+    return rows
+
+
 def _load_trust_counts() -> tuple:
     """Return ``(events_today, investigation_count)`` for the
     launcher footer. Reads disk directly so the daemon doesn't
@@ -242,6 +366,20 @@ def _open_target(kind: str, target: str) -> bool:
         return webbrowser.open(target, new=2, autoraise=True)
     except Exception:  # noqa: BLE001
         return False
+
+
+def _glyph_for_episodic(kind: str) -> str:
+    """Map an event kind onto a darkframe glyph name. The search
+    result-row uses these as the icon column."""
+    if kind in ("open", "reveal"):
+        return "file"
+    if kind == "chat_session":
+        return "chat"
+    if kind == "browser_search":
+        return "search_sm"
+    if kind == "browser_visit":
+        return "tab"
+    return "doc"
 
 
 def _humanize_thread_when(updated_at: float) -> str:
@@ -306,6 +444,11 @@ class LiveLauncher(DarkLauncher):
         self._pending_title: str = ""
         self._pending_cid: str = ""
         self._pending_demo: bool = False
+
+        # Phase P2 — parallel to the RecoveryView's other-work rail.
+        # Holds the (kind, target) tuple for each row so a click
+        # at index i can open the right thing.
+        self._row_targets: List[Optional[Tuple[str, str]]] = []
 
         # Forward the search bar's frozen public signals to the host.
         sb = self.search_bar()
@@ -390,53 +533,114 @@ class LiveLauncher(DarkLauncher):
 
         if empty and not self._demo_active():
             self.set_state(STATE_EMPTY)
+            self._wire_empty_view()
             return
 
         self._populate_recovery_state()
 
     def _populate_recovery_state(self) -> None:
         """Build a RecoveryProps + PreviewProps + OtherWorkRow[]
-        triple from engine data, then enter STATE_RECOVERY."""
+        triple from engine data, then enter STATE_RECOVERY.
+
+        Phase P2 — the launcher *never* falls through to STATE_EMPTY
+        when the event store has any captured data. The hero is
+        either: (a) the real recovery candidate, (b) a thread-
+        derived QuickResume hero synthesised from the top thread,
+        or (c) a minimal Recent-activity hero built from the
+        freshest event. The other-work rail always carries recent
+        cross-source activity so the surface is useful immediately."""
         if self._demo_active():
             self._populate_demo()
             return
         try:
-            recoveries = self.api_client.recovery_recent(n=1) or []
+            recoveries = self.api_client.recovery_recent(n=3) or []
         except Exception:  # noqa: BLE001
             recoveries = []
         try:
-            threads = self.api_client.threads_recent(n=3) or []
+            threads = self.api_client.threads_recent(n=6) or []
         except Exception:  # noqa: BLE001
             threads = []
 
-        # HIGH-only gate (Phase 6O) + ledger-flag demotion (Phase 6Q).
+        # Phase P1: band-aware acceptance. Engine guarantees
+        # _MIN_DISTINCT_TARGETS for non-fallback bands; fallback
+        # synthesises its own minimum. We accept any non-flagged
+        # candidate with at least one restorable target.
         hero = None
-        if recoveries:
-            c = recoveries[0]
+        for c in recoveries:
             targets = list(getattr(c, "suggested_targets", []) or [])
-            n_targets = len(targets)
             flagged = bool(
                 (getattr(c, "signals", None) or {}).get("ledger_flagged", 0.0)
             )
-            if n_targets >= 4 and not flagged:
+            if targets and not flagged:
                 hero = c
+                break
 
-        if hero is None:
-            # No hero but daemon has events -- show empty for now.
-            # (Future: STATE_RECOVERY w/ hero=None renders just the
-            # Other work rail.)
-            self.set_state(STATE_EMPTY)
-            return
+        # Phase P2 — the rail is always populated from recent
+        # disk activity so the launcher carries cross-source
+        # *RECENT ACTIVITY* even when recovery surfaces a hero.
+        # The rail is the "RECENT ACTIVITY" surface from the
+        # directive; threads alone would only show topic groups.
+        activity_rows = _load_recent_activity(max_rows=4)
+        other_work: List[OtherWorkRow] = []
+        self._row_targets: List[Optional[Tuple[str, str]]] = []
+        for row in activity_rows:
+            other_work.append(OtherWorkRow(
+                glyph=row["glyph"],
+                title=row["label"],
+                when=row["when"],
+                strength=row["strength"],
+            ))
+            self._row_targets.append(row["target"])
 
-        targets = list(getattr(hero, "suggested_targets", []) or [])
-        self._pending_cid = getattr(hero, "id", "")
-        self._pending_title = getattr(hero, "title", "") or "(untitled)"
-        self._pending_targets = list(targets)
-        self._pending_demo = False
+        if hero is not None:
+            # Real recovery candidate available — use it as the hero
+            # so the QUICK RESUME slot fires the orchestrated plan.
+            targets = list(getattr(hero, "suggested_targets", []) or [])
+            self._pending_cid = getattr(hero, "id", "")
+            self._pending_title = getattr(hero, "title", "") or "(untitled)"
+            self._pending_targets = list(targets)
+            self._pending_demo = False
+            recovery_props = self._engine_to_recovery_props(hero, targets)
+            preview_props = self._engine_to_preview_props(hero)
+        elif threads:
+            # No recovery hero — synthesise a QUICK RESUME hero
+            # from the top thread so the launcher still has a
+            # primary action. The thread carries
+            # representative_targets which the click handler
+            # opens directly (bypasses the orchestrated plan since
+            # there's no candidate id behind it).
+            top = threads[0]
+            recovery_props, preview_props, t_targets = \
+                self._thread_to_quick_resume(top)
+            self._pending_cid = ""  # no candidate -> direct-open path
+            self._pending_title = getattr(top, "title", "") or "(thread)"
+            self._pending_targets = list(t_targets)
+            self._pending_demo = False
+        else:
+            # No threads either, but at least one event sits on
+            # disk (caller checked `count > 0`). Build a
+            # Recent-activity hero off the freshest activity row
+            # so the surface still has a primary action: open the
+            # most recent thing the user touched.
+            recovery_props, preview_props, ev_targets = \
+                self._activity_to_recent_hero(activity_rows)
+            self._pending_cid = ""
+            self._pending_title = recovery_props.title_main + \
+                " " + recovery_props.title_accent
+            self._pending_targets = list(ev_targets)
+            self._pending_demo = False
 
-        recovery_props = self._engine_to_recovery_props(hero, targets)
-        preview_props = self._engine_to_preview_props(hero)
-        other_work = [self._thread_to_other_row(t) for t in threads[:3]]
+        # Fall back to thread-derived rows when the disk-read
+        # activity rail came up empty (rare — only if event files
+        # exist but are unreadable).
+        if not other_work:
+            other_work = [self._thread_to_other_row(t) for t in threads[:4]]
+            # Build row-target list from the thread's representative
+            # targets so clicks still open something.
+            self._row_targets = []
+            for t in threads[:4]:
+                rts = list(getattr(t, "representative_targets", []) or [])
+                self._row_targets.append(rts[0] if rts else None)
 
         self.set_state(
             STATE_RECOVERY,
@@ -445,6 +649,100 @@ class LiveLauncher(DarkLauncher):
             other_work=other_work,
         )
         self._wire_recovery_view()
+
+    # ── Phase P2 — synthesise hero when no recovery hero exists ─────
+
+    def _thread_to_quick_resume(
+        self, thread,
+    ) -> Tuple[RecoveryProps, PreviewProps, List[Tuple[str, str]]]:
+        """Project a Thread onto (RecoveryProps, PreviewProps,
+        targets) for the QUICK RESUME hero when the engine has no
+        recovery candidate."""
+        title = getattr(thread, "title", "") or "(thread)"
+        title_main, title_accent = _split_title_accent(title)
+        rts = list(getattr(thread, "representative_targets", []) or [])
+        n_files = sum(1 for k, _ in rts if k == "path")
+        n_tabs = sum(1 for k, t in rts
+                     if k != "path" and "search" not in (t or "").lower())
+        n_searches = sum(1 for k, t in rts
+                         if k != "path" and "search" in (t or "").lower())
+        when = _humanize_thread_when(
+            float(getattr(thread, "updated_at", 0.0) or 0.0)
+        )
+        eyebrow = f"Active · {when}" if when else "Active thread"
+        recovery_props = RecoveryProps(
+            title_main=title_main,
+            title_accent=title_accent,
+            eyebrow_meta=eyebrow,
+            n_files=n_files,
+            n_tabs=n_tabs,
+            n_searches=n_searches,
+            last_active=f"last active · {when}" if when else "last active",
+        )
+        # Preview the first file if the thread has one; else the
+        # first URL's host as a stand-in label.
+        file_t = next((t for k, t in rts if k == "path"), None)
+        url_t = next((t for k, t in rts if k != "path"), None)
+        defaults = PreviewProps()
+        if file_t:
+            label = Path(file_t).name
+            meta = f"~{Path(file_t).parent.name}"
+        elif url_t:
+            try:
+                from urllib.parse import urlparse
+                host = urlparse(url_t).hostname or ""
+                label = host.replace("www.", "")[:40] or url_t[:40]
+            except Exception:  # noqa: BLE001
+                label = url_t[:40]
+            meta = "browser"
+        else:
+            label = defaults.label
+            meta = defaults.meta
+        preview_props = PreviewProps(
+            label=label,
+            excerpt_prefix=defaults.excerpt_prefix,
+            excerpt_highlight=defaults.excerpt_highlight,
+            excerpt_suffix=defaults.excerpt_suffix,
+            meta=meta,
+        )
+        return recovery_props, preview_props, rts
+
+    def _activity_to_recent_hero(
+        self, activity_rows: List[dict],
+    ) -> Tuple[RecoveryProps, PreviewProps, List[Tuple[str, str]]]:
+        """Last-resort hero built off the freshest event row when no
+        thread is available — so the launcher still shows the
+        user's most recent action as a one-click resume."""
+        defaults_r = RecoveryProps()
+        defaults_p = PreviewProps()
+        if not activity_rows:
+            return defaults_r, defaults_p, []
+        top = activity_rows[0]
+        label = top["label"]
+        when = top["when"]
+        target = top.get("target")
+        title_main = label[:32]
+        title_accent = "again."
+        recovery_props = RecoveryProps(
+            title_main=title_main,
+            title_accent=title_accent,
+            eyebrow_meta=f"Latest activity · {when}",
+            n_files=1 if target and target[0] == "path" else 0,
+            n_tabs=1 if target and target[0] != "path" else 0,
+            n_searches=0,
+            last_active=f"last active · {when}",
+        )
+        preview_props = PreviewProps(
+            label=label[:40],
+            excerpt_prefix=defaults_p.excerpt_prefix,
+            excerpt_highlight=defaults_p.excerpt_highlight,
+            excerpt_suffix=defaults_p.excerpt_suffix,
+            meta=when,
+        )
+        targets: List[Tuple[str, str]] = []
+        if target:
+            targets.append(target)
+        return recovery_props, preview_props, targets
 
     def _populate_demo(self) -> None:
         from app.core import demo_mode
@@ -566,9 +864,9 @@ class LiveLauncher(DarkLauncher):
         )
 
     def _wire_recovery_view(self) -> None:
-        """Hook the RecoveryView's resume + review signals to the
-        engine-side restore flow. Called after every
-        ``set_state(STATE_RECOVERY, ...)``."""
+        """Hook the RecoveryView's resume + review + preview-open
+        + row-click signals to the engine-side handlers. Called
+        after every ``set_state(STATE_RECOVERY, ...)``."""
         view = self._view
         if hasattr(view, "resume"):
             try:
@@ -582,6 +880,41 @@ class LiveLauncher(DarkLauncher):
             except (TypeError, RuntimeError):
                 pass
             view.review.connect(self._on_resume_clicked)
+        # Phase P0 — preview card's Open ↗ now opens the previewed
+        # file via the OS open helper instead of being decorative.
+        if hasattr(view, "preview_open"):
+            try:
+                view.preview_open.disconnect()
+            except (TypeError, RuntimeError):
+                pass
+            view.preview_open.connect(self._on_preview_open)
+        # Phase P2 — RECENT ACTIVITY rail rows fire `row_clicked(int)`
+        # which previously went nowhere. Each click now opens the
+        # underlying target via `_row_targets[i]`.
+        if hasattr(view, "row_clicked"):
+            try:
+                view.row_clicked.disconnect()
+            except (TypeError, RuntimeError):
+                pass
+            view.row_clicked.connect(self._on_other_row_clicked)
+
+    def _wire_empty_view(self) -> None:
+        """Hook the EmptyView's Show example / Start working buttons
+        so they activate / dismiss demo mode. Phase P0 — these were
+        dead since the Phase 10B migration."""
+        view = self._view
+        if hasattr(view, "show_example"):
+            try:
+                view.show_example.disconnect()
+            except (TypeError, RuntimeError):
+                pass
+            view.show_example.connect(self._on_show_example)
+        if hasattr(view, "start_working"):
+            try:
+                view.start_working.disconnect()
+            except (TypeError, RuntimeError):
+                pass
+            view.start_working.connect(self._on_start_working)
 
     def _wire_resume_view(self) -> None:
         """Hook the ResumeView's undo + done signals after every
@@ -604,11 +937,27 @@ class LiveLauncher(DarkLauncher):
 
     def _on_query_changed(self, q: str) -> None:
         """Typing toggles between recovery and search states. Empty
-        string -> back to the idle surface."""
+        string -> back to the idle surface.
+
+        Phase P2 — when the user clears the search bar we want to
+        return to the recovery surface immediately. The default
+        `_refresh_idle_state` guards against re-entering when
+        already in SEARCH/RESUME, so on clear we route directly
+        through `_populate_recovery_state`."""
         self._request_search.emit(q)
         if not q.strip():
-            # Restore the prior state.
-            self._refresh_idle_state()
+            # Force a recompute of the idle surface even though we
+            # are currently in SEARCH — the user just *left* search
+            # and the rail needs to repaint.
+            try:
+                empty = self.search_engine.store.count() == 0
+            except Exception:  # noqa: BLE001
+                empty = True
+            if empty and not self._demo_active():
+                self.set_state(STATE_EMPTY)
+                self._wire_empty_view()
+            else:
+                self._populate_recovery_state()
             return
         # Build a SearchGroupSpec list from the engine. The
         # adapter is intentionally tiny: take the first 10 hits +
@@ -623,34 +972,111 @@ class LiveLauncher(DarkLauncher):
         return
 
     def _search_engine_to_groups(self, q: str) -> List[SearchGroupSpec]:
-        """Engine -> SearchGroupSpec[] adapter. Phase 10B keeps this
-        modest: the engine doesn't yet return a 4-bucket result
-        shape, so we map the available hits onto the design's
-        groups (Investigation / Files / Returns / Events)."""
+        """Engine -> SearchGroupSpec[] adapter.
+
+        Phase P0 — the launcher's `search_engine` is the ChromaDB
+        file index (used by the desktop file-search path). That
+        only returns files matching the query, never browser
+        events. The user has no chatgpt-named files on disk, but
+        has 19 chatgpt browser events; the previous wiring missed
+        all of them.
+
+        The daemon's blended `/v1/search` already runs episodic +
+        contexts + sessions retrieval over the event store, so the
+        launcher routes through `api_client.search(q)` instead and
+        falls back to the file index only when the daemon is down.
+
+        Buckets map to the design's four groups:
+          Investigations  micro-contexts (label + match_count)
+          Files           file-event episodic hits (kind=open|reveal)
+          Returns         sessions (revisited topics)
+          Events          remaining episodic hits (browser / chat / search)
+        """
+        groups: List[SearchGroupSpec] = []
+        resp = None
         try:
-            hits = self.search_engine.search(q, max_results=10) or []
+            resp = self.api_client.search(q, n_episodic=8, n_sessions=3, n_contexts=4)
+        except Exception:  # noqa: BLE001
+            resp = None
+
+        if resp is not None:
+            inv_rows: List[SearchResultRow] = []
+            for i, c in enumerate(resp.contexts[:4]):
+                inv_rows.append(SearchResultRow(
+                    glyph="thread",
+                    title=(c.label or c.topic or "(thread)")[:60],
+                    meta=(c.time_label or "")[:48],
+                    score=80 + (3 - i) * 4,
+                    selected=(len(inv_rows) == 0),
+                ))
+            file_rows: List[SearchResultRow] = []
+            event_rows: List[SearchResultRow] = []
+            for h in resp.episodic:
+                row = SearchResultRow(
+                    glyph=_glyph_for_episodic(h.kind),
+                    title=(h.title or h.subtitle or h.url or "(untitled)")[:60],
+                    meta=(h.subtitle or h.url or "")[:48],
+                    score=max(0, min(99, int(round(h.score * 100)))) if h.score else 70,
+                    selected=False,
+                )
+                if h.kind in ("open", "reveal"):
+                    file_rows.append(row)
+                else:
+                    event_rows.append(row)
+            ret_rows: List[SearchResultRow] = []
+            for i, s in enumerate(resp.sessions[:3]):
+                ret_rows.append(SearchResultRow(
+                    glyph="chat",
+                    title=(s.label or s.topic or "(session)")[:60],
+                    meta=(s.time_label or "")[:48],
+                    score=max(0, min(99, int(round(s.score * 100)))) if s.score else 82,
+                    selected=False,
+                ))
+            # Promote the first inv row to selected only if it exists; else
+            # promote the first file / event / return row so the surface
+            # always has a focus highlight.
+            if not inv_rows:
+                first_pool = file_rows or event_rows or ret_rows
+                if first_pool:
+                    first_pool[0] = SearchResultRow(
+                        glyph=first_pool[0].glyph,
+                        title=first_pool[0].title,
+                        meta=first_pool[0].meta,
+                        score=first_pool[0].score,
+                        selected=True,
+                    )
+            if inv_rows:
+                groups.append(SearchGroupSpec("Investigations", inv_rows))
+            if file_rows:
+                groups.append(SearchGroupSpec("Files", file_rows[:4]))
+            if ret_rows:
+                groups.append(SearchGroupSpec("Returns", ret_rows))
+            if event_rows:
+                groups.append(SearchGroupSpec("Events", event_rows[:4]))
+            if groups:
+                return groups
+
+        # Daemon unreachable -- degrade to the file index so search
+        # at least shows file matches.
+        try:
+            hits = self.search_engine.search(q, max_results=8) or []
         except Exception:  # noqa: BLE001
             hits = []
-        groups: List[SearchGroupSpec] = []
-        files_rows: List[SearchResultRow] = []
+        file_rows = []
         for i, h in enumerate(hits[:5]):
             label = getattr(h, "title", None) or getattr(h, "label", None) \
                 or getattr(h, "path", None) or "(untitled)"
             meta = getattr(h, "source", "") or getattr(h, "path", "") or ""
             score = int(round(float(getattr(h, "score", 0.0)) * 100))
-            files_rows.append(SearchResultRow(
+            file_rows.append(SearchResultRow(
                 glyph="file",
                 title=str(label)[:60],
                 meta=str(meta)[:48],
                 score=max(0, min(99, score)) if score else 80 - i,
                 selected=(i == 0),
             ))
-        if files_rows:
-            groups.append(SearchGroupSpec("Files", files_rows))
-        # If we got nothing, show the design fixture so the surface
-        # still reads as a populated search.
-        if not groups:
-            return []  # darkframe's default fixture fires
+        if file_rows:
+            groups.append(SearchGroupSpec("Files", file_rows))
         return groups
 
     # ── resume flow ─────────────────────────────────────────────
@@ -658,12 +1084,75 @@ class LiveLauncher(DarkLauncher):
     def _on_resume_clicked(self) -> None:
         """Resume / Review pressed on the recovery hero. The Phase 9
         merge keeps both bound to the same target: open the resume
-        confirmation state and execute the plan."""
-        if not self._pending_cid:
-            return
+        confirmation state and execute the plan.
+
+        Phase P2 — when the hero was synthesised from a thread or
+        the freshest activity row, there's no candidate id so the
+        engine-side `/v1/recovery/{id}/restore` path doesn't apply;
+        we open `self._pending_targets` directly and synthesise a
+        RestoredItem list so the Resume confirmation surface still
+        reads correctly."""
         # Snapshot the prior state so `Done` can revert cleanly.
         self._pre_resume_state = STATE_RECOVERY
-        self._execute_resume_plan()
+        if self._pending_cid:
+            self._execute_resume_plan()
+            return
+        if self._pending_targets:
+            self._execute_direct_resume()
+            return
+        # Nothing to restore — flash the empty resume state instead
+        # of staying silent on the click.
+        self.set_state(STATE_RESUME, restored_items=[])
+        self._wire_resume_view()
+
+    def _execute_direct_resume(self) -> None:
+        """Open `self._pending_targets` via the OS open helper and
+        flash the Resume confirmation surface. Used when the hero
+        is synthesised (no candidate id behind it)."""
+        targets = list(self._pending_targets)
+        items: List[RestoredItem] = []
+        for kind, target in targets:
+            target = (target or "").strip()
+            if not target:
+                continue
+            ok = False
+            try:
+                if kind == "path" and not Path(target).exists():
+                    items.append(self._step_to_restored_item(kind, target, False))
+                    continue
+                if kind == "path" and self.event_logger is not None:
+                    try:
+                        self.event_logger.log_open(target, Path(target).name)
+                    except Exception:  # noqa: BLE001
+                        pass
+                ok = _open_target(kind, target)
+            except Exception:  # noqa: BLE001
+                ok = False
+            items.append(self._step_to_restored_item(kind, target, ok))
+        self.set_state(STATE_RESUME, restored_items=items)
+        self._wire_resume_view()
+
+    def _on_other_row_clicked(self, idx: int) -> None:
+        """Phase P2 — RECENT ACTIVITY rail row clicked. Open the
+        row's underlying target via the OS open helper. No state
+        change; the row open feels like a Spotlight/Raycast hit."""
+        targets = getattr(self, "_row_targets", None) or []
+        if idx < 0 or idx >= len(targets):
+            return
+        target = targets[idx]
+        if target is None:
+            return
+        kind, value = target
+        _open_target(kind, value)
+        # Log the open the same way file-search does when the user
+        # opens a hit from the search surface — so the rail click
+        # leaves a breadcrumb in the event log.
+        if kind == "path" and self.event_logger is not None:
+            try:
+                self.event_logger.log_open(value, Path(value).name)
+            except Exception:  # noqa: BLE001
+                pass
+        self.hide()
 
     def _execute_resume_plan(self) -> None:
         title = self._pending_title
@@ -808,6 +1297,47 @@ class LiveLauncher(DarkLauncher):
         the launcher is in STATE_RECOVERY."""
         if self.state() == STATE_RECOVERY:
             self._on_resume_clicked()
+
+    # ── empty-state buttons (Phase P0) ──────────────────────────
+
+    def _on_show_example(self) -> None:
+        """Empty-state "Show example" button -- activate demo
+        overlay so the user sees a populated launcher
+        immediately. The same demo_mode the legacy launcher used."""
+        try:
+            from app.core import demo_mode
+            demo_mode.activate()
+        except Exception:  # noqa: BLE001
+            pass
+        self._refresh_idle_state()
+
+    def _on_start_working(self) -> None:
+        """Empty-state "Start working" button -- if demo mode is
+        active, dismiss it; otherwise just hide the launcher so
+        the user can start capturing. Either way, refresh state."""
+        try:
+            from app.core import demo_mode
+            if demo_mode.is_active():
+                demo_mode.dismiss()
+        except Exception:  # noqa: BLE001
+            pass
+        self.hide()
+
+    # ── preview-card open (Phase P0) ────────────────────────────
+
+    def _on_preview_open(self) -> None:
+        """The Open ↗ link inside the recovery state's preview
+        card. Opens the first path-target the engine surfaced for
+        the candidate; falls back to the first URL if the
+        candidate is browser-led."""
+        targets = list(self._pending_targets)
+        file_t = next((t for k, t in targets if k == "path"), None)
+        if file_t:
+            _open_target("path", file_t)
+            return
+        url_t = next((t for k, t in targets if k != "path"), None)
+        if url_t:
+            _open_target("url", url_t)
 
     # ── key handling ────────────────────────────────────────────
 

@@ -1,0 +1,31 @@
+Recall v0.1.0 alpha — placeholder
+==================================
+
+This file is a stand-in for the desktop binary while the
+landing page is wired before the real installer ships.
+
+The actual installers live under `dist/installer/` in the
+repo and ship as:
+
+  Recall-Setup-lite.exe   ~216 MB · Windows 10 / 11
+  Recall-Setup-full.exe   ~261 MB · Windows 10 / 11
+
+macOS preview and Linux builds are not yet packaged. See
+`docs/release/MAC_OWNER_NEEDED.md` for the Mac status.
+
+If you reached this file from the landing page, the
+production wiring step that swaps this placeholder for the
+real binary hasn't shipped yet. The page is correct; the
+artifact pipeline catches up next.
+
+To build from source today:
+
+  git clone https://github.com/kunalKumar-13/Recall-me.git
+  cd Recall-me
+  python -m venv .venv
+  .venv\Scripts\Activate.ps1     (Windows)
+  source .venv/bin/activate      (macOS / Linux)
+  pip install -r requirements.txt
+  python recall.py
+
+— Phase 11B placeholder · 2026-05-27

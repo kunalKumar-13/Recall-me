@@ -101,7 +101,10 @@ export function Footer() {
             { label: "Local-first", href: V2_ANCHORS.privacy },
             { label: "Resume flow", href: V2_ANCHORS.timeline },
             { label: "Security",    href: `${V2_LINKS.github}/security`, ext: true },
-            { label: "MIT License", href: `${V2_LINKS.github}/blob/main/LICENSE`, ext: true },
+            // Phase 11B — no LICENSE file at repo root yet; point at the
+            // FAQ that documents the MIT claim. Repoint to /blob/main/LICENSE
+            // once that file lands.
+            { label: "MIT License", href: `${V2_LINKS.github}/blob/main/apps/docs/faq.mdx`, ext: true },
           ]}
         />
       </div>
