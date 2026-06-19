@@ -1,4 +1,4 @@
-# releases/
+# docs/release/artifacts/
 
 Staging for Recall release artifacts. A release is *assembled* here,
 checksummed, then uploaded to GitHub Releases — this folder is the
@@ -7,7 +7,7 @@ pre-flight bench, not the distribution channel.
 ## Layout
 
 ```
-releases/
+docs/release/artifacts/
 ├── windows/      Recall-Setup.exe  (stable channel)
 ├── preview/      pre-release builds (preview channel)
 ├── checksums/    SHA256SUMS + artifact manifest, generated
@@ -24,8 +24,9 @@ between `build.ps1` and the GitHub upload.
 
 1. Build the installer — `pwsh infra/packaging/windows/build.ps1`
    produces `dist/installer/Recall-Setup.exe`.
-2. Copy it into `releases/windows/` (stable) or `releases/preview/`.
-3. `python releases/make_checksums.py` — writes
+2. Copy it into `docs/release/artifacts/windows/` (stable) or
+   `docs/release/artifacts/preview/`.
+3. `python docs/release/artifacts/make_checksums.py` — writes
    `checksums/SHA256SUMS` and `checksums/manifest.json`.
 4. Finalise `RELEASE_NOTES_v0.2.0.md`.
 5. Create the GitHub release; attach the artifact + `SHA256SUMS`.

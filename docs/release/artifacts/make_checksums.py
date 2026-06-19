@@ -1,13 +1,14 @@
 """Generate SHA-256 checksums + an artifact manifest for a release.
 
-Hashes every file staged in `releases/windows/` and
-`releases/preview/` and writes:
+Hashes every file staged in this folder's `windows/` and `preview/`
+subdirectories and writes (paths resolved relative to this file, so
+the script runs from any working directory):
 
-  • releases/checksums/SHA256SUMS    — `<sha256>  <name>` lines,
-                                       the format `shasum -c` reads
-  • releases/checksums/manifest.json — name, size, sha256, channel
+  • checksums/SHA256SUMS    — `<sha256>  <name>` lines,
+                              the format `shasum -c` reads
+  • checksums/manifest.json — name, size, sha256, channel
 
-    python releases/make_checksums.py
+    python docs/release/artifacts/make_checksums.py
 
 Run it after staging artifacts and before creating the GitHub
 release. The published `SHA256SUMS` is what a user checks a download
@@ -71,7 +72,7 @@ def main() -> None:
 
     if not artifacts:
         print("  no artifacts staged — checksums/ written empty.")
-        print("  stage Recall-Setup.exe into releases/windows/ first.")
+        print("  stage Recall-Setup.exe into the windows/ folder first.")
     else:
         for a in artifacts:
             mb = a["size_bytes"] / (1024 * 1024)
