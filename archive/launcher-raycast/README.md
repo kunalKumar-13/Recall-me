@@ -66,13 +66,13 @@ The launcher's complete archive chain, oldest to newest:
 
 | Folder                                                | Phase | What it preserved                            |
 |-------------------------------------------------------|-------|----------------------------------------------|
-| [`archive/launcher-v2/`](../launcher-v2/)             | 6L    | 3-column shell + sidebar + window           |
-| [`archive/launcher-refine/`](../launcher-refine/)     | 6M.1  | v3/live/minimal capture scripts             |
-| [`archive/launcher-overbuild/`](../launcher-overbuild/) | 6O   | minimal/recovery/investigation + 6M.2/6N captures |
-| [`archive/resume-old/`](../resume-old/)               | 6P    | stub `_on_restore` + `_on_demo_resume`      |
-| [`archive/recovery-ranking/`](../recovery-ranking/)   | 6Q    | ranking rationale + considered-and-rejected |
-| [`archive/launcher-debt/`](../launcher-debt/)         | 6R    | 6P.1 / 6Q / 6O variants frozen out of 6R    |
-| [`archive/launcher-final/`](../launcher-final/)       | 7B    | 6R per-section-card pattern                 |
+| [`archive/launcher-v2/`](../launcher-v2)             | 6L    | 3-column shell + sidebar + window           |
+| [`archive/launcher-refine/`](../launcher-refine)     | 6M.1  | v3/live/minimal capture scripts             |
+| [`archive/launcher-overbuild/`](../launcher-overbuild) | 6O   | minimal/recovery/investigation + 6M.2/6N captures |
+| [`archive/resume-old/`](../resume-old)               | 6P    | stub `_on_restore` + `_on_demo_resume`      |
+| [`archive/recovery-ranking/`](../recovery-ranking)   | 6Q    | ranking rationale + considered-and-rejected |
+| [`archive/launcher-debt/`](../launcher-debt)         | 6R    | 6P.1 / 6Q / 6O variants frozen out of 6R    |
+| [`archive/launcher-final/`](../launcher-final)       | 7B    | 6R per-section-card pattern                 |
 | **`archive/launcher-raycast/`** (this folder)         | **7B.1** | the command-palette feel that 7B inherited |
 
 ---

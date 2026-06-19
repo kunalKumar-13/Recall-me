@@ -55,7 +55,6 @@ one; a regression past a budget is a bug, not a slowdown.
 | `GET /v1/recovery/recent` | <80 ms wall (median) | within |
 | `POST /v1/recovery/{id}/restore` | <10 ms | within |
 | `POST /v1/events/{kind}` | <2 ms | within |
-| `POST /v1/replay/day` | <5 ms per file | within |
 | `GET /v1/health` | <1 ms | within |
 
 The budgets assume a **warm parse cache** for everything except the

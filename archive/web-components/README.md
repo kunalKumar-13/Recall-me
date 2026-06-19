@@ -26,7 +26,7 @@ than recreate them.
 
 The components still imported by `apps/web/app/page.tsx` and
 related surfaces — see
-[`apps/web/app/components/`](../../apps/web/app/components/)
+[`apps/web/app/components/`](../../apps/web/app/components)
 for the live set.
 
 ## Restoration

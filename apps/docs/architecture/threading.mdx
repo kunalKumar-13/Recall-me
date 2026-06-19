@@ -149,8 +149,7 @@ Decay happens through the same mechanism, in reverse:
 3. When a thread's confidence drops below `0.40` it is no longer
    returned from `recent`, but its identity row stays in the
    cache so a future return reactivates it with the original id.
-4. The user can explicitly `POST /v1/threads/{id}/forget` to drop
-   the identity row, or wipe the entire cache via Settings →
+4. The user can wipe the entire identity cache via Settings →
    *Clear thread cache*.
 
 There is **no automatic deletion**. The engine never throws away
@@ -230,7 +229,6 @@ event list.
 |---|---|---|
 | `GET` | `/v1/threads/recent?n=6` | Top-N active threads, ranked by confidence |
 | `GET` | `/v1/threads/{thread_id}` | One thread + reconstructed sessions + micro-contexts + flat event list |
-| `POST` | `/v1/threads/{thread_id}/forget` | Drop one thread from the identity cache |
 | `POST` | `/v1/threads/cache/clear` | Wipe `~/.recall/threads.json` (Settings → *Clear thread cache*) |
 
 All routes are loopback-only; the same security boundary as the
@@ -282,8 +280,6 @@ event parsing.
   also a thread. The two layers answer different questions
   (*"what should I notice now?"* vs *"what's the persistent shape
   of my work?"*) and a strong topic shows up in both.
-- **Replay** (`POST /v1/replay/day`) does not interact with
-  threads; it reconstructs the per-day file directly.
 
 Threads are intentionally additive. Disabling them via Settings or
 via the `RECALL_API_PORT` environment doesn't change any other

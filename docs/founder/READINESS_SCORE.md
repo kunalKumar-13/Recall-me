@@ -74,7 +74,7 @@ is the directive of [`GO_NO_GO.md`](../release/GO_NO_GO.md):
    the gate to flipping `release.go_no_go: NO-GO → GO`, which
    recovers ~15 points.
 4. **Enrol cohort `alpha-001`** (lifts *Alpha* once devices show
-   up + return data lands). The [`alpha/`](../../alpha/) packet
+   up + return data lands). The [`alpha/`](../../alpha) packet
    is what they receive. Returns also feed
    [`alpha_report.md`](../../alpha/alpha_report.md)'s Q1-5.
 5. **Code-sign the installer.** Closes SmartScreen-warning

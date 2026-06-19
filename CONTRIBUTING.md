@@ -158,7 +158,7 @@ GitHub issues for security findings — email first.
 
 ## Code of conduct
 
-See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+See [CODE_OF_CONDUCT.md](docs/CODE_OF_CONDUCT.md).
 
 ---
 

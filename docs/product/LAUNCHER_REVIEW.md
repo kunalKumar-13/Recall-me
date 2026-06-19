@@ -1,7 +1,7 @@
 # LAUNCHER_REVIEW.md — what the refinement deleted, what it kept, why
 
 The audit doc Phase 6M.1 produced. Pairs with
-[`PHASE_6M.1_STATUS.md`](../engineering/PHASE_6M.1_STATUS.md) (the
+[`PHASE_6M.1_STATUS.md`](../../archive/phase-status/PHASE_6M.1_STATUS.md) (the
 engineering receipt) and
 [`archive/launcher-refine/README.md`](../../archive/launcher-refine/README.md)
 (the rationale per archived capture script).
@@ -109,11 +109,11 @@ work that the refinement intentionally did not pull forward.
 
 ## Related
 
-- [`PHASE_6M.1_STATUS.md`](../engineering/PHASE_6M.1_STATUS.md) —
+- [`PHASE_6M.1_STATUS.md`](../../archive/phase-status/PHASE_6M.1_STATUS.md) —
   the engineering receipt.
 - [`archive/launcher-refine/README.md`](../../archive/launcher-refine/README.md)
   — per-capture-script rationale for the archived files.
 - [`archive/launcher-v2/README.md`](../../archive/launcher-v2/README.md)
   — Phase 6L's earlier archive of the 3-column shell.
-- [`assets/screenshots/launcher-refined/`](../../assets/screenshots/launcher-refined/)
+- [`assets/screenshots/launcher-refined/`](../../assets/screenshots/launcher-refined)
   — the five refined captures the directive named.

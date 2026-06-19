@@ -109,7 +109,7 @@ patch of paint covering the desktop.
 
 ### 8. Captures
 
-Four PNGs in [`assets/screenshots/launcher-visible/`](../../assets/screenshots/launcher-visible/):
+Four PNGs in [`assets/screenshots/launcher-visible/`](../../assets/screenshots/launcher-visible):
 
 - `hero.png` — populated digest (search + CONTINUE + OTHER WORK)
 - `empty.png` — stacked empty surface
@@ -149,7 +149,7 @@ This phase only touched paint.
   — white fill + accent strip + fixed-width Resume.
 - [infra/scripts/capture/capture_launcher_visible.py](../../infra/scripts/capture/capture_launcher_visible.py)
   — 4 captures.
-- [assets/screenshots/launcher-visible/](../../assets/screenshots/launcher-visible/)
+- [assets/screenshots/launcher-visible/](../../assets/screenshots/launcher-visible)
   — `hero.png`, `empty.png`, `focus.png`, `investigations.png`.
 
 ---

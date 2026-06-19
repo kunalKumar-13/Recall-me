@@ -9,7 +9,7 @@ was verified, what risk remains.
 
 Pairs with [`INSTALL_SIZE_AUDIT_V2.md`](INSTALL_SIZE_AUDIT_V2.md)
 (the byte map this report tries to deliver) and
-[`PHASE_5J_STATUS.md`](PHASE_5J_STATUS.md) (the phase summary).
+[`PHASE_5J_STATUS.md`](../../archive/phase-status/PHASE_5J_STATUS.md) (the phase summary).
 
 ---
 
@@ -134,7 +134,7 @@ compressed / install ~45 s* — all three are written below as
 ```
 
 The Phase 5J rebuild's filter receipt is captured in
-[`build_logs/build-lite-<ts>.log`](../../infra/packaging/windows/build_logs/)
+[`build_logs/build-lite-<ts>.log`](../../infra/packaging/windows/build_logs)
 and copied into the *After* table once the build is done.
 
 ---

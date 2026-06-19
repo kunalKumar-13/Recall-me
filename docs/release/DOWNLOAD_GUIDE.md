@@ -95,7 +95,7 @@ row.
 
 The popup that lives next to the browser address bar — the same
 one the
-[`assets/screenshots/extension-v2/`](../../assets/screenshots/extension-v2/)
+[`assets/screenshots/extension-v2/`](../../assets/screenshots/extension-v2)
 captures show. Two paths to install:
 
 ### Path A — bundled (preferred)

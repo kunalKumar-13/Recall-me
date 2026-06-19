@@ -1,7 +1,7 @@
 # CONTROL_ROOM.md — what the operator UI is, and isn't
 
 Phase 5E.2 built the actual founder dashboard at
-[`apps/admin/web/`](../../apps/admin/web/). This file is the
+[`apps/admin/web/`](../../apps/admin/web). This file is the
 explainer: what exists, what data is allowed in, what is *never*
 allowed in.
 
@@ -14,7 +14,7 @@ answers) and [`../engineering/TRUST_LEDGER.md`](../engineering/TRUST_LEDGER.md)
 
 ## What exists
 
-A **local-first Next.js page** at [`apps/admin/web/`](../../apps/admin/web/).
+A **local-first Next.js page** at [`apps/admin/web/`](../../apps/admin/web).
 Run `npm install && npm run dev` and the founder gets one page,
 seven sections, calm visual:
 
@@ -46,7 +46,7 @@ seven sections, calm visual:
 ## What data is allowed in
 
 The control room reads exactly **eight files** from
-[`apps/admin/data/`](../../apps/admin/data/):
+[`apps/admin/data/`](../../apps/admin/data):
 
 ```
 health.json     traction.json   cohorts.json    release.json

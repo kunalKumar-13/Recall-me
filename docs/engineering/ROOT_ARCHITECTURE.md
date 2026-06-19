@@ -27,8 +27,6 @@ What's actually running when a user uses Recall:
 │  │   └───────────────┘    │  routes:                     │  │  │
 │  │                        │   /v1/events/* (ingest)      │  │  │
 │  │                        │   /v1/search                 │  │  │
-│  │                        │   /v1/sessions/recent        │  │  │
-│  │                        │   /v1/contexts/recent        │  │  │
 │  │                        │   /v1/resurface/idle         │  │  │
 │  │                        │   /v1/threads/recent         │  │  │
 │  │                        │   /v1/threads/{id}/evolution │  │  │

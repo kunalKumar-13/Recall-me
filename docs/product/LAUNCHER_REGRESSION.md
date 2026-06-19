@@ -5,7 +5,7 @@ The directive-required audit doc explaining the Phase 6M.1 →
 **what changed in 6M.1 that broke it**, **what 6M.2 fixed**.
 
 Pairs with
-[`PHASE_6M.2_STATUS.md`](../engineering/PHASE_6M.2_STATUS.md)
+[`PHASE_6M.2_STATUS.md`](../../archive/phase-status/PHASE_6M.2_STATUS.md)
 (the engineering receipt) and the prior
 [`LAUNCHER_REVIEW.md`](LAUNCHER_REVIEW.md) (6M.1's own
 audit doc, which described the problems 6M.1 was *trying*
@@ -141,15 +141,15 @@ recovery values answered "Raycast" on every dimension.
 
 ## Related
 
-- [`PHASE_6M.2_STATUS.md`](../engineering/PHASE_6M.2_STATUS.md) —
+- [`PHASE_6M.2_STATUS.md`](../../archive/phase-status/PHASE_6M.2_STATUS.md) —
   the engineering receipt + verification matrix.
-- [`PHASE_6M.1_STATUS.md`](../engineering/PHASE_6M.1_STATUS.md) —
+- [`PHASE_6M.1_STATUS.md`](../../archive/phase-status/PHASE_6M.1_STATUS.md) —
   the prior refinement's receipt (preserved; the 6M.1 work
   itself is *not* reverted, it's *re-tuned* per token).
 - [`LAUNCHER_REVIEW.md`](LAUNCHER_REVIEW.md) — 6M.1's own
   audit doc (preserved as the *what was tried in 6M.1* record).
-- [`assets/screenshots/launcher-compact/`](../../assets/screenshots/launcher-compact/)
+- [`assets/screenshots/launcher-compact/`](../../assets/screenshots/launcher-compact)
   — the 4 new compact captures.
-- [`assets/screenshots/launcher-refined/`](../../assets/screenshots/launcher-refined/)
+- [`assets/screenshots/launcher-refined/`](../../assets/screenshots/launcher-refined)
   — the 5 6M.1 captures, kept on disk as the *before* set the
   regression doc references.

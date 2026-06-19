@@ -217,7 +217,7 @@ Capture proof: [`empty.png`](../../assets/screenshots/launcher-final/empty.png).
 
 ## 9. Captures
 
-Each capture in [`assets/screenshots/launcher-final/`](../../assets/screenshots/launcher-final/)
+Each capture in [`assets/screenshots/launcher-final/`](../../assets/screenshots/launcher-final)
 is a proof:
 
 - `hero.png` — populated digest. Header eyebrows + hero +

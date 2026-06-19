@@ -20,7 +20,7 @@ Open problems get one line each: **what is wrong / why it is hard
 | 1 | No EV code-signing certificate | costs ~$300/yr + identity check | maintainer procures cert; signs `Recall-Setup.exe`; SmartScreen warning stops |
 | 2 | No Apple Developer ID + notarisation | $99/yr + Mac access | maintainer enrols; macOS Gatekeeper warning stops |
 | 3 | macOS verification all `unknown` | no Mac hardware | a maintainer with a Mac runs the script in [`MAC_OWNER_NEEDED.md`](../release/MAC_OWNER_NEEDED.md) |
-| 4 | Zero alpha-001 testers enrolled | no distribution channel opened | maintainer hand-shares the [`alpha/`](../../alpha/) packet to five real humans |
+| 4 | Zero alpha-001 testers enrolled | no distribution channel opened | maintainer hand-shares the [`alpha/`](../../alpha) packet to five real humans |
 | 5 | Three fresh-VM clean-machine walks pending | no VM hosts on this build machine | three runs of [`CLEAN_MACHINE_RUN.md`](../trust/CLEAN_MACHINE_RUN.md) on three different fresh Win10/11 VMs |
 | 6 | `install.gif` + `control-room.gif` need live recording | static PNGs can't show motion | follow [`RECORDING_PROTOCOL.md`](../release/RECORDING_PROTOCOL.md) on a recording-quality screen |
 | 7 | `LICENSE` file missing at root | maintainer must pick a license | choose MIT / Apache-2 / source-available; add the file |

@@ -148,7 +148,7 @@ headline reads as 26-pt logical at typical Windows DPI.
 | [`investigation_panel.py`](../../app/ui/launcher_v3/investigation_panel.py) | stubbed (engine path stays live; render is gone) |
 | [`live.py`](../../app/ui/launcher_v3/live.py)                       | `DEFAULT_SIZE = (740, 500)`; settings/close wiring; hotkeys 2-9 removed; `_extract_gap_clause` helper |
 | [`capture_launcher_merge.py`](../../infra/scripts/capture/capture_launcher_merge.py) | 5 captures |
-| [`archive/launcher-raycast/`](../../archive/launcher-raycast/)      | 7B snapshots + per-file README       |
+| [`archive/launcher-raycast/`](../../archive/launcher-raycast)      | 7B snapshots + per-file README       |
 
 ---
 

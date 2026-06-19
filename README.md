@@ -186,9 +186,6 @@ lock, event log. Removing that folder is a complete reset.
   across days, sessions, and surfaces, with stable identities and
   confidence that strengthens over time and decays when activity
   stops. *Healthcare startup*, *WebSocket retry logic*, *RLHF research*.
-- **Replay** — `POST /v1/replay/day` reconstructs the sessions and
-  micro-contexts for any single past day. Useful for "what did I do on
-  Monday", and for audit.
 - **Semantic file search** — `all-MiniLM-L6-v2` over your chosen
   folders. Cosine ranking with a small, capped boost layer for
   filename hits and recency. ChromaDB persisted to
@@ -328,7 +325,7 @@ Output: `dist/Recall/Recall.exe` (Windows) or `dist/Recall/Recall`
 
 ## Browser extension
 
-The extension at [`extension/`](extension/) captures the title and URL
+The extension at [`extension/`](extension) captures the title and URL
 of completed page loads, the queries you type into search engines, and
 the titles of ChatGPT / Claude conversations. It posts each event to
 the local API.
@@ -340,7 +337,7 @@ Install:
    `Connected · N captured`.
 2. Open `chrome://extensions` (or `edge://extensions`).
 3. Toggle **Developer mode** (top-right).
-4. **Load unpacked** → select [`extension/`](extension/).
+4. **Load unpacked** → select [`extension/`](extension).
 
 Visits to `chrome://`, `file://`, incognito tabs, and any domain in
 your **Settings → Browser Memory → Domains never captured** list are
@@ -376,11 +373,8 @@ docs at `http://127.0.0.1:4545/docs-api`. OpenAPI JSON at
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/v1/search?q=…` | Episodic + session + micro-context bundle for a query |
-| `GET` | `/v1/sessions/recent` | Recent sessions, no query filter |
-| `GET` | `/v1/contexts/recent` | Recent micro-contexts |
 | `GET` | `/v1/events/recent` | Newest-first event stream, filterable by kind |
 | `GET` | `/v1/queries/recent` | Distinct recent launcher queries |
-| `POST` | `/v1/replay/day` | Reconstruct sessions + micro-contexts for one past day |
 | `GET` | `/v1/health` | Liveness + counters |
 
 ### Cognitive continuity
@@ -392,9 +386,7 @@ docs at `http://127.0.0.1:4545/docs-api`. OpenAPI JSON at
 | `GET` | `/v1/threads/recent` | Top-N active memory threads, ranked by confidence |
 | `GET` | `/v1/threads/{id}` | One thread + reconstructed sessions + contexts + events |
 | `GET` | `/v1/threads/{id}/evolution` | Chronological phases inside a thread (research → impl → revisit) |
-| `POST` | `/v1/threads/{id}/forget` | Drop one thread from the identity cache |
 | `POST` | `/v1/threads/cache/clear` | Wipe `~/.recall/threads.json` |
-| `POST` | `/v1/threads/evolution/clear` | Wipe `~/.recall/evolution.json` |
 | `GET` | `/v1/recovery/recent` | Top-N (≤3) resumable work cards for the launcher digest |
 | `POST` | `/v1/recovery/{id}/restore` | Return the full target list for one-click restoration |
 
@@ -613,7 +605,6 @@ Numbers from the in-process smoke test
 |---|---|---|
 | `GET /v1/search` (cold) | ~95 ms wall, ~55 ms server | First call pays the JSONL parse |
 | `GET /v1/search` (warm) | ~70 ms wall, ~50 ms server | Per-file parse cache + cached searchable text |
-| `POST /v1/replay/day` | ~1 ms | Reads one per-day file |
 | `POST /v1/events/{kind}` | <2 ms | Validate + append |
 | `GET /v1/health` | <1 ms | |
 
@@ -709,7 +700,7 @@ Deliberately *not* on the roadmap:
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, conventions, and the
 review process. Security disclosures: [SECURITY.md](SECURITY.md).
-Community expectations: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+Community expectations: [CODE_OF_CONDUCT.md](docs/CODE_OF_CONDUCT.md).
 
 Issues, ideas, and pull requests are welcome. The audit at
 [AUDIT_REPORT.md](docs/engineering/AUDIT_REPORT.md) lists the current consistency gaps

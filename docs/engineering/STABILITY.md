@@ -88,7 +88,6 @@ the budget is a bug, not a slowdown:
 | `GET /v1/recovery/recent` | <80 ms wall (best-of-3) |
 | `POST /v1/recovery/{id}/restore` | <10 ms |
 | `POST /v1/events/{kind}` | <2 ms |
-| `POST /v1/replay/day` | <5 ms per file |
 | `GET /v1/health` | <1 ms |
 
 The smoke test asserts every one of these. A pull request that
@@ -402,3 +401,20 @@ that sentence true. If you find a place in the codebase where
 one of these promises is broken in practice, that is a
 **stability bug**, not a feature request — and it goes to the
 top of [`AUDIT_REPORT.md`](AUDIT_REPORT.md).
+
+---
+
+## Per-surface stability reports
+
+This document is the contract; the detailed per-surface
+measurement reports (formerly the top-level `STABILITY/` folder,
+consolidated here) live alongside it under
+[`stability/`](stability/):
+
+- [`stability/CAPTURE.md`](stability/CAPTURE.md) — event-store coverage by site
+- [`stability/CONTROL.md`](stability/CONTROL.md) — admin routes + loaders
+- [`stability/EXTENSION.md`](stability/EXTENSION.md) — popup state machine + bundle health
+- [`stability/LAUNCHER.md`](stability/LAUNCHER.md) — frozen widget tree + cold-construct timing
+- [`stability/PERF.md`](stability/PERF.md) — wall-clock timings for launcher + CLI + daemon
+- [`stability/RESUME.md`](stability/RESUME.md) — recovery pipeline + restore-plan invariants
+- [`stability/TRACK_A_REPORT.md`](stability/TRACK_A_REPORT.md) — Track A consolidation report

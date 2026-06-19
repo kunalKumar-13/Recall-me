@@ -62,7 +62,7 @@ In dependency order:
 5. **Code-sign the installer** with an EV certificate so
    SmartScreen stops warning. Closes Gate 7's second half.
 6. **Alpha-001 enrolment.** Five testers receive the
-   [`alpha/`](../../alpha/) packet; first recoveries and trust
+   [`alpha/`](../../alpha) packet; first recoveries and trust
    reports land via [`alpha_report.md`](../../alpha/alpha_report.md).
    Closes Gates 3 + 4.
 7. **macOS verification.** A maintainer with a Mac runs

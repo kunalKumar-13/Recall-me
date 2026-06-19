@@ -13,7 +13,7 @@ PNGs can't represent:
 
 This file is the recording recipe for each. The output of a
 session under this protocol is a single GIF (≤ 5 MB, ≤ 12 s) that
-drops into [`assets/demos/`](../../assets/demos/) and is referenced
+drops into [`assets/demos/`](../../assets/demos) and is referenced
 by the website per [`LANDING_GO_LIVE.md`](LANDING_GO_LIVE.md).
 
 Pairs with [`assets/demos/README.md`](../../assets/demos/README.md)

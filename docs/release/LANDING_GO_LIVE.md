@@ -1,6 +1,6 @@
 # LANDING_GO_LIVE.md — what has to be true before the website goes live
 
-The website at [`apps/web/`](../../apps/web/) is the *front door*
+The website at [`apps/web/`](../../apps/web) is the *front door*
 for a person who has never heard of Recall. Once it goes live,
 the install path is no longer a hand-share — strangers will hit
 it, click *Download*, and either succeed or bounce. This file is

@@ -55,5 +55,5 @@ SHA-256, and read the *why* and the fix plan in
 You never have to trust a binary. The installers are reproducible
 from source:
 
-- Windows — [`infra/packaging/windows/`](../../infra/packaging/windows/)
-- macOS — [`infra/packaging/macos/`](../../infra/packaging/macos/)
+- Windows — [`infra/packaging/windows/`](../../infra/packaging/windows)
+- macOS — [`infra/packaging/macos/`](../../infra/packaging/macos)

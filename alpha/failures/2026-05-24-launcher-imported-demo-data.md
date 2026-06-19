@@ -2,7 +2,7 @@
 
 **Reporter:** alpha-001
 **Date:**     2026-05-24
-**Severity:** P0 (downgraded P1 after fix; see [`../../BUGS_OPEN.md`](../../BUGS_OPEN.md) BUG-001)
+**Severity:** P0 (downgraded P1 after fix; see [`../../BUGS_OPEN.md`](../../docs/engineering/BUGS_OPEN.md) BUG-001)
 
 ## What happened
 

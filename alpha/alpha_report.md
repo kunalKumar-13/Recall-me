@@ -17,7 +17,7 @@ are the source of truth — this is the read.
 As of Phase 5H close (2026-05-21), **zero alpha-001 humans have
 installed Recall.** The packet at [`alpha/`](README.md) exists.
 The five-file no-terminal install pack at
-[`alpha/launcher/`](launcher/) exists. The five-persona runbook
+[`alpha/launcher/`](launcher) exists. The five-persona runbook
 at [`ALPHA_001_RUNBOOK.md`](ALPHA_001_RUNBOOK.md) exists. The
 distribution channel (a hand-share to five testers) has not yet
 opened.

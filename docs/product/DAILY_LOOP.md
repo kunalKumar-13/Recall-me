@@ -5,7 +5,7 @@ return to it. Phase 6F adds the layer that names that signal —
 **counts only**, local-only, six bins per day, three derived
 signals. This file is the product-side story (what the layer
 *means*). The engineering receipt is
-[`PHASE_6F_STATUS.md`](../engineering/PHASE_6F_STATUS.md); the
+[`PHASE_6F_STATUS.md`](../../archive/phase-status/PHASE_6F_STATUS.md); the
 return semantics get their own page at
 [`RETURN_BEHAVIOR.md`](RETURN_BEHAVIOR.md).
 
@@ -140,7 +140,7 @@ immediately re-closing them.
   detector's semantics, in detail.
 - [`docs/alpha/PLAYBOOK.md`](../alpha/PLAYBOOK.md) — how the
   daily-loop bins map onto the cohort operations cadence.
-- [`PHASE_6F_STATUS.md`](../engineering/PHASE_6F_STATUS.md) — the
+- [`PHASE_6F_STATUS.md`](../../archive/phase-status/PHASE_6F_STATUS.md) — the
   engineering receipt for this phase.
 - `recall founder daily-loop` — the operator CLI that prints
   this layer in human form.
