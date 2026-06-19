@@ -147,6 +147,19 @@ if len(sys.argv) > 1 and sys.argv[1] == "alpha":
         sys.exit(1)
     raise SystemExit(run_alpha_cli(sys.argv[2:]))
 
+# Headless daemon mode (`recall.py --service`). Starts only the API +
+# watcher + capture — no PyQt6, no launcher, no tray. Dispatched here so
+# the Qt stack is never imported in service mode; this is the entry the
+# macOS LaunchAgent uses to keep capture alive across reboots.
+if "--service" in sys.argv:
+    try:
+        from app.service import run_service
+    except BaseException:
+        print("[boot] [FAIL] importing app.service", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(1)
+    raise SystemExit(run_service())
+
 _t0 = time.time()
 _log(">> importing app.main")
 try:

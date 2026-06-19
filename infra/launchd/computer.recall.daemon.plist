@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Recall headless daemon — macOS launch-on-login LaunchAgent (template).
+
+  Runs `recall.py --service` (API + watcher + capture, no GUI) at login
+  so capture survives reboots. This is a TEMPLATE: the install step
+  substitutes the three __PLACEHOLDERS__ with absolute paths (launchd
+  does not expand ~ or $HOME inside plist values) and writes the result
+  to ~/Library/LaunchAgents/computer.recall.daemon.plist.
+
+  Install / reload:
+    launchctl unload ~/Library/LaunchAgents/computer.recall.daemon.plist 2>/dev/null
+    launchctl load   ~/Library/LaunchAgents/computer.recall.daemon.plist
+    launchctl list | grep computer.recall.daemon
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>computer.recall.daemon</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__VENV_PYTHON__</string>
+        <string>__RECALL_DIR__/recall.py</string>
+        <string>--service</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__RECALL_DIR__</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <key>StandardOutPath</key>
+    <string>__HOME__/.recall/service.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>__HOME__/.recall/service.log</string>
+</dict>
+</plist>
