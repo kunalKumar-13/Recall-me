@@ -1,0 +1,190 @@
+:root {
+  /* Warm dark graphite — not pure black — painted over native vibrancy. */
+  --graphite: rgba(28, 26, 23, 0.62);
+  --panel-solid: #1c1a17; /* used for node rings so they read as beads on the thread */
+  --hairline: rgba(255, 255, 255, 0.08);
+  --spine: rgba(255, 255, 255, 0.11);
+
+  /* One accent. The color of a recalled, lamp-lit thing. */
+  --amber: #e8b45a;
+  --amber-dim: rgba(232, 180, 90, 0.42);
+  --amber-wash: rgba(232, 180, 90, 0.1);
+
+  /* Restrained per-layer node hues (used by Search later). */
+  --slate: #8fb0d6;
+  --violet: #b79ce0;
+
+  --text: rgba(245, 242, 238, 0.95);
+  --text-dim: rgba(190, 184, 176, 0.62);
+  --provenance: rgba(178, 172, 163, 0.68);
+  --hint: rgba(150, 144, 136, 0.55);
+
+  --font-sf: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+  width: 100%;
+}
+
+body {
+  font-family: var(--font-sf);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  user-select: none;
+  cursor: default;
+  color-scheme: dark;
+}
+
+/* ----------------------------------------------------------- panel shell */
+
+.panel {
+  position: relative;
+  width: 100%;
+  background: var(--graphite);
+  border: 1px solid var(--hairline);
+  border-radius: 13px;
+  overflow: hidden;
+}
+
+.header {
+  padding: 14px 18px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  color: var(--text-dim);
+}
+
+/* ----------------------------------------------------------- the thread */
+
+.thread {
+  position: relative;
+  padding: 4px 12px 6px;
+  min-height: 10px;
+}
+
+/* the hairline spine running down the left of the results */
+.thread::before {
+  content: "";
+  position: absolute;
+  left: 27px;
+  top: 22px;
+  bottom: 22px;
+  width: 1px;
+  background: var(--spine);
+}
+
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  align-items: center;
+  gap: 2px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: transparent;
+  transition: background 90ms ease;
+}
+
+.row.sel {
+  background: var(--amber-wash);
+}
+
+.node-col {
+  display: flex;
+  justify-content: center;
+}
+
+/* a bead strung on the thread */
+.node {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--amber-dim);
+  box-shadow: 0 0 0 3.5px var(--panel-solid);
+}
+
+.row.sel .node {
+  background: var(--amber);
+  box-shadow: 0 0 0 3.5px var(--panel-solid), 0 0 9px rgba(232, 180, 90, 0.65);
+}
+
+.row-main {
+  min-width: 0;
+}
+
+.row-title {
+  font-size: 14px;
+  line-height: 1.25;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row.sel .row-title {
+  color: #fbf7f0;
+}
+
+.row-caption {
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--provenance);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-hint {
+  font-size: 10.5px;
+  color: var(--amber);
+  opacity: 0.85;
+  padding-left: 10px;
+  white-space: nowrap;
+}
+
+/* ----------------------------------------------------------- empty / offline */
+
+.state {
+  padding: 14px 18px 20px;
+}
+
+.state-title {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.state-sub {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--provenance);
+}
+
+/* ----------------------------------------------------------- footer hints */
+
+.footer {
+  display: flex;
+  gap: 16px;
+  padding: 9px 18px 12px;
+  font-size: 10.5px;
+  color: var(--hint);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* provenance + key hints are set in the typeface of data */
+.mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum" 1;
+}

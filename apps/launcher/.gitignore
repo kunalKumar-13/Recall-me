@@ -1,0 +1,14 @@
+# dependencies
+node_modules/
+
+# frontend build output
+dist/
+
+# Rust / Tauri build artifacts
+src-tauri/target/
+
+# Tauri-generated schemas + capabilities cache
+src-tauri/gen/
+
+# logs
+*.log
