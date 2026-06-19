@@ -112,5 +112,5 @@ not the launcher.
 When a future phase removes a ranking experiment, drop a
 short rationale here. The folder is the audit trail for
 *how* Recall's ranking became what it is — same shape as
-[`archive/launcher-overbuild/`](../launcher-overbuild/) and
-[`archive/resume-old/`](../resume-old/).
+[`archive/launcher-overbuild/`](../launcher-overbuild) and
+[`archive/resume-old/`](../resume-old).

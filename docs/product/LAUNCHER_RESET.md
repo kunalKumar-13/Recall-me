@@ -13,7 +13,7 @@ sections: **what we removed**, **why the launcher failed**,
 Pairs with
 [`archive/launcher-overbuild/README.md`](../../archive/launcher-overbuild/README.md)
 (the per-file rationale for every archived module) and
-[`PHASE_6O_STATUS.md`](../engineering/PHASE_6O_STATUS.md) (the
+[`PHASE_6O_STATUS.md`](../../archive/phase-status/PHASE_6O_STATUS.md) (the
 engineering receipt).
 
 ---
@@ -23,7 +23,7 @@ engineering receipt).
 The reset directive named a list. Every item below is gone from
 the launcher's runtime surface; the code paths that produced
 them moved to
-[`archive/launcher-overbuild/`](../../archive/launcher-overbuild/).
+[`archive/launcher-overbuild/`](../../archive/launcher-overbuild).
 
 | Surface | Where it lived | Removed because |
 |---|---|---|
@@ -160,11 +160,11 @@ That's the directive. That's the launcher.
 
 ## Related
 
-- [`PHASE_6O_STATUS.md`](../engineering/PHASE_6O_STATUS.md) —
+- [`PHASE_6O_STATUS.md`](../../archive/phase-status/PHASE_6O_STATUS.md) —
   engineering receipt + verification matrix.
 - [`archive/launcher-overbuild/README.md`](../../archive/launcher-overbuild/README.md)
   — per-file rationale for every archived module.
-- [`assets/screenshots/launcher-reset/`](../../assets/screenshots/launcher-reset/)
+- [`assets/screenshots/launcher-reset/`](../../assets/screenshots/launcher-reset)
   — the two reset captures: `populated.png` and `empty.png`.
 - [`LAUNCHER_REGRESSION.md`](LAUNCHER_REGRESSION.md) (6M.2)
   + [`LAUNCHER_REVIEW.md`](LAUNCHER_REVIEW.md) (6M.1) — the

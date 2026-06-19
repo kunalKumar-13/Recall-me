@@ -204,8 +204,9 @@ recall/
 │
 ├── infra/
 │   ├── installers/            installer specs + signing notes
-│   ├── release/               release pipeline assets
+│   ├── packaging/             packaging assets
 │   └── scripts/               dev.ps1 / dev.sh / build_icon.py
+│                              (release docs live in docs/release/)
 │
 ├── assets/                    screenshots / branding / demos
 ├── archive/                   deprecated work

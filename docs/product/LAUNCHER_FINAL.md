@@ -198,7 +198,7 @@ hero's 14-pt bold.
 | [`investigation_panel.py`](../../app/ui/launcher_v3/investigation_panel.py) | rebuilt 36-px rows with strength dot + last-seen |
 | [`live.py`](../../app/ui/launcher_v3/live.py)                       | `_load_recent_memory` + `_load_trust_counts` + 700×500 default size |
 | [`capture_launcher_7e.py`](../../infra/scripts/capture/capture_launcher_7e.py) | 5 captures |
-| [`archive/launcher-7b1/`](../../archive/launcher-7b1/)              | 7B.1 snapshots + per-file README     |
+| [`archive/launcher-7b1/`](../../archive/launcher-7b1)              | 7B.1 snapshots + per-file README     |
 
 ---
 

@@ -30,7 +30,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   ([`alpha/wow/`](../../alpha/wow/README.md) —
   verbatim-only), and an explicit RC evidence
   index
-  ([`RC_VALIDATION.md`](../../RC_VALIDATION.md)
+  ([`RC_VALIDATION.md`](../release/RC_VALIDATION.md)
   — all 6 RC1 claims backed by checked-in
   artifacts). **Two scores now:** **RC1 product
   87 → 90** (RC-tag threshold), **Alpha
@@ -38,7 +38,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   users 1/5, recoveries 0/3, wow 0/1).
   Combination interpretation: *RC ready · cohort
   recruitment is next phase*. Capstone:
-  [`PHASE_8E_STATUS.md`](../engineering/PHASE_8E_STATUS.md).
+  [`PHASE_8E_STATUS.md`](../../archive/phase-status/PHASE_8E_STATUS.md).
   Verdict: **infrastructure ready, cohort empty
   — Phase 8F fills it.**
 
@@ -48,44 +48,44 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   Recall becomes **v0.1.0-rc1**. 8 surfaces frozen
   (launcher · extension · capture · resume ·
   control room · doctor · demo · installer) per
-  [`VERSION.md`](../../VERSION.md). Release kit
-  ships under [`release/`](../../release/): README,
+  [`VERSION.md`](../release/VERSION.md). Release kit
+  ships under [`release/`](../release/rc1): README,
   CHANGELOG_RC1, INSTALL, QUICKSTART, DEMO_FLOW,
   KNOWN_ISSUES, LANDING_CHECK. Screen freeze
   reduces `assets/screenshots/` to 4 canonical
-  dirs ([`SCREEN_INDEX.md`](../../SCREEN_INDEX.md));
+  dirs ([`SCREEN_INDEX.md`](../product/SCREEN_INDEX.md));
   3 dirs + 11 root PNGs archived to
   `archive/screenshots-history-rc/`. New CLI
   **`recall demo run / reset / status`** + 98-line
   [`app/core/demo_cli.py`](../../app/core/demo_cli.py)
   dispatcher; seeds deterministic 30-event trace
   to `~/.recall/events-demo/` (isolated from real
-  log); documented in [`DEMO_MODE.md`](../../DEMO_MODE.md).
-  Install walk verified ([`INSTALL_VERIFIED.md`](../../INSTALL_VERIFIED.md)):
+  log); documented in [`DEMO_MODE.md`](../product/DEMO_MODE.md).
+  Install walk verified ([`INSTALL_VERIFIED.md`](../release/INSTALL_VERIFIED.md)):
   doctor 5 GREEN / 0 RED, capture status 36
   events today, daemon endpoints all 200 (103 /
   122 / 60 ms). Landing page: zero dead links
-  ([`release/LANDING_CHECK.md`](../../release/LANDING_CHECK.md)).
+  ([`release/LANDING_CHECK.md`](../release/rc1/LANDING_CHECK.md)).
   Bug ledger re-classified to RC1 gate: **P0 = 0**
   (down from 1 at 8C close); 3 P1 must-fix-before
   -alpha + 2 P2 can-wait + 3 blocked. **Release-
   readiness composite: 87/100** (up from 76; target
   was 85+; achieved). Path to 92 (stable tag) is
   5 named follow-ups totalling ~2.5 days. Capstone:
-  [`PHASE_8D_STATUS.md`](../engineering/PHASE_8D_STATUS.md).
+  [`PHASE_8D_STATUS.md`](../../archive/phase-status/PHASE_8D_STATUS.md).
 
 - **Phase 8C — Product Stabilization + Reality Pass**
   (previous). *No new features · no redesign · no
   cleanup · no archives.* Goal: make Recall reliable
   through measurement + honest documentation. 9
-  deliverables: [`STABILITY/PERF.md`](../../STABILITY/PERF.md),
-  [`STABILITY/CAPTURE.md`](../../STABILITY/CAPTURE.md),
-  [`STABILITY/LAUNCHER.md`](../../STABILITY/LAUNCHER.md),
-  [`STABILITY/RESUME.md`](../../STABILITY/RESUME.md),
-  [`STABILITY/EXTENSION.md`](../../STABILITY/EXTENSION.md),
-  [`STABILITY/CONTROL.md`](../../STABILITY/CONTROL.md),
-  [`BUGS_OPEN.md`](../../BUGS_OPEN.md),
-  [`RELEASE_READINESS.md`](../../RELEASE_READINESS.md) +
+  deliverables: [`STABILITY/PERF.md`](../engineering/stability/PERF.md),
+  [`STABILITY/CAPTURE.md`](../engineering/stability/CAPTURE.md),
+  [`STABILITY/LAUNCHER.md`](../engineering/stability/LAUNCHER.md),
+  [`STABILITY/RESUME.md`](../engineering/stability/RESUME.md),
+  [`STABILITY/EXTENSION.md`](../engineering/stability/EXTENSION.md),
+  [`STABILITY/CONTROL.md`](../engineering/stability/CONTROL.md),
+  [`BUGS_OPEN.md`](../engineering/BUGS_OPEN.md),
+  [`RELEASE_READINESS.md`](../release/RELEASE_READINESS.md) +
   one P0 regression fix. Caught and fixed in-flight:
   8B's archive sweep over-reached — `app/main.py`
   imports `demo_data`, `app/ui/onboarding.py` +
@@ -120,7 +120,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   modules (`launcher_legacy.py`, `cards.py`, `widgets.py`,
   `styles.py`, `launcher_anims.py`, `launcher_digest.py`,
   `demo_data.py`, `ceremonies.py`) + 3 historical capture
-  scripts → [`archive/launcher-old/`](../../archive/launcher-old/);
+  scripts → [`archive/launcher-old/`](../../archive/launcher-old);
   `app/ui/launcher.py` collapsed from 60→18 lines (no
   more `RECALL_LAUNCHER=legacy` branch); the import
   contract `from app.ui.launcher import Launcher` still
@@ -139,7 +139,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   components** — 8 dead files (`ContinueCard`,
   `DebugStrip`, `DemoBanner`, `InvestigationCard`,
   `MemoryList`, `Section`, `TrustSurface`, `states`) →
-  [`archive/extension-pre-7a/`](../../archive/extension-pre-7a/);
+  [`archive/extension-pre-7a/`](../../archive/extension-pre-7a);
   vite build proves they were already tree-shaken (293 KB
   JS bundle unchanged). (4) **Dependency cleanup** — 3
   unused deps removed from `apps/web/package.json`
@@ -150,7 +150,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   `sessions/recent`, `threads_clear_evolution_cache`,
   `replay_day`) — kept until associated pydantic schemas
   can be walked cleanly. 5 new audit docs land under
-  [`AUDIT/`](../../AUDIT/): `DELETE_PLAN.md` (per-row
+  [`AUDIT/`](../../archive/AUDIT): `DELETE_PLAN.md` (per-row
   delete log w/ verification), `LAUNCHER_FREEZE.md`
   (official launcher path + public API + allowed /
   forbidden changes — *no more launcher generations*),
@@ -173,15 +173,15 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   actually is today. No launcher redesign, no extension
   redesign, no control-room redesign, no new memory
   systems, no new phases. 7 audit docs land under a new
-  top-level [`AUDIT/`](../../AUDIT/) folder, each
+  top-level [`AUDIT/`](../../archive/AUDIT) folder, each
   evidence-based (file path + line number + grep
   result), each cross-linked to the others, each citing
   consumers + status: (1)
-  [`SURFACES.md`](../../AUDIT/SURFACES.md) inventories
+  [`SURFACES.md`](../../archive/AUDIT/SURFACES.md) inventories
   every runtime surface — 36 LIVE, 2 LEGACY (legacy
   launcher tree + pre-7A extension components), 11
   ARCHIVE, 1 REMOVE (auto-update, n/a); (2)
-  [`DEAD_CODE.md`](../../AUDIT/DEAD_CODE.md) catalogues
+  [`DEAD_CODE.md`](../../archive/AUDIT/DEAD_CODE.md) catalogues
   parallel trees + duplicates + orphans — 8 truly DEAD
   (pre-7A extension components), 7 LEGACY (behind
   `RECALL_LAUNCHER=legacy` escape hatch), 3 duplicate
@@ -189,31 +189,31 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   orphan API routes (`thread_forget`, `contexts/recent`,
   `sessions/recent`, `threads_clear_evolution_cache`,
   `replay_day`); (3)
-  [`LAUNCHER_MAP.md`](../../AUDIT/LAUNCHER_MAP.md)
+  [`LAUNCHER_MAP.md`](../../archive/AUDIT/LAUNCHER_MAP.md)
   traces every signal + slot + public method through
   the launcher; documents the class graph + frozen
   anti-rules (mirrors `LAUNCHER_CONTRACTS.md` from
   7E.1) + the state-flow per refresh + the "one
   launcher" collapse path; (4)
-  [`CAPTURE_MAP.md`](../../AUDIT/CAPTURE_MAP.md) cross-
+  [`CAPTURE_MAP.md`](../../archive/AUDIT/CAPTURE_MAP.md) cross-
   checks the 7D `CAPTURE_FLOW.md` against actual code,
   lists the diagnostic CLI per failure mode, captures
   live measurement (8 events today, 11 investigations,
   last event 38m ago — ChatGPT/Google/Stitch all
   present); (5)
-  [`ASSETS.md`](../../AUDIT/ASSETS.md) inventories
+  [`ASSETS.md`](../../archive/AUDIT/ASSETS.md) inventories
   every PNG under `assets/screenshots/` — 5 ACTIVE
   folders + the live `launcher-7e/` ⭐ + the live
   `extension-7a/` ⭐ + 11 HISTORICAL folders + 7
   root-level ORPHAN PNGs flagged for tier-1 delete;
-  (6) [`DEPENDENCIES.md`](../../AUDIT/DEPENDENCIES.md)
+  (6) [`DEPENDENCIES.md`](../../archive/AUDIT/DEPENDENCIES.md)
   classifies all 43 packages across `requirements.txt`
   + 3 `package.json` files — 20 runtime, 19 dev, 3
   unused (`clsx`, `lucide-react`, `tailwind-merge` in
   marketing web), 1 misplaced (`playwright` in
   extension's `dependencies` instead of
   `devDependencies`); (7)
-  [`STATE.md`](../../AUDIT/STATE.md) is the capstone —
+  [`STATE.md`](../../archive/AUDIT/STATE.md) is the capstone —
   what Recall *is* + what ships + what's dead + what
   survives + tier-graded delete recommendations + live
   verification (`doctor` GREEN on daemon/events/extension,
@@ -260,7 +260,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   `MinimalSearchBar`) with the freeze rule: *future
   launcher phases may **add** to the surface; they **must
   not remove or rename** the symbols below*. Receipt:
-  [`PHASE_7E.1_STATUS.md`](../engineering/PHASE_7E.1_STATUS.md).
+  [`PHASE_7E.1_STATUS.md`](../../archive/phase-status/PHASE_7E.1_STATUS.md).
   Verified: offscreen `LiveLauncher(FakeEngine())`
   constructs cleanly (`CONSTRUCT OK · DEFAULT_SIZE: (700,
   500)`); both signal spellings fire correctly; the
@@ -310,7 +310,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   buttons, centered empty states, large vertical spacing,
   floating pills, dark overlays, prototype illustrations.
   3 files snapshotted into
-  [`archive/launcher-7b1/`](../../archive/launcher-7b1/)
+  [`archive/launcher-7b1/`](../../archive/launcher-7b1)
   with per-file README documenting the Stitch-workspace
   era: `minimal_7b1.py` · `recovery_panel_7b1.py` ·
   `investigation_panel_7b1.py`. 5 captures (`home · high
@@ -321,7 +321,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   launcher's live contract — 7B.1 → 7E delta table +
   frozen paint/geometry/typography/per-region tables +
   5-row state catalogue + the removed-list. Receipt:
-  [`PHASE_7E_STATUS.md`](../engineering/PHASE_7E_STATUS.md).
+  [`PHASE_7E_STATUS.md`](../../archive/phase-status/PHASE_7E_STATUS.md).
   Success bar: *open Recall → see unfinished work + recent
   memory + resume path + trust within 3 seconds.* Launcher
   frozen.
@@ -358,7 +358,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   machine reports 71 events today / 11 investigations /
   ChatGPT + Google + Stitch tabs streaming through the
   tail — pipeline warm end-to-end. Receipt:
-  [`PHASE_7D_STATUS.md`](../engineering/PHASE_7D_STATUS.md).
+  [`PHASE_7D_STATUS.md`](../../archive/phase-status/PHASE_7D_STATUS.md).
   Success bar: *Recall truly remembers — and now you can
   prove it.*
 
@@ -400,7 +400,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   launcher never renders. Hotkeys: kept Esc / Ctrl+K /
   Cmd+K / `1`; removed 2-9 (nothing to navigate to). 3
   files snapshotted into
-  [`archive/launcher-raycast/`](../../archive/launcher-raycast/)
+  [`archive/launcher-raycast/`](../../archive/launcher-raycast)
   with per-file README documenting the per-section/raycast
   command-palette era: `minimal_7b.py` ·
   `recovery_panel_7b.py` · `investigation_panel_7b.py`. 5
@@ -411,7 +411,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   launcher's live contract — carries 7B → 7B.1 delta
   table + frozen paint/geometry/typography/per-region
   tables + 5-row state catalogue. Receipt:
-  [`PHASE_7B.1_STATUS.md`](../engineering/PHASE_7B.1_STATUS.md).
+  [`PHASE_7B.1_STATUS.md`](../../archive/phase-status/PHASE_7B.1_STATUS.md).
   Success bar: *Looks like product. Not utility.*
 
 - **Phase 7B — Launcher Production Freeze** (prior phase, this session).
@@ -465,11 +465,11 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   visibility-pass table + 2-row performance-budget table +
   the explicit *Launcher frozen forever* freeze rule. 3
   files snapshotted into
-  [`archive/launcher-final/`](../../archive/launcher-final/)
+  [`archive/launcher-final/`](../../archive/launcher-final)
   with per-file README documenting the per-section-card
   era: `minimal_6r.py` · `recovery_panel_6r.py` ·
   `investigation_panel_6r.py`. Receipt:
-  [`PHASE_7B_STATUS.md`](../engineering/PHASE_7B_STATUS.md).
+  [`PHASE_7B_STATUS.md`](../../archive/phase-status/PHASE_7B_STATUS.md).
   Success bar: *open Recall · see remembered work · press
   Resume · leave*.
 
@@ -522,7 +522,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   is the frozen-product checklist (paint table · motion
   table · per-region contracts · 7-row state catalogue
   with one capture per row). Receipt:
-  [`PHASE_7A_STATUS.md`](../engineering/PHASE_7A_STATUS.md).
+  [`PHASE_7A_STATUS.md`](../../archive/phase-status/PHASE_7A_STATUS.md).
   Success bar: *open extension → immediately understand
   Recall remembered work · Recall can continue it · Recall
   is running*.
@@ -577,7 +577,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   7-check visibility audit covering arm-length / dark-room /
   50 % / 125 % scaling / title overflow / empty / demo /
   resume / the freeze rule). Four files snapshotted into
-  [`archive/launcher-debt/`](../../archive/launcher-debt/) with
+  [`archive/launcher-debt/`](../../archive/launcher-debt) with
   a per-file README: `minimal_6p1.py` (6P.1 visibility surface)
   · `recovery_panel_6q.py` (6Q hero with the *Why this?* link)
   · `investigation_panel_6o.py` (6O horizontal row) ·
@@ -585,7 +585,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   signals layer (`recovery.explain_signals` + `recall inspect`
   + `bad_recoveries`) **stays in active code** — only the
   launcher's surface changed. Receipt:
-  [`PHASE_6R_STATUS.md`](../engineering/PHASE_6R_STATUS.md).
+  [`PHASE_6R_STATUS.md`](../../archive/phase-status/PHASE_6R_STATUS.md).
   Success bar: **open Recall · understand instantly · click
   Resume · done**.
 
@@ -627,13 +627,13 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   the directive's three-investigation scripted walk (proposal
   · RLHF · WebSocket) verifying *only one hero* + the *Why
   this?* sheet contract + the ledger-demotion path.
-  [`archive/recovery-ranking/`](../../archive/recovery-ranking/)
+  [`archive/recovery-ranking/`](../../archive/recovery-ranking)
   documents what 6Q kept untouched (every gate, every weight),
   what 6Q added (the ledger flag + explain_signals + 2 CLIs +
   the Why sheet), and what 6Q considered and rejected (a
   learned ranker, a second freshness half-life, a chat-heavy
   promotion bump, engine-side duplicate de-dup). Receipt:
-  [`PHASE_6Q_STATUS.md`](../engineering/PHASE_6Q_STATUS.md).
+  [`PHASE_6Q_STATUS.md`](../../archive/phase-status/PHASE_6Q_STATUS.md).
   Success bar: user says *"Yes. That is exactly what I
   wanted back."*
 
@@ -705,9 +705,9 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   [`SHOWCASE_RUN.md`](../product/SHOWCASE_RUN.md) scripted
   verification (step-by-step demo run + failure-injection
   matrix), and the engineering receipt
-  [`PHASE_6P_STATUS.md`](../engineering/PHASE_6P_STATUS.md).
+  [`PHASE_6P_STATUS.md`](../../archive/phase-status/PHASE_6P_STATUS.md).
   The stub `_on_restore` + `_on_demo_resume` were removed and
-  documented in [`archive/resume-old/`](../../archive/resume-old/).
+  documented in [`archive/resume-old/`](../../archive/resume-old).
 
 - **Phase 6O — Launcher Reset** (prior phase). The launcher
   overbuilt across 6I → 6N — multi-state heroes, confidence
@@ -737,7 +737,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   [`LAUNCHER_RESET.md`](../product/LAUNCHER_RESET.md)
   (the directive's *what removed · why launcher failed · new
   philosophy* audit — 3 failure modes, 3 design rules) +
-  [`PHASE_6O_STATUS.md`](../engineering/PHASE_6O_STATUS.md).
+  [`PHASE_6O_STATUS.md`](../../archive/phase-status/PHASE_6O_STATUS.md).
 
 - **Phase 6N — Recovery Precision** (prior phase). The launcher
   *feels intelligent*. **No redesign. No geometry changes. No
@@ -772,7 +772,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   [`RECOVERY_VISUAL_AUDIT.md`](../product/RECOVERY_VISUAL_AUDIT.md)
   carries the directive's *high / medium / low / silence /
   bad recovery* audit. Receipt:
-  [`PHASE_6N_STATUS.md`](../engineering/PHASE_6N_STATUS.md).
+  [`PHASE_6N_STATUS.md`](../../archive/phase-status/PHASE_6N_STATUS.md).
 
 - **Phase 6M.2 — Launcher Geometry Recovery** (prior phase).
   The 6M.1 refinement drifted the launcher away from a
@@ -805,7 +805,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   (the directive's *why old looked better / what changed /
   what fixed* audit — 13-token comparison table + the
   *Raycast ↔ Notion* axis narrative) +
-  [`PHASE_6M.2_STATUS.md`](../engineering/PHASE_6M.2_STATUS.md).
+  [`PHASE_6M.2_STATUS.md`](../../archive/phase-status/PHASE_6M.2_STATUS.md).
   Numbering: this directive's *Phase 6M.1* label conflicts
   with the prior Launcher Refinement that already shipped;
   filed as **6M.2** so both audit trails survive.
@@ -838,7 +838,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   (removed · kept · why · future). The previous Phase 6M
   (Desktop Memory Layer) docs + tracker entries are untouched.
   Receipt:
-  [`PHASE_6M.1_STATUS.md`](../engineering/PHASE_6M.1_STATUS.md).
+  [`PHASE_6M.1_STATUS.md`](../../archive/phase-status/PHASE_6M.1_STATUS.md).
 
 - **Phase 6M — Desktop Memory Layer** (prior phase, this
   session). Recall now
@@ -863,7 +863,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   only platform with a probe today; `darwin.py` / `linux.py`
   siblings drop in next to `windows.py` when a maintainer
   with the hardware adds them. Receipt:
-  [`PHASE_6M_STATUS.md`](../engineering/PHASE_6M_STATUS.md).
+  [`PHASE_6M_STATUS.md`](../../archive/phase-status/PHASE_6M_STATUS.md).
   Product story:
   [`DESKTOP_LAYER.md`](../product/DESKTOP_LAYER.md).
 
@@ -890,7 +890,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   investigations · resume). Default import unchanged
   (`from app.ui.launcher import Launcher` still returns the
   v3 LiveLauncher). Receipt:
-  [`PHASE_6L_STATUS.md`](../engineering/PHASE_6L_STATUS.md).
+  [`PHASE_6L_STATUS.md`](../../archive/phase-status/PHASE_6L_STATUS.md).
 
 - **Phase 6K — Launcher Promotion** (prior phase). The v3 widget
   tree built in Phase 6I becomes the actual launcher. **No
@@ -915,7 +915,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   6 new captures in `assets/screenshots/launcher-live/`
   (overview / continue / empty / trust / focus / recovery).
   Receipt:
-  [`PHASE_6K_STATUS.md`](../engineering/PHASE_6K_STATUS.md).
+  [`PHASE_6K_STATUS.md`](../../archive/phase-status/PHASE_6K_STATUS.md).
 
 - **Phase 6J — Control Room V2** (prior phase). The founder
   dashboard at `apps/admin/web/` becomes the founder's *actual
@@ -944,7 +944,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   87.4 KB first-load shared). **No engine touches, no Python
   touches, no marketing-site touches, no extension touches.**
   Receipt:
-  [`PHASE_6J_STATUS.md`](../engineering/PHASE_6J_STATUS.md).
+  [`PHASE_6J_STATUS.md`](../../archive/phase-status/PHASE_6J_STATUS.md).
   User manual:
   [`CONTROL_ROOM_V2.md`](CONTROL_ROOM_V2.md).
 
@@ -970,7 +970,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   `app/ui/launcher.py` is **untouched** — the v3 package sits
   alongside, ready to be wired in on a follow-up with its own
   QA matrix. Receipt:
-  [`PHASE_6I_STATUS.md`](../engineering/PHASE_6I_STATUS.md).
+  [`PHASE_6I_STATUS.md`](../../archive/phase-status/PHASE_6I_STATUS.md).
 
 - **Phase 6H — Control Room OS** (prior phase). The founder
   dashboard at `apps/admin/web/` becomes a real operating system
@@ -997,7 +997,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   server-rendered on demand, 87.4 KB first-load shared. **No
   Python, no engine, no recovery work, no `apps/web/`
   touched.** Receipt:
-  [`PHASE_6H_STATUS.md`](../engineering/PHASE_6H_STATUS.md).
+  [`PHASE_6H_STATUS.md`](../../archive/phase-status/PHASE_6H_STATUS.md).
 
 - **Phase 6G — Public Alpha Surface** (prior phase). Build the
   public alpha front door. Pure marketing-site + operator-doc
@@ -1023,7 +1023,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   storyboard, 6 beats, captions only). PUBLIC_ALPHA.md gains a
   Phase 6G addendum. Next.js build clean (55 KB static, 142 KB
   first-load). Receipt:
-  [`PHASE_6G_STATUS.md`](../engineering/PHASE_6G_STATUS.md).
+  [`PHASE_6G_STATUS.md`](../../archive/phase-status/PHASE_6G_STATUS.md).
 
 - **Phase 6F — Daily Loop Validation** (prior phase). Recall
   earns the right to keep running only if a real human installs
@@ -1048,7 +1048,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   `RETURN_BEHAVIOR.md` (return semantics in detail) +
   `MOMENTS.md` (seven first-time moments per tester).
   **No visual redesign**, **no installer work**. Receipt:
-  [`PHASE_6F_STATUS.md`](../engineering/PHASE_6F_STATUS.md).
+  [`PHASE_6F_STATUS.md`](../../archive/phase-status/PHASE_6F_STATUS.md).
 
 - **Phase 6E — Alpha Reality** (prior phase). Recall leaves
   founder-only mode: the operational scaffolding for real
@@ -1069,7 +1069,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   `assets/screenshots/alpha/` (control room / populated status /
   honest empty). **No engine work**, **no UI redesign** — pure
   operations. Receipt:
-  [`PHASE_6E_STATUS.md`](../engineering/PHASE_6E_STATUS.md).
+  [`PHASE_6E_STATUS.md`](../../archive/phase-status/PHASE_6E_STATUS.md).
 
 - **Phase 6D — Demo Mode** (prior phase). A fresh install must
   feel alive. New `app/core/demo_mode.py` state machine
@@ -1090,7 +1090,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   identical to a real populated surface. 4 captures in
   `assets/screenshots/demo/` (launcher / extension / transition
   / empty). **No engine layer touched.** Receipt:
-  [`PHASE_6D_STATUS.md`](../engineering/PHASE_6D_STATUS.md).
+  [`PHASE_6D_STATUS.md`](../../archive/phase-status/PHASE_6D_STATUS.md).
   Story doc: [`FIRST_MAGIC.md`](../product/FIRST_MAGIC.md).
 
 - **Phase 6C — Extension Premium** (prior phase). The popup gets
@@ -1109,7 +1109,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   `recall://`. 5 new captures in
   `assets/screenshots/extension-v2/`. **NO engine work**, **NO
   founder work** — extension surface only. Receipt:
-  [`PHASE_6C_STATUS.md`](../engineering/PHASE_6C_STATUS.md).
+  [`PHASE_6C_STATUS.md`](../../archive/phase-status/PHASE_6C_STATUS.md).
 
 - **Phase 6B — Launcher Identity** (prior phase). The theme swap
   deferred from 6A landed. Palette inverted to warm white +
@@ -1120,7 +1120,7 @@ Pairs with [`PHASE_TRACKER.md`](PHASE_TRACKER.md) (build state).
   `EmptyCard.empty` redesigned at 210 px with *"Recall notices
   unfinished work."* and a soft Show-example lavender pill. 7
   new captures in `assets/screenshots/launcher-v2/`. Receipt:
-  [`PHASE_6B_STATUS.md`](../engineering/PHASE_6B_STATUS.md).
+  [`PHASE_6B_STATUS.md`](../../archive/phase-status/PHASE_6B_STATUS.md).
 
 ## Next
 

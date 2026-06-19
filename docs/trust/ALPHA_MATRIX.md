@@ -77,8 +77,8 @@ A row is **GO** when every column is non-`unknown` and the
 The same three artifacts in each machine's hand-off:
 
 1. `Recall-Setup-lite.exe` (or the equivalent macOS `.dmg`)
-2. The [`alpha/launcher/`](../../alpha/launcher/) pack
-3. The [`alpha/users/<cohort>/`](../../alpha/users/) `TEMPLATE.md`
+2. The [`alpha/launcher/`](../../alpha/launcher) pack
+3. The [`alpha/users/<cohort>/`](../../alpha/users) `TEMPLATE.md`
    that gets copied into a per-tester folder during the run
 
 The Windows path is detailed in

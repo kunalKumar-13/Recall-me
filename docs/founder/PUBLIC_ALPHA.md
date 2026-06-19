@@ -155,4 +155,4 @@ Cross-references for the doc trio Phase 6G added:
   will link to once recorded.
 
 Phase 6G's own engineering receipt:
-[`PHASE_6G_STATUS.md`](../engineering/PHASE_6G_STATUS.md).
+[`PHASE_6G_STATUS.md`](../../archive/phase-status/PHASE_6G_STATUS.md).

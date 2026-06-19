@@ -5,7 +5,7 @@ trust · medium trust · weak trust · silence · bad recovery* —
 documenting the visual contract for every state the launcher
 ships against.
 
-Pairs with [`PHASE_6N_STATUS.md`](../engineering/PHASE_6N_STATUS.md)
+Pairs with [`PHASE_6N_STATUS.md`](../../archive/phase-status/PHASE_6N_STATUS.md)
 (the engineering receipt) and
 [`docs/product/DAILY_LOOP.md`](DAILY_LOOP.md) (the
 `continuity_restored` / `resume_quality` thresholds the
@@ -126,7 +126,7 @@ ledger captures the verdict.
 
 ## Related
 
-- [`PHASE_6N_STATUS.md`](../engineering/PHASE_6N_STATUS.md) — engineering receipt + verification matrix.
-- [`assets/screenshots/launcher-recovery/`](../../assets/screenshots/launcher-recovery/) — 5 captures referenced above.
+- [`PHASE_6N_STATUS.md`](../../archive/phase-status/PHASE_6N_STATUS.md) — engineering receipt + verification matrix.
+- [`assets/screenshots/launcher-recovery/`](../../assets/screenshots/launcher-recovery) — 5 captures referenced above.
 - [`DAILY_LOOP.md`](DAILY_LOOP.md) — `recoveries_shown` / `recoveries_used` / `resume_success` counters that feed the *resume quality* signal.
 - [`MOMENTS.md`](../alpha/MOMENTS.md) — the seven first-time moments per tester; the *bad recovery* row of the moments log links straight to a journal entry.

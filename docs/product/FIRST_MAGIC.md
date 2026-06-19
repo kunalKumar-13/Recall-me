@@ -161,7 +161,7 @@ that any new layer must satisfy.
 
 ## Related
 
-- [`PHASE_6D_STATUS.md`](../engineering/PHASE_6D_STATUS.md) —
+- [`PHASE_6D_STATUS.md`](../../archive/phase-status/PHASE_6D_STATUS.md) —
   the engineering receipt for this phase.
 - [`CLAUDE.md`](../../CLAUDE.md) — the engineering charter, in
   particular the *Things we will not build* section. The demo

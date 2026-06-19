@@ -96,7 +96,7 @@ The directive's "fix every remaining friction" goal is honoured
 in the literal-grep sense: the items listed in the *Friction Kill*
 brief that were *not* in [`OPEN_PROBLEMS.md`](OPEN_PROBLEMS.md)
 either pre-shipped (see *What this iteration did not ship* in
-[`PHASE_5H_STATUS.md`](PHASE_5H_STATUS.md)) or shipped here.
+[`PHASE_5H_STATUS.md`](../../archive/phase-status/PHASE_5H_STATUS.md)) or shipped here.
 
 The directive's *< 60 s install* target is the one
 quantitative goal that did **not** shift this iteration —

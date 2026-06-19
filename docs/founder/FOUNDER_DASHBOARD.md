@@ -4,7 +4,7 @@ A founder needs five answers. This file is how Recall answers them
 **without a single byte of telemetry** — because the product's
 promise and the answers cannot both be true if Recall phones home.
 
-The operating dashboard lives in [`apps/admin/`](../../apps/admin/); this
+The operating dashboard lives in [`apps/admin/`](../../apps/admin); this
 file explains *what it can and cannot know, and why.*
 
 ---

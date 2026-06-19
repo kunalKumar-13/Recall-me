@@ -55,7 +55,7 @@ README + TEMPLATE — **verbatim-only rule**
 (no paraphrase, ever); anonymisation guide;
 0 quotes filed (cohort pending). **(6) RC
 validation:** new
-[`RC_VALIDATION.md`](../../RC_VALIDATION.md)
+[`RC_VALIDATION.md`](../release/RC_VALIDATION.md)
 cross-link evidence index — all 6 RC1 claims
 (install / capture / resume / launcher /
 extension / control-room) backed by checked-in
@@ -67,7 +67,7 @@ combination-table interpretation pins the next
 phase: *"Product ≥ 90 + Alpha 25-50 ⇒ RC ready,
 cohort recruitment is next phase"*. **(8)
 Capstone:**
-[`PHASE_8E_STATUS.md`](../engineering/PHASE_8E_STATUS.md)
+[`PHASE_8E_STATUS.md`](../../archive/phase-status/PHASE_8E_STATUS.md)
 with 9-line verification table. 9 verifications
 all green: `recall alpha review` renders · alpha
 help shows review · pyflakes clean · demo CLI
@@ -86,15 +86,15 @@ cleanup · no archives. Only ship preparation.*
 Recall becomes **v0.1.0-rc1**. 8 frozen surfaces:
 launcher · extension · capture · resume · control
 room · doctor · demo · installer. 4 new top-level
-RC docs ([`VERSION.md`](../../VERSION.md),
-[`SCREEN_INDEX.md`](../../SCREEN_INDEX.md),
-[`DEMO_MODE.md`](../../DEMO_MODE.md),
-[`INSTALL_VERIFIED.md`](../../INSTALL_VERIFIED.md))
+RC docs ([`VERSION.md`](../release/VERSION.md),
+[`SCREEN_INDEX.md`](../product/SCREEN_INDEX.md),
+[`DEMO_MODE.md`](../product/DEMO_MODE.md),
+[`INSTALL_VERIFIED.md`](../release/INSTALL_VERIFIED.md))
 + 7 new release-kit docs under
-[`release/`](../../release/) (README,
+[`release/`](../release/rc1) (README,
 CHANGELOG_RC1, INSTALL, QUICKSTART, DEMO_FLOW,
 KNOWN_ISSUES, LANDING_CHECK) + 1 new capstone
-([`PHASE_8D_STATUS.md`](../engineering/PHASE_8D_STATUS.md)).
+([`PHASE_8D_STATUS.md`](../../archive/phase-status/PHASE_8D_STATUS.md)).
 **(1) Version lock:** v0.1.0-rc1 spec with
 per-surface freeze-source table + build artifacts
 (lite 216 MB / full 261 MB / extension 296 KB) +
@@ -142,7 +142,7 @@ empty-state copy); 2 P2 can-wait; 3 blocked
 80 / extension 85 / control-room 85 / perf 95;
 target was 85+; achieved. Path to 92 (stable
 tag) is 5 follow-ups totalling ~2.5 days. **(9)
-Capstone:** [`PHASE_8D_STATUS.md`](../engineering/PHASE_8D_STATUS.md)
+Capstone:** [`PHASE_8D_STATUS.md`](../../archive/phase-status/PHASE_8D_STATUS.md)
 with 12-line verification table. Success bar:
 **Recall becomes a release candidate. P0 = 0.
 Score 87. v0.1.0-rc1.**
@@ -153,26 +153,26 @@ Score 87. v0.1.0-rc1.**
 *No new features. No redesign. No cleanup. No
 archives.* Make Recall reliable through measurement
 + honest documentation. 9 deliverables ship:
-[`STABILITY/PERF.md`](../../STABILITY/PERF.md) —
+[`STABILITY/PERF.md`](../engineering/stability/PERF.md) —
 real wall-clock timings (launcher construct 84.5 ms
 warm / ~460 ms cold; CLI commands 230–365 ms; resume
-preview 3.1 ms); [`STABILITY/CAPTURE.md`](../../STABILITY/CAPTURE.md)
+preview 3.1 ms); [`STABILITY/CAPTURE.md`](../engineering/stability/CAPTURE.md)
 — 30d event-store reality (166 browser events, 5
 day-files, ChatGPT 20 / GitHub 16 / Google 55
 working, StackOverflow 0 / Stitch 0 flagged as
-matcher-audit-needed); [`STABILITY/LAUNCHER.md`](../../STABILITY/LAUNCHER.md)
+matcher-audit-needed); [`STABILITY/LAUNCHER.md`](../engineering/stability/LAUNCHER.md)
 — frozen 7E.1 widget tree walked offscreen, public
 import contract holds, max 8 user-readable rows
-regardless of event count; [`STABILITY/RESUME.md`](../../STABILITY/RESUME.md)
+regardless of event count; [`STABILITY/RESUME.md`](../engineering/stability/RESUME.md)
 — pipeline alive (6 threads / 5 contexts / 4
 resurfacing contexts), 0 recovery candidates is
-*correctly conservative* not a bug; [`STABILITY/EXTENSION.md`](../../STABILITY/EXTENSION.md)
+*correctly conservative* not a bug; [`STABILITY/EXTENSION.md`](../engineering/stability/EXTENSION.md)
 — 9-state machine, 7 captures, bundle byte-identical
-(293 KB JS) across 8B; [`STABILITY/CONTROL.md`](../../STABILITY/CONTROL.md)
+(293 KB JS) across 8B; [`STABILITY/CONTROL.md`](../engineering/stability/CONTROL.md)
 — 13 routes, 10 loaders, TypeScript clean exit 0;
-[`BUGS_OPEN.md`](../../BUGS_OPEN.md) — honest
+[`BUGS_OPEN.md`](../engineering/BUGS_OPEN.md) — honest
 ledger (1 P0 fixed + 1 P0 open + 5 P1 + 4 P2);
-[`RELEASE_READINESS.md`](../../RELEASE_READINESS.md)
+[`RELEASE_READINESS.md`](../release/RELEASE_READINESS.md)
 — **composite score 76/100** (preview-grade, not
 stable). **(0) Real regression caught and fixed:**
 8B's archive over-reached — `app/main.py` imports
@@ -243,7 +243,7 @@ modules (`launcher_legacy.py` 2675 LOC + `cards.py` 970
 LOC + `widgets.py` 2471 LOC + `styles.py` 359 LOC +
 `launcher_anims.py` 84 LOC + `launcher_digest.py` 89 LOC
 + `demo_data.py` + `ceremonies.py`) + 3 historical
-capture scripts → [`archive/launcher-old/`](../../archive/launcher-old/);
+capture scripts → [`archive/launcher-old/`](../../archive/launcher-old);
 `app/ui/launcher.py` collapsed from 60→18 lines (no more
 `RECALL_LAUNCHER=legacy` branch + no more back-compat
 constant re-exports `LAUNCHER_WIDTH`/`SHADOW_MARGIN`/
@@ -264,7 +264,7 @@ outright (`control-room.png` · `doctor-output.png` ·
 components** — 8 dead files (`ContinueCard`, `DebugStrip`,
 `DemoBanner`, `InvestigationCard`, `MemoryList`,
 `Section`, `TrustSurface`, `states`) →
-[`archive/extension-pre-7a/`](../../archive/extension-pre-7a/);
+[`archive/extension-pre-7a/`](../../archive/extension-pre-7a);
 vite build proves they were already tree-shaken (293 KB
 JS bundle unchanged). **(4) Dependency cleanup** — 3
 unused deps removed from `apps/web/package.json` (`clsx`,
@@ -275,7 +275,7 @@ orphan API routes (`thread_forget`, `contexts/recent`,
 `sessions/recent`, `threads_clear_evolution_cache`,
 `replay_day`) — kept until associated pydantic schemas
 can be walked cleanly. 5 new audit docs land under
-[`AUDIT/`](../../AUDIT/): `DELETE_PLAN.md` (per-row
+[`AUDIT/`](../../archive/AUDIT): `DELETE_PLAN.md` (per-row
 delete log w/ verification per row), `LAUNCHER_FREEZE.md`
 (official launcher path + public API + allowed/forbidden
 changes — *no more launcher generations*),
@@ -302,36 +302,36 @@ Understand what Recall actually is today.* No launcher
 redesign · no extension redesign · no control-room
 redesign · no new memory systems · no new phases — audit
 only. 7 evidence-based audit docs land under a new
-top-level [`AUDIT/`](../../AUDIT/) folder:
-[`SURFACES.md`](../../AUDIT/SURFACES.md) catalogues every
+top-level [`AUDIT/`](../../archive/AUDIT) folder:
+[`SURFACES.md`](../../archive/AUDIT/SURFACES.md) catalogues every
 runtime surface (36 LIVE / 2 LEGACY / 11 ARCHIVE / 1
 REMOVE) with entry point + owner file + status;
-[`DEAD_CODE.md`](../../AUDIT/DEAD_CODE.md) lists parallel
+[`DEAD_CODE.md`](../../archive/AUDIT/DEAD_CODE.md) lists parallel
 trees + duplicate widgets + orphan API routes + dead
 helpers w/ file:line citations + grep evidence (8 truly
 DEAD pre-7A extension components, 7 LEGACY `app/ui/*.py`
 behind `RECALL_LAUNCHER=legacy`, 3 duplicate widget pairs
 + 1 duplicate confidence-logic pair, 5 orphan API routes);
-[`LAUNCHER_MAP.md`](../../AUDIT/LAUNCHER_MAP.md) traces
+[`LAUNCHER_MAP.md`](../../archive/AUDIT/LAUNCHER_MAP.md) traces
 every signal/slot/public method through the launcher (class
 graph + state-flow per refresh + frozen anti-rules
 mirroring 7E.1 `LAUNCHER_CONTRACTS.md` + the *one launcher*
 collapse path);
-[`CAPTURE_MAP.md`](../../AUDIT/CAPTURE_MAP.md) cross-checks
+[`CAPTURE_MAP.md`](../../archive/AUDIT/CAPTURE_MAP.md) cross-checks
 the 7D `CAPTURE_FLOW.md` against current code, lists the
 diagnostic CLI per failure mode, captures live measurement
 (8 events today, 11 investigations, last event 38m ago);
-[`ASSETS.md`](../../AUDIT/ASSETS.md) inventories every
+[`ASSETS.md`](../../archive/AUDIT/ASSETS.md) inventories every
 PNG under `assets/screenshots/` (5 ACTIVE folders + 2
 `⭐` LIVE-launcher/extension capture folders + 11
 HISTORICAL phase folders + 7 root-level ORPHAN PNGs
 flagged for tier-1 delete);
-[`DEPENDENCIES.md`](../../AUDIT/DEPENDENCIES.md)
+[`DEPENDENCIES.md`](../../archive/AUDIT/DEPENDENCIES.md)
 classifies all 43 packages across `requirements.txt` + 3
 `package.json` files (20 runtime / 19 dev / 3 unused
 `clsx`+`lucide-react`+`tailwind-merge` in marketing web /
 1 misplaced `playwright` in extension's `dependencies`);
-[`STATE.md`](../../AUDIT/STATE.md) is the capstone (*what
+[`STATE.md`](../../archive/AUDIT/STATE.md) is the capstone (*what
 Recall is · what ships · what's dead · what survives ·
 tier-graded delete recommendations · live verify*). Three
 parallel `Explore` subagents gathered evidence for the
@@ -404,7 +404,7 @@ recall.py doctor` green on config / events / extension /
 installer (daemon RED is the expected not-running state).
 No widget paint changed, no layout changed, no new
 features. Receipt:
-[`PHASE_7E.1_STATUS.md`](../engineering/PHASE_7E.1_STATUS.md).
+[`PHASE_7E.1_STATUS.md`](../../archive/phase-status/PHASE_7E.1_STATUS.md).
 Success bar: *launcher boots every time.*
 
 ### Previous phase
@@ -474,7 +474,7 @@ the surface). Hotkeys preserved: `Esc` / `Ctrl+K` /
 signature: synthesises a `MemoryRow` list from the demo
 payload's `timeline` so the demo reads identically to a
 live populated state. 3 files snapshotted into
-[`archive/launcher-7b1/`](../../archive/launcher-7b1/)
+[`archive/launcher-7b1/`](../../archive/launcher-7b1)
 with per-file README: `minimal_7b1.py` ·
 `recovery_panel_7b1.py` · `investigation_panel_7b1.py`. 5
 captures (`home · high · med · low · no_hero`) in
@@ -487,7 +487,7 @@ catalogue + the removed-list. Engine + recovery + resume
 pipeline (6P) + trust/inspector CLIs (6Q) + capture CLIs
 (7D) all **untouched** — 7E is paint + composition only.
 pyflakes clean. Receipt:
-[`PHASE_7E_STATUS.md`](../engineering/PHASE_7E_STATUS.md).
+[`PHASE_7E_STATUS.md`](../../archive/phase-status/PHASE_7E_STATUS.md).
 Success bar: *open Recall → see unfinished work + recent
 memory + resume path + trust within 3 seconds.* **Launcher
 frozen.**
@@ -535,7 +535,7 @@ confirm Continue document → `recall inspect` confirms
 events today (64 tabs + 7 chats), 11 investigations, last
 event 1h ago — ChatGPT / Google / Stitch / Kotak visits
 all present in the tail output. pyflakes clean. Receipt:
-[`PHASE_7D_STATUS.md`](../engineering/PHASE_7D_STATUS.md).
+[`PHASE_7D_STATUS.md`](../../archive/phase-status/PHASE_7D_STATUS.md).
 Success bar: *Recall truly remembers — and now you can prove
 it.*
 
@@ -588,7 +588,7 @@ surface** — single-focus tool. `InvestigationCardV3` +
 path keeps constructing them while the launcher never
 renders. Hotkeys: kept `Esc` / `Ctrl+K` / `Meta+K` / `1`;
 removed `2-9` (nothing to navigate to). 3 files snapshotted
-into [`archive/launcher-raycast/`](../../archive/launcher-raycast/)
+into [`archive/launcher-raycast/`](../../archive/launcher-raycast)
 with per-file README: `minimal_7b.py` ·
 `recovery_panel_7b.py` · `investigation_panel_7b.py`. 5
 captures (`empty · active · resume · demo · overflow`) in
@@ -600,7 +600,7 @@ geometry/typography/per-region tables + 5-row state
 catalogue. Engine + recovery layer + resume pipeline (6P)
 + trust/inspector CLIs (6Q) all **untouched** — 7B.1 is
 paint + composition only. pyflakes clean. Receipt:
-[`PHASE_7B.1_STATUS.md`](../engineering/PHASE_7B.1_STATUS.md).
+[`PHASE_7B.1_STATUS.md`](../../archive/phase-status/PHASE_7B.1_STATUS.md).
 Success bar: *Looks like product. Not utility.*
 
 ### Previous phase
@@ -655,14 +655,14 @@ table (covering 100%/125%/150% scaling + arm-length + dark/
 bright room + title overflow + empty + demo) + 2-row
 performance-budget table + the explicit *Launcher frozen
 forever* freeze rule. 3 files snapshotted into
-[`archive/launcher-final/`](../../archive/launcher-final/)
+[`archive/launcher-final/`](../../archive/launcher-final)
 with per-file README documenting the per-section-card era:
 `minimal_6r.py` · `recovery_panel_6r.py` ·
 `investigation_panel_6r.py`. Engine + recovery layer +
 resume pipeline (6P) + trust/inspector CLIs (6Q) all
 **untouched** — 7B is paint + ergonomics only. pyflakes
 clean. Receipt:
-[`PHASE_7B_STATUS.md`](../engineering/PHASE_7B_STATUS.md).
+[`PHASE_7B_STATUS.md`](../../archive/phase-status/PHASE_7B_STATUS.md).
 Success bar: *open Recall · see remembered work · press
 Resume · leave*.
 
@@ -728,7 +728,7 @@ is the frozen-product checklist: paint table · motion table
 · per-region contracts · 7-row state catalogue with one
 capture per row · the *Design UI now. Engine later.*
 capture-architecture table. Receipt:
-[`PHASE_7A_STATUS.md`](../engineering/PHASE_7A_STATUS.md).
+[`PHASE_7A_STATUS.md`](../../archive/phase-status/PHASE_7A_STATUS.md).
 `tsc --noEmit` + `vite build` clean (~293 KB JS). 21
 captures total (7 new in `extension-7a/`). Success bar:
 *open extension → immediately understand: Recall remembered
@@ -785,7 +785,7 @@ is the frozen-product checklist (geometry table · paint table
 visibility audit: arm-length · dark-room · 50 % / 125 %
 scaling · title overflow · empty · demo · resume · the
 freeze rule). Four files snapshotted into
-[`archive/launcher-debt/`](../../archive/launcher-debt/) with
+[`archive/launcher-debt/`](../../archive/launcher-debt) with
 per-file README: `minimal_6p1.py` (6P.1 visibility surface) ·
 `recovery_panel_6q.py` (6Q hero with the *Why this?* link) ·
 `investigation_panel_6o.py` (6O horizontal row) ·
@@ -793,7 +793,7 @@ per-file README: `minimal_6p1.py` (6P.1 visibility surface) ·
 signals layer (`recovery.explain_signals` + `recall inspect`
 + `bad_recoveries`) **stays in active code** — only the
 launcher's surface changed. Receipt:
-[`PHASE_6R_STATUS.md`](../engineering/PHASE_6R_STATUS.md).
+[`PHASE_6R_STATUS.md`](../../archive/phase-status/PHASE_6R_STATUS.md).
 Success bar: **open Recall · understand instantly · click
 Resume · done**.
 
@@ -859,7 +859,7 @@ scripted walk (proposal draft · RLHF notes · WebSocket
 issue) verifying **only one hero ever surfaces** + the *Why
 this?* contract + the ledger-demotion path; carries a
 6-row failure-mode table the showcase exists to catch.
-[`archive/recovery-ranking/`](../../archive/recovery-ranking/)
+[`archive/recovery-ranking/`](../../archive/recovery-ranking)
 documents *what 6Q kept untouched* (every gate, every
 weight, `_behavior_clause`, `_classify_targets`), *what 6Q
 added* (the ledger flag + `explain_signals` + 2 CLIs + the
@@ -870,7 +870,7 @@ freshness half-life — double-counts the existing 14-day +
 duplicates `_W_SURFACE_BREADTH`; an engine-side duplicate
 de-dup pass — deferred until the launcher's 1-hero cap stops
 being enough). Receipt:
-[`PHASE_6Q_STATUS.md`](../engineering/PHASE_6Q_STATUS.md).
+[`PHASE_6Q_STATUS.md`](../../archive/phase-status/PHASE_6Q_STATUS.md).
 Success bar: user says *"Yes. That is exactly what I wanted
 back."*
 
@@ -961,7 +961,7 @@ end-to-end pipeline audit with the *why files first* rationale
 [`SHOWCASE_RUN.md`](../product/SHOWCASE_RUN.md) scripted
 verification (the step-by-step demo run + failure-injection
 matrix) + the receipt
-[`PHASE_6P_STATUS.md`](../engineering/PHASE_6P_STATUS.md).
+[`PHASE_6P_STATUS.md`](../../archive/phase-status/PHASE_6P_STATUS.md).
 The pre-6P stubs (`_on_restore`, `_on_demo_resume`) were
 removed and documented in
 [`archive/resume-old/README.md`](../../archive/resume-old/README.md).
@@ -1009,7 +1009,7 @@ no directive removed* · *became a memory center, not a tool*
 · *visual hierarchy inverted*; 3 design rules: *one surface ·
 HIGH or nothing · add nothing the user doesn't act on*).
 Receipt:
-[`PHASE_6O_STATUS.md`](../engineering/PHASE_6O_STATUS.md).
+[`PHASE_6O_STATUS.md`](../../archive/phase-status/PHASE_6O_STATUS.md).
 
 ### Previous phase
 
@@ -1052,7 +1052,7 @@ the engine is empty. 5 new captures in
 [`RECOVERY_VISUAL_AUDIT.md`](../product/RECOVERY_VISUAL_AUDIT.md)
 carries the directive's *high / medium / low / silence /
 bad recovery* audit + a cross-cutting rules table. Receipt:
-[`PHASE_6N_STATUS.md`](../engineering/PHASE_6N_STATUS.md).
+[`PHASE_6N_STATUS.md`](../../archive/phase-status/PHASE_6N_STATUS.md).
 
 ### Previous phase
 
@@ -1099,7 +1099,7 @@ narrative on the *Raycast ↔ Notion* axis. Numbering: this
 directive's *Phase 6M.1* label conflicts with the prior
 Launcher Refinement that already shipped; filed as **6M.2**
 so both audit trails survive. Receipt:
-[`PHASE_6M.2_STATUS.md`](../engineering/PHASE_6M.2_STATUS.md).
+[`PHASE_6M.2_STATUS.md`](../../archive/phase-status/PHASE_6M.2_STATUS.md).
 
 ### Previous phase
 
@@ -1142,9 +1142,9 @@ pill row). New
 the directive's audit table (*removed · kept · why · future*).
 Numbering: previous Phase 6M (Desktop Memory Layer) shipped
 this session with its own
-[`PHASE_6M_STATUS.md`](../engineering/PHASE_6M_STATUS.md); this
+[`PHASE_6M_STATUS.md`](../../archive/phase-status/PHASE_6M_STATUS.md); this
 phase files as **6M.1** to preserve that history. Receipt:
-[`PHASE_6M.1_STATUS.md`](../engineering/PHASE_6M.1_STATUS.md).
+[`PHASE_6M.1_STATUS.md`](../../archive/phase-status/PHASE_6M.1_STATUS.md).
 
 ### Previous phase
 
@@ -1180,7 +1180,7 @@ correct durations. **Purely additive layer** — deleting
 `app/core/desktop/` removes the watcher without breaking any
 downstream artifact (CLAUDE.md rule for new layers honoured).
 Receipt:
-[`PHASE_6M_STATUS.md`](../engineering/PHASE_6M_STATUS.md).
+[`PHASE_6M_STATUS.md`](../../archive/phase-status/PHASE_6M_STATUS.md).
 Product story:
 [`DESKTOP_LAYER.md`](../product/DESKTOP_LAYER.md).
 
@@ -1226,7 +1226,7 @@ Default import unchanged
 LiveLauncher); `RECALL_LAUNCHER=legacy` escape hatch from
 Phase 6K still works. **No engine touches, no recovery-logic
 change.** Receipt:
-[`PHASE_6L_STATUS.md`](../engineering/PHASE_6L_STATUS.md).
+[`PHASE_6L_STATUS.md`](../../archive/phase-status/PHASE_6L_STATUS.md).
 Archive doc:
 [`archive/launcher-v2/README.md`](../../archive/launcher-v2/README.md).
 
@@ -1270,7 +1270,7 @@ produces 6 PNGs in `assets/screenshots/launcher-live/`
 constructed from the same v3 widgets LiveLauncher composes at
 runtime. **No engine touches**, **no recovery-logic changes**.
 Receipt:
-[`PHASE_6K_STATUS.md`](../engineering/PHASE_6K_STATUS.md).
+[`PHASE_6K_STATUS.md`](../../archive/phase-status/PHASE_6K_STATUS.md).
 
 ### Previous phase
 
@@ -1311,7 +1311,7 @@ mirrored bucket directories so every gallery renders real
 thumbnails. Next.js build clean (14 routes, all
 `ƒ` server-rendered, 87.4 KB first-load shared). **No engine,
 no Python, no marketing-site, no extension touches.** Receipt:
-[`PHASE_6J_STATUS.md`](../engineering/PHASE_6J_STATUS.md). User
+[`PHASE_6J_STATUS.md`](../../archive/phase-status/PHASE_6J_STATUS.md). User
 manual: [`CONTROL_ROOM_V2.md`](CONTROL_ROOM_V2.md).
 
 ### Previous phase
@@ -1353,7 +1353,7 @@ accent ring). Live `app/ui/launcher.py` is **untouched** — the
 v3 package sits alongside, ready for promotion on a follow-up
 with its own QA matrix; the directive's anti-rule
 (*no engine, no recovery*) held strictly. Receipt:
-[`PHASE_6I_STATUS.md`](../engineering/PHASE_6I_STATUS.md).
+[`PHASE_6I_STATUS.md`](../../archive/phase-status/PHASE_6I_STATUS.md).
 
 ### Previous phase
 
@@ -1402,7 +1402,7 @@ request; no cache / no revalidate. Next.js build clean (10
 routes, all `ƒ` dynamic, 87.4 KB first-load shared). **No
 Python, no engine, no recovery, no `apps/web/` marketing-site
 touches.** Receipt:
-[`PHASE_6H_STATUS.md`](../engineering/PHASE_6H_STATUS.md).
+[`PHASE_6H_STATUS.md`](../../archive/phase-status/PHASE_6H_STATUS.md).
 
 ### Previous phase
 
@@ -1443,7 +1443,7 @@ pre-flight checklist, the cuts to never make). PUBLIC_ALPHA.md
 gains a Phase 6G addendum naming the new front-door surfaces.
 Next.js build clean (`/` at 55 KB / first-load 142 KB).
 Receipt:
-[`PHASE_6G_STATUS.md`](../engineering/PHASE_6G_STATUS.md).
+[`PHASE_6G_STATUS.md`](../../archive/phase-status/PHASE_6G_STATUS.md).
 
 ### Previous phase
 
@@ -1480,7 +1480,7 @@ what doesn't, why 30 min, manual verification recipe) +
 `MOMENTS.md` (seven first-time moments per tester:
 install / capture / investigation / recovery / resume / wow /
 trust break). Receipt:
-[`PHASE_6F_STATUS.md`](../engineering/PHASE_6F_STATUS.md).
+[`PHASE_6F_STATUS.md`](../../archive/phase-status/PHASE_6F_STATUS.md).
 
 ### Previous phase
 
@@ -1514,7 +1514,7 @@ section — 5 new rows for Windows × Chrome / Edge / Arc + macOS
 Intel / Apple Silicon daily use. 3 new captures in
 `assets/screenshots/alpha/` (control room / populated status /
 honest empty). Receipt:
-[`PHASE_6E_STATUS.md`](../engineering/PHASE_6E_STATUS.md). Pairs
+[`PHASE_6E_STATUS.md`](../../archive/phase-status/PHASE_6E_STATUS.md). Pairs
 with [`docs/alpha/PLAYBOOK.md`](../alpha/PLAYBOOK.md).
 
 ### Previous phase
@@ -1631,14 +1631,14 @@ captures in `assets/screenshots/extension-v2/`
 | 6N | Recovery Precision | **No redesign, no geometry changes, no control-room work — recovery experience only** · `RecoveryCardV3` gains `signal` param (HIGH/MED/LOW) driving CTA verb (Resume/Continue/Review), pill paint variant, card fill + border strength, and confidence sentence · `_ResumePill` rewritten as 3-variant widget (`kind="resume"\|"continue"\|"review"`); per-kind paint (accent-filled / accent-soft+border / ghost outline) · card paint per signal: HIGH=accent-soft fill + accent line α=80; MED=halfway tint + accent line α=48; LOW=plain white + hairline α=24 · new `DEFAULT_SENTENCES` map carries directive's exact strings; optional `sentence` constructor arg overrides; LiveLauncher passes `getattr(c, "why_summary", None)` so engine-side sentences land without further widget changes · evidence chips capped at **3** (directive); parser unchanged — never fabricates · new `sort_for_digest()` pure helper orders investigations: `0 unfinished` (strength≥3) · `1 returned` (last_touch contains return/revisit/back) · `2 recent` (today/now/active/Nh/≤3d) · `3 passive`; within rank, high-strength wins · `LiveLauncher._populate_digest` sorts before passing to strip (still caps at 6M.2's `MAX_VISIBLE=3` + `+N more`) · `MinimalEmpty._build_preview_card` adds PREVIEW caption + non-interactive LOW-state `RecoveryCardV3` (canonical WebSocket fixture, sentence *A real recovery will replace this*); auto-dismiss is upstream (state machine swaps to `MinimalDigest` on first real ingest) · 5 captures in `assets/screenshots/launcher-recovery/` (high/medium/low/empty/resume) · new `RECOVERY_VISUAL_AUDIT.md` (5 sections — high/medium/low trust + silence + bad recovery + cross-cutting rules table) |
 | 6O | Launcher Reset | **We overbuilt — stop adding, delete complexity, build ONE surface** · window **680 × 460** paper white, radius 24, soft shadow only · single column: search (capped 620, centred) + CONTINUE section + **fixed 100 px hero** (HIGH only, `n_targets ≥ 4`) + OTHER WORK section + **3 bare-text titles** equal width · or empty (centered headline + body + 2 buttons) · `RecoveryCardV3` rewritten — `setFixedHeight(100)`, single `_ResumeButton`, ambient meta text (no chips, no badges, no sentences, no signal variants); new `_EliderLabel` paints `…` on long titles · `InvestigationCardV3` is now a bare `QLabel`; `InvestigationRow` caps at 3 equal-width, no `+N` overflow, no animations · `minimal.py` slimmed to 5 classes (`MinimalSearchBar`, `MinimalDigest`, `MinimalEmpty`, `MinimalShell`, `MinimalWindow`) · `LiveLauncher.DEFAULT_SIZE = (680, 460)` (was 720×520); `_populate_digest` gates on HIGH and falls through to empty otherwise · **deleted from the runtime surface**: returns row · trust line · MED/LOW signal variants · confidence sentences · preview card · status dots · evidence chip parser · `+N` overflow · `sort_for_digest` · footers · daemon/doctor/version blocks · 6 files moved to `archive/launcher-overbuild/` (prior `minimal.py` · `recovery_panel.py` · `investigation_panel.py` · `digest.py` · 6M.2/6N capture scripts) w/ per-file README · new `capture_launcher_reset.py` produces 2 PNGs (populated · empty) in `assets/screenshots/launcher-reset/` · new `LAUNCHER_RESET.md` (directive's *what removed · why launcher failed · new philosophy* audit: 3 failure modes + 3 design rules) |
 | 6P | Resume Reality | **Click Resume — actually continue work. No UI redesign, no launcher changes, no control-room work, restore flow only** · pre-6P `_on_restore` was a one-line stub that resolved the `RestorationPlan` from the API and immediately dropped it — user clicked Resume, launcher silently closed, nothing reopened · new [`ResumePreview`](../../app/ui/launcher_v3/resume_preview.py) overlay floats on top of the digest inside the launcher window: *Continue* eyebrow + title + *Will reopen* count breakdown (e.g. `2 files · 2 tabs · 1 search`, derived from `_classify_counts` locally — same buckets `RecoveryEngine.plan_for` uses) + Cancel / Resume now buttons, Esc cancels, no modal darkening · new [`RestoreToast`](../../app/ui/launcher_v3/restore_toast.py) pins to the bottom of the launcher for **3 s** with up to **3** restored target names (*Restored · backoff.py · client.py · MDN*) or a calm failure line (*Could not reopen 1 item · Continue anyway* / *Could not reach the engine · try again*); `_name_for` shortens paths to basename + URLs to host · `_on_preview_accept` calls `APIClient.recovery_restore`, walks `plan.steps` in the engine's prescribed order (**files → chats → tabs → searches**), opens each via `_open_target` (`os.startfile` on Windows, `open` on macOS, `xdg-open` on Linux); files are existence-checked before logging the `open` event so a phantom file doesn't pollute the log · failure handling is best-effort: missing files + `os.startfile` exceptions are counted as `skipped` and the chain continues — no hard stop, no modal, no traceback ever surfaced to the user · `RECALL_EXPLAIN_RECOVERY=1` writes per-step skip reasons to stdout (developer-only path) · demo path runs through the same preview → toast cycle (synthesises `demo_targets` from the demo recovery's `urls` + `files`) so the WebSocket example reads identically to a live restore · stub helpers (`_on_restore`, `_on_demo_resume`) deleted and documented in `archive/resume-old/README.md` · launcher hides ~400 ms after a successful toast so the user lands in the editor / browser uncovered · 3 new docs: `RESUME_FLOW.md` (end-to-end pipeline + the *why files first* / *why chats second* rationale + 5-row failure table) + `SHOWCASE_RUN.md` (scripted WebSocket demo run + failure-injection matrix) + `PHASE_6P_STATUS.md` · pyflakes clean across the new files; legacy launcher's own `_on_recovery_restore` left intact (still reachable via `RECALL_LAUNCHER=legacy`) |
-| 6Q | Continuity Truth | **Make Recall feel correct - not pretty, not bigger - investigation quality only. No launcher redesign, no extension redesign, no control-room work** · 3 layers shipped together: (1) **the canonical contract** — new `INVESTIGATION_PRINCIPLES.md` codifies the 7 rules (*same topic returns → merge · one-off visit → suppress · passive browsing → suppress · deep work → promote · unfinished work → strongest signal · multi-day return → boost · casual reopen loops → decay*) + 9-row trust-floor gate table; new `PROMOTION_THRESHOLDS.md` documents **LOW (0-1) / MED (2-3) / HIGH (4+)** bands + 5 overrides (*unfinished overrides all · returned_after_gap boosts +1 · duplicate penalty · noise penalty · ledger penalty*) (2) **the feedback loop** — new [`bad_recoveries.py`](../../app/core/bad_recoveries.py) appends to `~/.recall/bad_recoveries.jsonl` (closed 4-reason enum: `wrong_topic` · `already_done` · `noise` · `duplicate`; trust contract: no content, only `thread_id`+`reason`+`ts`, local-only, inspectable JSONL), engine writes `signals.ledger_flagged = 1.0` on flagged threads (`_LEDGER_WINDOW_DAYS = 14`), launcher's `_populate_digest` reads the flag and skips HIGH promotion — the only user-feedback input into ranking; everything else stays derived (3) **the introspection surface** — new [`recall inspect <id>`](../../app/core/inspect_cli.py) CLI prints deterministic ASCII card (Title · Strength · Signals · Evidence · Decision); new [`recall trust review`](../../app/core/trust_cli.py) prints 14-day ledger + bad %/silence %/resume % rates; new [`WhyThisSheet`](../../app/ui/launcher_v3/why_sheet.py) overlay opens from a small lavender *Why this?* link on hero meta row (`_WhyLink` widget), lists [`recovery.explain_signals(candidate)`](../../app/core/recovery.py) verbatim — **no AI text, no prose, no scoring numbers**, just observational lines (*"unfinished work · returned after a 2-day gap · 5 targets involved · multiple surfaces engaged"*) · launcher escape cascade: *why sheet > preview > hide* · 4 captures in `assets/screenshots/launcher-truth/` (`hero_with_why` · `why_sheet` · `showcase` · `ledger_demoted`) · new `SHOWCASE_TRUTH.md` is the *Showcase Reality* scripted walk (proposal · RLHF · WebSocket) verifying *only one hero ever surfaces* + the *Why this?* contract + the ledger-demotion path + a 6-row failure-mode table · [`archive/recovery-ranking/`](../../archive/recovery-ranking/) documents what 6Q **kept untouched** (every gate + every weight), what 6Q **added** (ledger flag + `explain_signals` + 2 CLIs + Why sheet), and what 6Q **considered and rejected** (learned ranker — CLAUDE.md determinism rule; second freshness half-life — double counts; chat-heavy bump — duplicates surface-breadth weight; engine-side de-dup pass — deferred) · pyflakes clean across new files · ASCII-only output across both CLIs (`cp1252` safe) · success bar: *"Yes. That is exactly what I wanted back."* |
+| 6Q | Continuity Truth | **Make Recall feel correct - not pretty, not bigger - investigation quality only. No launcher redesign, no extension redesign, no control-room work** · 3 layers shipped together: (1) **the canonical contract** — new `INVESTIGATION_PRINCIPLES.md` codifies the 7 rules (*same topic returns → merge · one-off visit → suppress · passive browsing → suppress · deep work → promote · unfinished work → strongest signal · multi-day return → boost · casual reopen loops → decay*) + 9-row trust-floor gate table; new `PROMOTION_THRESHOLDS.md` documents **LOW (0-1) / MED (2-3) / HIGH (4+)** bands + 5 overrides (*unfinished overrides all · returned_after_gap boosts +1 · duplicate penalty · noise penalty · ledger penalty*) (2) **the feedback loop** — new [`bad_recoveries.py`](../../app/core/bad_recoveries.py) appends to `~/.recall/bad_recoveries.jsonl` (closed 4-reason enum: `wrong_topic` · `already_done` · `noise` · `duplicate`; trust contract: no content, only `thread_id`+`reason`+`ts`, local-only, inspectable JSONL), engine writes `signals.ledger_flagged = 1.0` on flagged threads (`_LEDGER_WINDOW_DAYS = 14`), launcher's `_populate_digest` reads the flag and skips HIGH promotion — the only user-feedback input into ranking; everything else stays derived (3) **the introspection surface** — new [`recall inspect <id>`](../../app/core/inspect_cli.py) CLI prints deterministic ASCII card (Title · Strength · Signals · Evidence · Decision); new [`recall trust review`](../../app/core/trust_cli.py) prints 14-day ledger + bad %/silence %/resume % rates; new [`WhyThisSheet`](../../app/ui/launcher_v3/why_sheet.py) overlay opens from a small lavender *Why this?* link on hero meta row (`_WhyLink` widget), lists [`recovery.explain_signals(candidate)`](../../app/core/recovery.py) verbatim — **no AI text, no prose, no scoring numbers**, just observational lines (*"unfinished work · returned after a 2-day gap · 5 targets involved · multiple surfaces engaged"*) · launcher escape cascade: *why sheet > preview > hide* · 4 captures in `assets/screenshots/launcher-truth/` (`hero_with_why` · `why_sheet` · `showcase` · `ledger_demoted`) · new `SHOWCASE_TRUTH.md` is the *Showcase Reality* scripted walk (proposal · RLHF · WebSocket) verifying *only one hero ever surfaces* + the *Why this?* contract + the ledger-demotion path + a 6-row failure-mode table · [`archive/recovery-ranking/`](../../archive/recovery-ranking) documents what 6Q **kept untouched** (every gate + every weight), what 6Q **added** (ledger flag + `explain_signals` + 2 CLIs + Why sheet), and what 6Q **considered and rejected** (learned ranker — CLAUDE.md determinism rule; second freshness half-life — double counts; chat-heavy bump — duplicates surface-breadth weight; engine-side de-dup pass — deferred) · pyflakes clean across new files · ASCII-only output across both CLIs (`cp1252` safe) · success bar: *"Yes. That is exactly what I wanted back."* |
 | 6P.1 | Launcher Visibility Recovery | **No new features, no recovery logic work, no resume work — visual correction only** · the 6O reset went too far on paint: `#F7F5F2` page vs `#FFFFFF` cards differed by ~10 % luminance so layered surfaces blended together, search had no chrome of its own, OTHER WORK was bare text adrift, empty-state buttons had no fixed widths, and the launcher window painted flush to its edge with no visible frame · `theme.BG` warms to **`#F3F1ED`** (6 % darker than the cards) · new `BORDER_RAISED = #E4DED6` solid hairline replaces rgba hairlines that read as muddy ink · new `SHADOW_CARD_* = 0 12 32 rgba(0,0,0,.08)` (vs 6O's `0 8 24 .07`) · new `_LayeredCard` base class (white fill + 1-px warm-grey border + soft drop shadow) inherited by the search bar (radius 14), the recovery hero (radius 22), and the new `_InvestigationsCard` wrapper (radius 18) around the OTHER WORK row · search bar gains hand-drawn `_SearchIcon` (`QPainter` circle + handle, no Unicode glyph dependency) + lavender focus ring (2-px `T.ACCENT` border on `FocusIn`, drops back to the warm hairline on `FocusOut`); inactive cards paint at ~0.96 alpha so the focused card is always the foreground · hero gains **soft 4-px lavender left accent strip** painted inside the rounded border (clipped to follow the card curve) + **fixed-width 110-px Resume button** (`_ResumeButton.WIDTH`) so the right edge of the card is stable across recoveries with different title lengths · empty state stacks **logo dot → headline → sub → buttons** with a 16-px gap and two **140-px fixed-width buttons** (primary accent-filled, secondary layered card) · `MinimalWindow` reserves a **12-px outer margin** and paints a 1-px warm-grey border around the page at radius 24 so the launcher reads as a discrete object · new [`capture_launcher_visible.py`](../../infra/scripts/capture/capture_launcher_visible.py) produces 4 PNGs (`hero` · `empty` · `focus` · `investigations`) in `assets/screenshots/launcher-visible/` · new [`LAUNCHER_VISIBILITY.md`](../product/LAUNCHER_VISIBILITY.md) carries the directive's *problem · fix · before / after* audit (9-row comparison table) · structural geometry unchanged (680 × 460, HIGH-only gate, max-3 investigations) · pyflakes clean |
-| 6R | Launcher Finalization | **Stop feature work - only launcher - make it feel like shipped software. No docs, no trust system, no recovery ranking, no control room, no extension. The launcher becomes a frozen product surface; no more launcher phases after this** · window **680 × 440** hard clamp (`setFixedSize` min=max, no resize), `WA_TranslucentBackground=False` — *no glass, no blur, no floating opacity tricks* · `BG=#F4F1EC` (was `#F3F1ED`), new `BORDER_RAISED_STRONG=#E7DED3` (2-px search border), new `SHADOW_SEARCH_*=0 8 24 rgba(0,0,0,.06)` under `SHADOW_CARD_*=0 12 32 rgba(0,0,0,.08)` · **search bar rewritten**: 52 px tall, radius 14, lavender focus ring, hand-drawn `_SearchIcon` (no Unicode glyph dependency), placeholder *Search work…* · **hero card rewritten**: fixed 88-px height, **6-px lavender left accent strip** clipped to rounded border, title (one line, elided with `...`) + tiny **HIGH** confidence pill + **fixed-width 112-px Resume button** + max-3 chip row beneath title derived from `suggested_targets` via `_chips_from_targets` (same buckets as resume preview); **removed from hero**: subtitle · meta caption · prose · *Why this?* link · `signals` param · `request_why` signal · **OTHER WORK rewritten**: vertical list (was horizontal in 6O), 44-px rows (lavender 6-px dot + title + quiet painted chevron), max 3 rows, white card wrapper with 1-px inter-row dividers · **empty surface restacked**: lavender square · headline · *Show example* (primary accent-filled) · *Start working* (secondary layered card — renamed from *Start normally* per directive), both buttons 200-px fixed width, **inside the centred stack** (no longer floating page furniture) · new single-line **footer** *local only · no cloud* at the bottom of every surface (populated + empty), ~10 px ink-3, centred · live launcher's `WhyThisSheet` wiring removed: `_recovery_to_v3` no longer passes `signals`, demo path no longer synthesises demo signals, escape cascade collapses back to *preview > hide* · new `capture_launcher_final.py` produces 4 PNGs (`hero` · `empty` · `focus` · `overflow`) in `assets/screenshots/launcher-final/` · new `LAUNCHER_FINAL_AUDIT.md` is the frozen-product checklist (geometry table · paint table · hero / OTHER WORK / empty / footer contracts · 7-check visibility audit covering *arm-length / dark-room / 50% / 125% scaling / title overflow / empty / demo / resume* + the freeze rule) · 4 files snapshotted into [`archive/launcher-debt/`](../../archive/launcher-debt/) with per-file README: `minimal_6p1.py` · `recovery_panel_6q.py` · `investigation_panel_6o.py` · `why_sheet_6q.py` · engine-side signals layer (`recovery.explain_signals` + `recall inspect` + `bad_recoveries`) **stays in active code** — only the launcher's surface changed · pyflakes clean · success bar: *open Recall · understand instantly · click Resume · done* |
+| 6R | Launcher Finalization | **Stop feature work - only launcher - make it feel like shipped software. No docs, no trust system, no recovery ranking, no control room, no extension. The launcher becomes a frozen product surface; no more launcher phases after this** · window **680 × 440** hard clamp (`setFixedSize` min=max, no resize), `WA_TranslucentBackground=False` — *no glass, no blur, no floating opacity tricks* · `BG=#F4F1EC` (was `#F3F1ED`), new `BORDER_RAISED_STRONG=#E7DED3` (2-px search border), new `SHADOW_SEARCH_*=0 8 24 rgba(0,0,0,.06)` under `SHADOW_CARD_*=0 12 32 rgba(0,0,0,.08)` · **search bar rewritten**: 52 px tall, radius 14, lavender focus ring, hand-drawn `_SearchIcon` (no Unicode glyph dependency), placeholder *Search work…* · **hero card rewritten**: fixed 88-px height, **6-px lavender left accent strip** clipped to rounded border, title (one line, elided with `...`) + tiny **HIGH** confidence pill + **fixed-width 112-px Resume button** + max-3 chip row beneath title derived from `suggested_targets` via `_chips_from_targets` (same buckets as resume preview); **removed from hero**: subtitle · meta caption · prose · *Why this?* link · `signals` param · `request_why` signal · **OTHER WORK rewritten**: vertical list (was horizontal in 6O), 44-px rows (lavender 6-px dot + title + quiet painted chevron), max 3 rows, white card wrapper with 1-px inter-row dividers · **empty surface restacked**: lavender square · headline · *Show example* (primary accent-filled) · *Start working* (secondary layered card — renamed from *Start normally* per directive), both buttons 200-px fixed width, **inside the centred stack** (no longer floating page furniture) · new single-line **footer** *local only · no cloud* at the bottom of every surface (populated + empty), ~10 px ink-3, centred · live launcher's `WhyThisSheet` wiring removed: `_recovery_to_v3` no longer passes `signals`, demo path no longer synthesises demo signals, escape cascade collapses back to *preview > hide* · new `capture_launcher_final.py` produces 4 PNGs (`hero` · `empty` · `focus` · `overflow`) in `assets/screenshots/launcher-final/` · new `LAUNCHER_FINAL_AUDIT.md` is the frozen-product checklist (geometry table · paint table · hero / OTHER WORK / empty / footer contracts · 7-check visibility audit covering *arm-length / dark-room / 50% / 125% scaling / title overflow / empty / demo / resume* + the freeze rule) · 4 files snapshotted into [`archive/launcher-debt/`](../../archive/launcher-debt) with per-file README: `minimal_6p1.py` · `recovery_panel_6q.py` · `investigation_panel_6o.py` · `why_sheet_6q.py` · engine-side signals layer (`recovery.explain_signals` + `recall inspect` + `bad_recoveries`) **stays in active code** — only the launcher's surface changed · pyflakes clean · success bar: *open Recall · understand instantly · click Resume · done* |
 | 7A | Extension Product Surface | **Stop launcher, control room, founder tooling, docs, alpha dashboards. Only extension. Make Recall extension feel premium** · Popup frozen at **440 × 640** (body width+height pinned, overflow hidden) · 6 fixed regions in a single column: **Header** (lavender mark + breathing daemon dot + subtitle *Connected locally* + Search/Settings icons; removed event-count + desktop badges + wrench) · **Continue hero** (full-width white card, **6-px lavender accent rail**, tiny HIGH pill, title 1 line elided, max 3 derived chips, **fixed-width 112-px Resume** with `1` shortcut chip, capped at 110-px) · **Active investigations** (vertical stack of 48-px rows inside one white card; strength dot + title + last-seen + chevron; max 4 visible without scroll) · **Today timeline** (3-column grid mono-time/bold-source/label, empty rail surfaces 36-px painted illustration in place of the old *"No browser memory captured yet"* prose) · **Activity** (two side-by-side cards — Browser w/ `capturing/idle/offline` pill listing *tabs · navigation · returns · searches*; Desktop w/ `capturing/soon/offline` pill listing *files · editors · integrations* — the Desktop `SOON` pill surfaces the directive's *Design UI now. Engine later.* seam honestly) · **Trust strip** (4 tiny pinned pills `LOCAL ONLY · NO CLOUD · 0 UPLOADS · DAEMON OK` replaces the ~140-px `TrustSurface` section) · **SearchOverlay** on Ctrl/Cmd+K slides down with input + groupings for *Investigations · Files · Returns · Events* (in-memory filter for now; `useResults` swappable when a unified endpoint lands) · new design tokens: **page `#F5F2ED`** warm paper · card `#FFFFFF` · hairline `#E6DED4` · accent `#8B7FE3` · shadow `0 12 32 rgba(0,0,0,.06)` (card) + `0 20 56 rgba(0,0,0,.12)` (search overlay) — *no glass, no neon, no blur* · motion scale tightened to directive's exact **120 / 180 / 240** via `--motion-fast/normal/slow` tokens · 8 new components under `apps/extension/ui/src/components/v2/` (`Header`, `Hero`, `Investigations`, `Timeline`, `Activity`, `TrustStrip`, `SearchOverlay`, `States`) · `App.tsx` rewritten to compose them; state machine + API client + demo overlay flow preserved untouched · `capture_extension.mjs` gains `OUT_7A` + 7 fixtures (`empty · capturing · active · resume · offline · search · demo`); `search` fires Ctrl+K via Playwright keyboard · new `EXTENSION_PRODUCT_AUDIT.md` is the frozen-product checklist (paint table · motion table · per-region contracts · 7-row state catalogue + capture-architecture table) · `tsc --noEmit` + `vite build` clean (~293 KB JS) · 21 captures total (7 new in `extension-7a/`) · success bar: *open extension → immediately understand: Recall remembered work · Recall can continue it · Recall is running* |
-| 7B | Launcher Production Freeze | **Turn launcher into shipping product. No new features, no control room, no extension, no alpha, no docs except audit** · 6R froze the layout cleanly but kept the per-section-card pattern (search/hero/OTHER WORK each painted their own bordered shadowed white card on the warm page) → read as *three floating overlays* not *one product object* · 7B collapses into **a single white root card** on the warm page · `MinimalWindow.paintEvent` now: (1) fills full window with `BG=#F4F1EC`, (2) draws manual two-offset-rounded-fill shadow (3-px offset, 18 α — replaces `QGraphicsDropShadowEffect` so hot path skips software rasterise), (3) draws white root card body at radius **22** inside the 14-px outer margin with 1-px `BORDER_RAISED` outline · `MinimalShell` provides 20-px internal padding (top/sides) + 18 (bottom) · **search bar rewritten**: 52-px row with **warm-paper fill** (`#F4F1EC`) inside the root + 2-px `BORDER_RAISED_STRONG` border + lavender focus ring + hand-drawn `_SearchIcon` + inline `Ctrl K` hint chip (auto-hidden on focus) · **hero rewritten — no card chrome**: fixed 88-px height, **only the 6-px lavender left accent rail** (rounded ends; brighter rail + 1-px lavender outline when keyboard-focused); title row (title elided + `HIGH` confidence pill + **fixed-width 112-px Resume button**) + chips row beneath (max 3, derived from `suggested_targets`) · **OTHER WORK list — no wrapping card**: rows paint directly on the root with 1-px `BORDER_RAISED` hairline dividers between, max 3 visible · footer (*local only · no cloud*) pinned at bottom of root card · new **`Ctrl+K` + `Meta+K`** QShortcuts in `LiveLauncher.__init__` focus + select-all the search input from anywhere inside the launcher · new **`RECALL_DEBUG=1` timing log** writes one line per `show_centered` to stderr (`[recall.launcher.timing] show_centered  N ms  (budget 400)`) so the *<400 ms launcher open* budget is verifiable on a real machine · search emits on every keystroke (no client-side debounce) so *<100 ms search* budget lands by construction · new `capture_launcher_ship.py` produces 5 PNGs (`hero · empty · focus · demo · overflow`) in `assets/screenshots/launcher-ship/` · new `LAUNCHER_SHIP_AUDIT.md` **supersedes** `LAUNCHER_FINAL_AUDIT.md` (6R) as the live contract — carries 6R → 7B delta table + frozen paint/geometry/motion/per-region tables + 9-row visibility-pass table (100% / 125% / 150% scaling, arm-length, dark/bright room, title overflow, empty, demo) + 2-row performance-budget table + the explicit *Launcher frozen forever* freeze rule · 3 files snapshotted into [`archive/launcher-final/`](../../archive/launcher-final/) with per-file README: `minimal_6r.py` · `recovery_panel_6r.py` · `investigation_panel_6r.py` · engine + recovery layer + resume pipeline (6P) + trust/inspector CLIs (6Q) all **untouched** — 7B is paint + ergonomics only · pyflakes clean · success bar: *open Recall · see remembered work · press Resume · leave* |
-| 7B.1 | Launcher Visual Merge | **Rebuild launcher toward Stitch reference. Current launcher discarded visually. Keep logic, replace surface** · 7B locked the launcher into one root card with three regions inside (search/hero/OTHER WORK) but the Raycast-shaped density still read as *utility* · 7B.1 follows the Stitch document-workspace shape · **canvas 740 × 500** hard clamp (`setFixedSize`), single white workspace inside 16-px gutter, radius 22, warm `#F4F1EC` page outside · **search bar rewritten**: 52-px row, warm-paper fill (`#FAF7F1`), hand-drawn glyph, right cluster of **settings cog + close × + `Ctrl K` hint chip** (cog forwards to `request_settings`; × hides launcher), placeholder *Start typing to recover…* · **Continue document** replaces the dense hero row: 220-px calm card w/ soft warm-paper tint (`#FBF8F2`), 6-px lavender accent rail clipped to rounded corners, `CONTINUE` eyebrow inside the card, 14.5-pt bold title (elided), bulleted body (file/tab/chat/search counts + *returned after Nd* clause pulled from `preview_caption` via new `_extract_gap_clause` helper in `live.py`), right-aligned fixed-width 116-px Resume button w/ `1` shortcut chip — reads as *document with an action*, not command-palette row · **empty workspace rebuilt**: new `_InfinityGlyph` paints lavender lemniscate (two overlapping ellipses + `ACCENT_SOFT` halo) via QPainter (no Unicode glyph dependency); 20-pt bold headline *Everything you've seen, searchable.* (≈26 logical at Windows DPI); 14-px sub *Your digital continuity layer.*; two stacked 200-px buttons *Show example* (accent-filled) + *Start working* (outline) · **bottom strip** replaces the centred footer: 22-px row w/ trust line *End-to-end encrypted. Local storage only.* on left + tiny `Privacy · Demo · Docs · Browser` text links on right (links inert in 7B.1, placeholders for future deep links — *Design UI now, engine later* pattern) · **OTHER WORK list removed from visible surface** — single-focus tool; `InvestigationCardV3` + `InvestigationList` reduced to zero-cost stubs (`HEIGHT = 0`, hidden, `populate()` discards) so engine path stays live · hotkeys: kept `Esc` / `Ctrl+K` / `Meta+K` / `1`; removed `2-9` (nothing to navigate to) · 3 files snapshotted into [`archive/launcher-raycast/`](../../archive/launcher-raycast/) w/ per-file README: `minimal_7b.py` · `recovery_panel_7b.py` · `investigation_panel_7b.py` · 5 captures (`empty · active · resume · demo · overflow`) in `assets/screenshots/launcher-merge/` · new `LAUNCHER_VISUAL_MERGE.md` **supersedes** `LAUNCHER_SHIP_AUDIT.md` (7B) as the live contract — 7B → 7B.1 delta table + frozen paint/geometry/typography/per-region tables + 5-row state catalogue · engine + recovery + resume + trust/inspector layers all **untouched** — 7B.1 is paint + composition only · pyflakes clean · success bar: *Looks like product. Not utility.* |
+| 7B | Launcher Production Freeze | **Turn launcher into shipping product. No new features, no control room, no extension, no alpha, no docs except audit** · 6R froze the layout cleanly but kept the per-section-card pattern (search/hero/OTHER WORK each painted their own bordered shadowed white card on the warm page) → read as *three floating overlays* not *one product object* · 7B collapses into **a single white root card** on the warm page · `MinimalWindow.paintEvent` now: (1) fills full window with `BG=#F4F1EC`, (2) draws manual two-offset-rounded-fill shadow (3-px offset, 18 α — replaces `QGraphicsDropShadowEffect` so hot path skips software rasterise), (3) draws white root card body at radius **22** inside the 14-px outer margin with 1-px `BORDER_RAISED` outline · `MinimalShell` provides 20-px internal padding (top/sides) + 18 (bottom) · **search bar rewritten**: 52-px row with **warm-paper fill** (`#F4F1EC`) inside the root + 2-px `BORDER_RAISED_STRONG` border + lavender focus ring + hand-drawn `_SearchIcon` + inline `Ctrl K` hint chip (auto-hidden on focus) · **hero rewritten — no card chrome**: fixed 88-px height, **only the 6-px lavender left accent rail** (rounded ends; brighter rail + 1-px lavender outline when keyboard-focused); title row (title elided + `HIGH` confidence pill + **fixed-width 112-px Resume button**) + chips row beneath (max 3, derived from `suggested_targets`) · **OTHER WORK list — no wrapping card**: rows paint directly on the root with 1-px `BORDER_RAISED` hairline dividers between, max 3 visible · footer (*local only · no cloud*) pinned at bottom of root card · new **`Ctrl+K` + `Meta+K`** QShortcuts in `LiveLauncher.__init__` focus + select-all the search input from anywhere inside the launcher · new **`RECALL_DEBUG=1` timing log** writes one line per `show_centered` to stderr (`[recall.launcher.timing] show_centered  N ms  (budget 400)`) so the *<400 ms launcher open* budget is verifiable on a real machine · search emits on every keystroke (no client-side debounce) so *<100 ms search* budget lands by construction · new `capture_launcher_ship.py` produces 5 PNGs (`hero · empty · focus · demo · overflow`) in `assets/screenshots/launcher-ship/` · new `LAUNCHER_SHIP_AUDIT.md` **supersedes** `LAUNCHER_FINAL_AUDIT.md` (6R) as the live contract — carries 6R → 7B delta table + frozen paint/geometry/motion/per-region tables + 9-row visibility-pass table (100% / 125% / 150% scaling, arm-length, dark/bright room, title overflow, empty, demo) + 2-row performance-budget table + the explicit *Launcher frozen forever* freeze rule · 3 files snapshotted into [`archive/launcher-final/`](../../archive/launcher-final) with per-file README: `minimal_6r.py` · `recovery_panel_6r.py` · `investigation_panel_6r.py` · engine + recovery layer + resume pipeline (6P) + trust/inspector CLIs (6Q) all **untouched** — 7B is paint + ergonomics only · pyflakes clean · success bar: *open Recall · see remembered work · press Resume · leave* |
+| 7B.1 | Launcher Visual Merge | **Rebuild launcher toward Stitch reference. Current launcher discarded visually. Keep logic, replace surface** · 7B locked the launcher into one root card with three regions inside (search/hero/OTHER WORK) but the Raycast-shaped density still read as *utility* · 7B.1 follows the Stitch document-workspace shape · **canvas 740 × 500** hard clamp (`setFixedSize`), single white workspace inside 16-px gutter, radius 22, warm `#F4F1EC` page outside · **search bar rewritten**: 52-px row, warm-paper fill (`#FAF7F1`), hand-drawn glyph, right cluster of **settings cog + close × + `Ctrl K` hint chip** (cog forwards to `request_settings`; × hides launcher), placeholder *Start typing to recover…* · **Continue document** replaces the dense hero row: 220-px calm card w/ soft warm-paper tint (`#FBF8F2`), 6-px lavender accent rail clipped to rounded corners, `CONTINUE` eyebrow inside the card, 14.5-pt bold title (elided), bulleted body (file/tab/chat/search counts + *returned after Nd* clause pulled from `preview_caption` via new `_extract_gap_clause` helper in `live.py`), right-aligned fixed-width 116-px Resume button w/ `1` shortcut chip — reads as *document with an action*, not command-palette row · **empty workspace rebuilt**: new `_InfinityGlyph` paints lavender lemniscate (two overlapping ellipses + `ACCENT_SOFT` halo) via QPainter (no Unicode glyph dependency); 20-pt bold headline *Everything you've seen, searchable.* (≈26 logical at Windows DPI); 14-px sub *Your digital continuity layer.*; two stacked 200-px buttons *Show example* (accent-filled) + *Start working* (outline) · **bottom strip** replaces the centred footer: 22-px row w/ trust line *End-to-end encrypted. Local storage only.* on left + tiny `Privacy · Demo · Docs · Browser` text links on right (links inert in 7B.1, placeholders for future deep links — *Design UI now, engine later* pattern) · **OTHER WORK list removed from visible surface** — single-focus tool; `InvestigationCardV3` + `InvestigationList` reduced to zero-cost stubs (`HEIGHT = 0`, hidden, `populate()` discards) so engine path stays live · hotkeys: kept `Esc` / `Ctrl+K` / `Meta+K` / `1`; removed `2-9` (nothing to navigate to) · 3 files snapshotted into [`archive/launcher-raycast/`](../../archive/launcher-raycast) w/ per-file README: `minimal_7b.py` · `recovery_panel_7b.py` · `investigation_panel_7b.py` · 5 captures (`empty · active · resume · demo · overflow`) in `assets/screenshots/launcher-merge/` · new `LAUNCHER_VISUAL_MERGE.md` **supersedes** `LAUNCHER_SHIP_AUDIT.md` (7B) as the live contract — 7B → 7B.1 delta table + frozen paint/geometry/typography/per-region tables + 5-row state catalogue · engine + recovery + resume + trust/inspector layers all **untouched** — 7B.1 is paint + composition only · pyflakes clean · success bar: *Looks like product. Not utility.* |
 | 7D | Capture Truth Audit | **Verify Recall actually remembers. No UI, no redesign — engine + CLI + docs only** · new [`recall capture status`](../../app/core/capture_cli.py) prints read-only ASCII summary (events today + per-kind tally for the 7 known kinds + returns ≥ 30-min gap + investigation count + last-event ts/kind/age); daemon **not required**, reads `~/.recall/events/YYYY-MM-DD.jsonl` + `~/.recall/threads.json` directly; degrades gracefully on missing threads cache (returns `0`); prints 3 remediation hints when `events today == 0` (run daemon · check extension · run demo) · new [`recall capture tail`](../../app/core/capture_cli.py) is a `tail -f`-style live inspector: prints every existing event in today's file first then polls daily JSONL at 500-ms intervals, surfaces each new line as compact `HH:MM:SS  kind  detail  title` row; survives midnight day-rollover (re-derives `_today_filename()` per tick); survives truncate/rotate (falls back to `pos = 0`); `--once` mode prints existing events then exits (script-friendly) · both dispatch from `recall.py` fast path before `app.main` import — no Qt boot cost · new [`CAPTURE_FLOW.md`](../product/CAPTURE_FLOW.md) documents the **seven hops** end-to-end (browser observers → loopback POST → daemon ingest routes → EventLogger.log → ThreadBuilder → RecoveryEngine.recover_recent → LiveLauncher), names file + function per hop, lists confirmation CLI per hop, closes with scripted 7-step verification walk (ChatGPT / GitHub / StackOverflow / Google → leave ≥ 30 min → return → confirm Continue document + `recall inspect` confirms `Strength: HIGH`) · live measurement: 71 events today / 64 tabs + 7 chats / 11 investigations / last event 1h ago — ChatGPT / Google / Stitch all present in tail output · pyflakes clean · success bar: *Recall truly remembers — and now you can prove it* |
-| 7E | Launcher Final Product Pass | **Freeze engine, recovery, extension, control room — launcher only. Make memory visible, hierarchy clear, single surface at 700×500** · 7B.1 shipped beautiful Stitch-aligned single-document workspace but solved *floating overlays* by **removing memory from surface** → looked calm but felt prototype-y · 7E restores memory while honouring calm-product feel · canvas **700 × 500** hard clamp (was 740×500), warm `#F5F2ED` page outside, one white inner card radius **24** + padding 20/16/20/14, **no nested cards / no glass / no transparency** · 5 sections stack inside w/ **no per-section chrome**: (1) **52-px search bar** (warm-paper fill, lavender focus ring, inline Ctrl K hint, placeholder *Search investigations…*); (2) **13-px / 9-pt muted-lavender tagline** *Recall noticed unfinished work* directly under search; (3) **Continue hero** w/ **HIGH/MED/LOW signal variants** driving 6-px left accent rail (filled/soft/outline) + matching confidence pill — 110-px row, title + Resume on top, evidence + pill on bottom; (4) **NEW RECENT MEMORY section** — new [`recent_memory.py`](../../app/ui/launcher_v3/recent_memory.py) ships `MemoryRow` + `RecentMemoryList` (max 5 rows, 18 px each); `LiveLauncher._load_recent_memory` pulls from `EventStore.iter_events(days=2)` and maps `Event.payload → MemoryRow(time, source, label)` via `_short_source` (ChatGPT/Claude/Gemini/Google/DuckDuckGo/Bing/domain title-case) + `_short_label` — **fixes the *memory invisible* problem**; (5) **OTHER WORK rebuilt** from 7B.1's zero-cost stub into 36-px rows w/ strength dot (lavender if surfaces≥3 else ink-4) + title elided + last-seen mono caption right-aligned via `events.humanize_age`, max 3 rows, 1-px hairline dividers; (6) **TrustRow** pinned at bottom — 22-px row w/ 4 tiny pills `LOCAL · NO CLOUD · N EVENTS TODAY · M INVESTIGATIONS`, counts derived live by `_load_trust_counts` from same disk reads Phase 7D `recall capture status` uses · **removed from surface**: Show example/Start working giant buttons · centered empty states · large vertical spacing · floating pills · dark overlays · prototype illustrations · empty-state swap (launcher now always shows *something memory-shaped*) · hotkeys preserved: `Esc` / `Ctrl+K` / `Meta+K` / `1` · demo path updated to synthesise `MemoryRow` list from demo payload's timeline · 3 files snapshotted into [`archive/launcher-7b1/`](../../archive/launcher-7b1/) w/ per-file README: `minimal_7b1.py` · `recovery_panel_7b1.py` · `investigation_panel_7b1.py` · 5 captures (`home · high · med · low · no_hero`) in `assets/screenshots/launcher-7e/` · new [`LAUNCHER_FINAL.md`](../product/LAUNCHER_FINAL.md) **supersedes** `LAUNCHER_VISUAL_MERGE.md` (7B.1) as live contract — 7B.1→7E delta table + frozen paint/geometry/typography/per-region tables + 5-row state catalogue + removed-list · engine + recovery + resume (6P) + trust/inspector CLIs (6Q) + capture CLIs (7D) all **untouched** — 7E is paint + composition only · pyflakes clean · success bar: *open Recall → see unfinished work + recent memory + resume path + trust within 3 seconds* · **launcher frozen** |
+| 7E | Launcher Final Product Pass | **Freeze engine, recovery, extension, control room — launcher only. Make memory visible, hierarchy clear, single surface at 700×500** · 7B.1 shipped beautiful Stitch-aligned single-document workspace but solved *floating overlays* by **removing memory from surface** → looked calm but felt prototype-y · 7E restores memory while honouring calm-product feel · canvas **700 × 500** hard clamp (was 740×500), warm `#F5F2ED` page outside, one white inner card radius **24** + padding 20/16/20/14, **no nested cards / no glass / no transparency** · 5 sections stack inside w/ **no per-section chrome**: (1) **52-px search bar** (warm-paper fill, lavender focus ring, inline Ctrl K hint, placeholder *Search investigations…*); (2) **13-px / 9-pt muted-lavender tagline** *Recall noticed unfinished work* directly under search; (3) **Continue hero** w/ **HIGH/MED/LOW signal variants** driving 6-px left accent rail (filled/soft/outline) + matching confidence pill — 110-px row, title + Resume on top, evidence + pill on bottom; (4) **NEW RECENT MEMORY section** — new [`recent_memory.py`](../../app/ui/launcher_v3/recent_memory.py) ships `MemoryRow` + `RecentMemoryList` (max 5 rows, 18 px each); `LiveLauncher._load_recent_memory` pulls from `EventStore.iter_events(days=2)` and maps `Event.payload → MemoryRow(time, source, label)` via `_short_source` (ChatGPT/Claude/Gemini/Google/DuckDuckGo/Bing/domain title-case) + `_short_label` — **fixes the *memory invisible* problem**; (5) **OTHER WORK rebuilt** from 7B.1's zero-cost stub into 36-px rows w/ strength dot (lavender if surfaces≥3 else ink-4) + title elided + last-seen mono caption right-aligned via `events.humanize_age`, max 3 rows, 1-px hairline dividers; (6) **TrustRow** pinned at bottom — 22-px row w/ 4 tiny pills `LOCAL · NO CLOUD · N EVENTS TODAY · M INVESTIGATIONS`, counts derived live by `_load_trust_counts` from same disk reads Phase 7D `recall capture status` uses · **removed from surface**: Show example/Start working giant buttons · centered empty states · large vertical spacing · floating pills · dark overlays · prototype illustrations · empty-state swap (launcher now always shows *something memory-shaped*) · hotkeys preserved: `Esc` / `Ctrl+K` / `Meta+K` / `1` · demo path updated to synthesise `MemoryRow` list from demo payload's timeline · 3 files snapshotted into [`archive/launcher-7b1/`](../../archive/launcher-7b1) w/ per-file README: `minimal_7b1.py` · `recovery_panel_7b1.py` · `investigation_panel_7b1.py` · 5 captures (`home · high · med · low · no_hero`) in `assets/screenshots/launcher-7e/` · new [`LAUNCHER_FINAL.md`](../product/LAUNCHER_FINAL.md) **supersedes** `LAUNCHER_VISUAL_MERGE.md` (7B.1) as live contract — 7B.1→7E delta table + frozen paint/geometry/typography/per-region tables + 5-row state catalogue + removed-list · engine + recovery + resume (6P) + trust/inspector CLIs (6Q) + capture CLIs (7D) all **untouched** — 7E is paint + composition only · pyflakes clean · success bar: *open Recall → see unfinished work + recent memory + resume path + trust within 3 seconds* · **launcher frozen** |
 | 7E.1 | Launcher Stability | **Launcher boots every time. No visual work, no redesign — audit + freeze public interface** · 7E paint rewrite of `MinimalSearchBar` silently dropped `request_settings` + `request_close` signals while `LiveLauncher.__init__` still wired both → every `python recall.py` crashed `AttributeError: 'MinimalSearchBar' object has no attribute 'request_settings'` at construction · fix: restore both dropped signals on `MinimalSearchBar` + add documented contract (`searchChanged(str)` alias of `query_changed(str)` wired via two parallel `QLineEdit.textChanged` connects; `submit(str)` already present; `clear()` + `selectAll()` methods added) · two *may-not-exist* signals declared even though no widget in 7E fires them — consumers `connect(...)` safely; later paints can wire an on-screen affordance without touching host wiring · `MinimalSearchBar` docstring gains "Public contract (Phase 7E.1 — frozen)" block listing 5 signals + 3 methods · new [`LAUNCHER_CONTRACTS.md`](../product/LAUNCHER_CONTRACTS.md) documents frozen interface (per-class signals + methods + stable attributes; `LiveLauncher` constructor signature; keyboard-shortcut table; `app/main.py → LiveLauncher → MinimalSearchBar` wiring map; freeze rule *future launcher phases may **add** to the surface; they **must not remove or rename** the symbols below* + slow-path procedure for the rare case a major break needs to happen) · verification: offscreen `LiveLauncher(FakeEngine())` constructs cleanly (`CONSTRUCT OK · DEFAULT_SIZE: (700, 500)`); all 5 signals present; all 3 methods callable; both `query_changed` + `searchChanged` fire on text (`{'query_changed':1,'searchChanged':1}`); `request_settings.emit()` propagates to `LiveLauncher.request_settings` (hits=1); `python recall.py doctor` green on config / events / extension / installer · no widget paint changed, no layout changed, no new features · success bar: *launcher boots every time* |
 | 8A | Full Product Audit | **STOP BUILDING FEATURES. Understand what Recall actually is today. No launcher/extension/control-room redesign, no new memory systems, no new phases — audit only** · 7 evidence-based audit docs land under new top-level `AUDIT/` folder: `SURFACES.md` catalogues every runtime surface (36 LIVE / 2 LEGACY / 11 ARCHIVE / 1 REMOVE) w/ entry point + owner file + status · `DEAD_CODE.md` lists parallel trees + duplicate widgets + orphan API routes + dead helpers w/ file:line citations + grep evidence (8 truly DEAD pre-7A extension components, 7 LEGACY `app/ui/*.py` behind `RECALL_LAUNCHER=legacy`, 3 duplicate widget pairs + 1 duplicate confidence-logic pair, 5 orphan API routes: `thread_forget`, `contexts/recent`, `sessions/recent`, `threads_clear_evolution_cache`, `replay_day`) · `LAUNCHER_MAP.md` traces every signal/slot/public method through launcher (class graph + state-flow per refresh + frozen anti-rules mirroring 7E.1 contract + the *one launcher* collapse path) · `CAPTURE_MAP.md` cross-checks 7D `CAPTURE_FLOW.md` against current code, lists diagnostic CLI per failure mode, captures live measurement (8 events today, 11 investigations, last event 38m ago) · `ASSETS.md` inventories every PNG under `assets/screenshots/` (5 ACTIVE folders + `⭐` `launcher-7e/` + `⭐` `extension-7a/` + 11 HISTORICAL phase folders + 7 root-level ORPHAN PNGs flagged for tier-1 delete) · `DEPENDENCIES.md` classifies all 43 packages across `requirements.txt` + 3 `package.json` files (20 runtime / 19 dev / 3 unused `clsx`+`lucide-react`+`tailwind-merge` in marketing web / 1 misplaced `playwright` in extension's `dependencies`) · `STATE.md` is capstone (*what Recall is · what ships · what's dead · what survives · tier-graded delete recommendations · live verify*) · 3 parallel `Explore` subagents gathered evidence for dead-code/asset/dependency audits · launcher/capture/state docs authored against raw findings · `DOC_INDEX.md` updated w/ new `/AUDIT/` section at top so audit docs reachable from standard index · live verify: `recall doctor` GREEN on config/events/event-flow/daemon/extension/installer (5 YELLOWs all *user hasn't done yet* — autostart, recall://, version drift); `recall capture status` clean (8 events today, 11 investigations); `recall founder status` shows [GREEN] Continuity restored 78%, Resume sessions 41, Investigations 134, Extension connected 75%; TypeScript clean across all 3 frontend apps; offscreen `LiveLauncher(FakeEngine())` boots cleanly at `(700, 500)` · **no deletions, no code changes** — audit phase, not feature phase · success bar: *understand entire repo. No more accidental building. No more launcher rewrites. No more code slop.* |
 | 8B | Tier 1 Cleanup + Repo Collapse | **Execute 8A audit recommendations. No feature work, no UI changes, no new docs except 5 cleanup audit docs** · Python LOC **−24%** (29,544→22,435 = **−7,109 lines moved to archive**), asset PNGs **−54%** (102→47), asset folders **−58%** (19→8), extension components **−73%** (11→3), `app/ui` live files **−55%** (11→5) · **no code deleted** outside dep entries + 7 stale root PNGs · (1) **launcher collapse** — 8 legacy modules (`launcher_legacy.py` 2675 LOC + `cards.py` 970 + `widgets.py` 2471 + `styles.py` 359 + `launcher_anims.py` 84 + `launcher_digest.py` 89 + `demo_data.py` + `ceremonies.py`) + 3 historical capture scripts → `archive/launcher-old/`; `app/ui/launcher.py` collapsed 60→18 lines (no more `RECALL_LAUNCHER=legacy` branch + no back-compat constant re-exports); import contract `from app.ui.launcher import Launcher` still resolves to `LiveLauncher` · (2) **asset cleanup** — 11 historical capture folders (`launcher-live` 6K · `launcher-minimal` 6L · `launcher-refined` 6M.1 · `launcher-compact` 6M.2 · `launcher-recovery` 6N · `launcher-reset` 6O · `launcher-visible` 6P.1 · `launcher-truth` 6Q · `launcher-ship` 6R · `launcher-final` 7B · `launcher-merge` 7B.1) → `archive/screenshots-history/`; 7 stale orphan PNGs deleted outright (`control-room` · `doctor-output` · `installer-flow` · `settings-dialog` · `launcher-first-week` · `launcher-loading` · `launcher-offline`) · (3) **extension pre-7A components** — 8 dead files (`ContinueCard`, `DebugStrip`, `DemoBanner`, `InvestigationCard`, `MemoryList`, `Section`, `TrustSurface`, `states`) → `archive/extension-pre-7a/`; vite build proves they were already tree-shaken (293 KB JS bundle unchanged) · (4) **dependency cleanup** — 3 unused deps removed from `apps/web/package.json` (`clsx`, `lucide-react`, `tailwind-merge`); `playwright` moved `dependencies`→`devDependencies` in extension · **deferred to 8C**: 5 orphan API routes (`thread_forget`, `contexts/recent`, `sessions/recent`, `threads_clear_evolution_cache`, `replay_day`) — kept until pydantic schemas walked cleanly · 5 new audit docs land in `AUDIT/`: `DELETE_PLAN.md` (per-row delete log w/ verification), `LAUNCHER_FREEZE.md` (official launcher path + public API + allowed/forbidden changes — *no more launcher generations*), `DEPENDENCY_DIFF.md` (before/after manifests + build impact), `ASSET_FREEZE.md` (frozen active asset surface), `PHASE_8B_STATUS.md` (capstone w/ before/after metrics table) · `DOC_INDEX.md` updated · verify: `pyflakes app/ui app/core api` clean · `recall doctor` GREEN · `recall capture status` clean (11 events today, 12 investigations) · offscreen `Launcher(FakeEngine())` constructs at `(700, 500)` · TypeScript clean across all 3 frontend apps · `vite build` of extension 293 KB JS unchanged from 8A · success bar: **repo smaller. Same product. No regressions.** |

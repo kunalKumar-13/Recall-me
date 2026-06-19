@@ -6,7 +6,7 @@ calibrated expectations.
 
 This file is **for the founder**, not the testers. The testers
 get [`alpha/README.md`](README.md) and the
-[`alpha/launcher/`](launcher/) pack. This runbook tells the
+[`alpha/launcher/`](launcher) pack. This runbook tells the
 founder what each persona is likely to do, what to expect them
 to report, and which of those reports is *signal* vs. *noise*.
 

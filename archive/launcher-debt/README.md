@@ -94,13 +94,13 @@ This archive is the record of how the launcher arrived at
 its frozen shape. Three previous archives carry the same
 shape:
 
-- [`archive/launcher-v2/`](../launcher-v2/) — Phase 6L shell
+- [`archive/launcher-v2/`](../launcher-v2) — Phase 6L shell
   + sidebar + window helpers retired when the launcher went
   single-column.
-- [`archive/launcher-overbuild/`](../launcher-overbuild/) —
+- [`archive/launcher-overbuild/`](../launcher-overbuild) —
   Phase 6O reset deleted six layers that had accumulated
   across 6I → 6N.
-- [`archive/launcher-refine/`](../launcher-refine/) —
+- [`archive/launcher-refine/`](../launcher-refine) —
   Phase 6M.1 refinement deleted the v3 / live / minimal
   capture scripts.
 

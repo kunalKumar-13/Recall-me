@@ -174,7 +174,7 @@ enforced at the request boundary).
 
 ## Related
 
-- [`PHASE_6M_STATUS.md`](../engineering/PHASE_6M_STATUS.md) —
+- [`PHASE_6M_STATUS.md`](../../archive/phase-status/PHASE_6M_STATUS.md) —
   the engineering receipt.
 - [`TRUST.md`](TRUST.md) — the public five-rule contract this
   layer respects.

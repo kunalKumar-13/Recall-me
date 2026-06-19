@@ -1,6 +1,6 @@
 # CONTROL_ROOM_V2.md — the founder's operating system
 
-Phase 6J turned the control room at [`apps/admin/web/`](../../apps/admin/web/)
+Phase 6J turned the control room at [`apps/admin/web/`](../../apps/admin/web)
 from a single-page dashboard into the founder's actual operating
 system for Recall. Pairs with
 [`CONTROL_ROOM.md`](CONTROL_ROOM.md) (the Phase 5E origin doc) and
@@ -9,7 +9,7 @@ system for Recall. Pairs with
 This page is the **user manual** the founder reaches for when they
 want to understand a surface they're looking at. The
 implementation receipt is
-[`PHASE_6J_STATUS.md`](../engineering/PHASE_6J_STATUS.md).
+[`PHASE_6J_STATUS.md`](../../archive/phase-status/PHASE_6J_STATUS.md).
 
 ---
 
@@ -142,9 +142,9 @@ Every step in that loop lives inside the same room.
 
 ## Related
 
-- [`PHASE_6J_STATUS.md`](../engineering/PHASE_6J_STATUS.md) —
+- [`PHASE_6J_STATUS.md`](../../archive/phase-status/PHASE_6J_STATUS.md) —
   the implementation receipt.
-- [`PHASE_6H_STATUS.md`](../engineering/PHASE_6H_STATUS.md) —
+- [`PHASE_6H_STATUS.md`](../../archive/phase-status/PHASE_6H_STATUS.md) —
   the v1 control-room foundation 6J extends.
 - [`FOUNDER_OPERATIONS.md`](FOUNDER_OPERATIONS.md) — the daily
   cadence the dashboard supports.

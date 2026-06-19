@@ -325,7 +325,7 @@ Output: `dist/Recall/Recall.exe` (Windows) or `dist/Recall/Recall`
 
 ## Browser extension
 
-The extension at [`extension/`](extension/) captures the title and URL
+The extension at [`extension/`](extension) captures the title and URL
 of completed page loads, the queries you type into search engines, and
 the titles of ChatGPT / Claude conversations. It posts each event to
 the local API.
@@ -337,7 +337,7 @@ Install:
    `Connected · N captured`.
 2. Open `chrome://extensions` (or `edge://extensions`).
 3. Toggle **Developer mode** (top-right).
-4. **Load unpacked** → select [`extension/`](extension/).
+4. **Load unpacked** → select [`extension/`](extension).
 
 Visits to `chrome://`, `file://`, incognito tabs, and any domain in
 your **Settings → Browser Memory → Domains never captured** list are
@@ -700,7 +700,7 @@ Deliberately *not* on the roadmap:
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, conventions, and the
 review process. Security disclosures: [SECURITY.md](SECURITY.md).
-Community expectations: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+Community expectations: [CODE_OF_CONDUCT.md](docs/CODE_OF_CONDUCT.md).
 
 Issues, ideas, and pull requests are welcome. The audit at
 [AUDIT_REPORT.md](docs/engineering/AUDIT_REPORT.md) lists the current consistency gaps

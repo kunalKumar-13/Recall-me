@@ -72,12 +72,12 @@ The launcher's complete archive chain, oldest to newest:
 
 | Folder                                          | Phase | What it preserved                            |
 |-------------------------------------------------|-------|----------------------------------------------|
-| [`archive/launcher-v2/`](../launcher-v2/)       | 6L    | shell + sidebar + window (the 3-column shell) |
-| [`archive/launcher-refine/`](../launcher-refine/) | 6M.1 | v3/live/minimal capture scripts              |
-| [`archive/launcher-overbuild/`](../launcher-overbuild/) | 6O | minimal/recovery/investigation + 6M.2/6N captures |
-| [`archive/resume-old/`](../resume-old/)         | 6P    | stub `_on_restore` + `_on_demo_resume`       |
-| [`archive/recovery-ranking/`](../recovery-ranking/) | 6Q | ranking rationale + considered-and-rejected  |
-| [`archive/launcher-debt/`](../launcher-debt/)   | 6R    | 6P.1 + 6Q + 6O variants frozen out of 6R     |
+| [`archive/launcher-v2/`](../launcher-v2)       | 6L    | shell + sidebar + window (the 3-column shell) |
+| [`archive/launcher-refine/`](../launcher-refine) | 6M.1 | v3/live/minimal capture scripts              |
+| [`archive/launcher-overbuild/`](../launcher-overbuild) | 6O | minimal/recovery/investigation + 6M.2/6N captures |
+| [`archive/resume-old/`](../resume-old)         | 6P    | stub `_on_restore` + `_on_demo_resume`       |
+| [`archive/recovery-ranking/`](../recovery-ranking) | 6Q | ranking rationale + considered-and-rejected  |
+| [`archive/launcher-debt/`](../launcher-debt)   | 6R    | 6P.1 + 6Q + 6O variants frozen out of 6R     |
 | **`archive/launcher-final/`** (this folder)     | **7B**| the per-section card pattern from 6R         |
 
 ---

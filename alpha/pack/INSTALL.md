@@ -71,7 +71,7 @@ python recall.py doctor
 
 Should print **5 GREEN** lines and ≤4 YELLOW.
 YELLOWs are usually opt-in features — see
-[`release/INSTALL.md`](../../release/INSTALL.md)
+[`release/INSTALL.md`](../../docs/release/rc1/INSTALL.md)
 "verify the install" section if curious.
 
 ## Step 5 — first capture (2 min)
@@ -125,7 +125,7 @@ python recall.py demo reset
 ```
 
 Full demo doc:
-[`../../DEMO_MODE.md`](../../DEMO_MODE.md).
+[`../../DEMO_MODE.md`](../../docs/product/DEMO_MODE.md).
 
 ---
 
@@ -139,6 +139,6 @@ Full demo doc:
 | Extension says disconnected      | Reload the extension; restart Recall       |
 
 The
-[`KNOWN_ISSUES.md`](../../release/KNOWN_ISSUES.md)
+[`KNOWN_ISSUES.md`](../../docs/release/rc1/KNOWN_ISSUES.md)
 covers the bugs RC1 ships with. None of them
 should block install.
