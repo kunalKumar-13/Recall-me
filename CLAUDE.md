@@ -302,6 +302,18 @@ chore: bump fastapi to 0.115
 One logical change per commit. If a change touches code + docs +
 tests, that's one commit, not three.
 
+### Git policy
+
+- **Never add `Co-Authored-By:` or "Generated with Claude Code"** —
+  or any other AI-attribution trailer — to any commit message or PR
+  body. Commits are authored by the repo owner alone. A
+  `commit-msg` hook strips these as a backstop, but don't rely on
+  it: don't write them in the first place.
+- **Commit locally after each unit of work.** Small, self-contained
+  commits.
+- **Never `git push`.** Pushing is done manually by the owner. No
+  tool or agent runs `git push` for any reason.
+
 ### Pull requests
 
 - Reference the audit-report item or issue number.
