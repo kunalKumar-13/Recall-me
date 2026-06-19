@@ -4,7 +4,7 @@
 # engine smoke + the two web builds. Catches the four things this
 # repo really cares about:
 #
-#   1. The 35-section smoke still passes (engine + API).
+#   1. The 33-section smoke still passes (engine + API).
 #   2. The marketing site still builds.
 #   3. The extension popup still builds.
 #   4. Python imports across `app/` + `api/` parse clean.
@@ -48,7 +48,7 @@ jobs:
             'app.core.events', 'app.core.episodic', 'app.core.sessions',
             'app.core.microcontexts', 'app.core.resurfacing',
             'app.core.threads', 'app.core.evolution', 'app.core.recovery',
-            'app.core.stats', 'app.core.doctor', 'app.core.ceremonies',
+            'app.core.stats', 'app.core.doctor', 'app.service',
             'api.main',
           ]
           for m in mods:
@@ -56,7 +56,7 @@ jobs:
             print(f'  imported {m}')
           "
 
-      - name: 35-section smoke
+      - name: 33-section smoke
         run: python _smoke_api.py
 
   web:
