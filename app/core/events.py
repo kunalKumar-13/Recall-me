@@ -372,7 +372,7 @@ class EventStore:
         which is what reconstruction wants. Missing or unreadable
         files yield nothing; never raises.
 
-        Added in Phase 2A for the `/v1/replay/day` endpoint; works
+        Added in Phase 2A for per-day reconstruction; works
         identically against the legacy logs Phase 1A wrote.
         """
         path = self.base_dir / f"{date_str}.jsonl"

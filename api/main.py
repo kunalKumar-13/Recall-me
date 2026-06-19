@@ -63,15 +63,11 @@ from .schemas import (
     LegacyEventIn,
     MicroContextOut,
     OpenableTarget,
-    RecentContextsResponse,
     RecentEventsResponse,
     RecentQueriesResponse,
-    RecentSessionsResponse,
     RecoveryCandidateOut,
     RecoveryRecentResponse,
     RecoveryRestoreResponse,
-    ReplayDayIn,
-    ReplayDayResponse,
     RestorationStepOut,
     ResurfaceHistoryClearResponse,
     ResurfaceIdleResponse,
@@ -80,7 +76,6 @@ from .schemas import (
     SessionOut,
     ThreadDetailResponse,
     ThreadEvolutionResponse,
-    ThreadForgetResponse,
     ThreadOut,
     ThreadsClearResponse,
     ThreadsRecentResponse,
@@ -529,42 +524,6 @@ def create_app(deps: AppDeps) -> FastAPI:
             elapsed_ms=elapsed_ms,
         )
 
-    @app.get(
-        "/v1/sessions/recent",
-        response_model=RecentSessionsResponse,
-        tags=["retrieval"],
-        summary="Reconstruct recent sessions without a query filter.",
-    )
-    async def recent_sessions(
-        days: int = Query(default=7, ge=1, le=90),
-        n: int = Query(default=5, ge=1, le=20),
-        deps: AppDeps = Depends(get_deps),
-    ) -> RecentSessionsResponse:
-        sessions = await run_in_threadpool(
-            deps.reconstruction.recent_sessions, n, days
-        )
-        return RecentSessionsResponse(
-            sessions=[_session_to_out(s) for s in sessions]
-        )
-
-    @app.get(
-        "/v1/contexts/recent",
-        response_model=RecentContextsResponse,
-        tags=["retrieval"],
-        summary="Reconstruct recent micro-contexts without a query filter.",
-    )
-    async def recent_contexts(
-        days: int = Query(default=7, ge=1, le=90),
-        n: int = Query(default=5, ge=1, le=20),
-        deps: AppDeps = Depends(get_deps),
-    ) -> RecentContextsResponse:
-        contexts = await run_in_threadpool(
-            deps.reconstruction.recent_contexts, n, days
-        )
-        return RecentContextsResponse(
-            contexts=[_context_to_out(c) for c in contexts]
-        )
-
     # Bonus — surfaces the launcher's idle-digest sources behind the
     # same API so the launcher can stop touching the event store
     # directly. Not in the original brief but matches the pattern.
@@ -617,28 +576,6 @@ def create_app(deps: AppDeps) -> FastAPI:
         )
         return RecentQueriesResponse(
             queries=[_event_to_out(e) for e in queries]
-        )
-
-    # ----------- replay -----------------------------------------------
-
-    @app.post(
-        "/v1/replay/day",
-        response_model=ReplayDayResponse,
-        tags=["replay"],
-        summary="Reconstruct sessions + micro-contexts for a single per-day log file.",
-    )
-    async def replay_day(
-        body: ReplayDayIn, deps: AppDeps = Depends(get_deps)
-    ) -> ReplayDayResponse:
-        n_events, sessions, contexts, elapsed_ms = await run_in_threadpool(
-            deps.reconstruction.replay_day, body.date
-        )
-        return ReplayDayResponse(
-            date=body.date,
-            event_count=n_events,
-            sessions=[_session_to_out(s) for s in sessions],
-            contexts=[_context_to_out(c) for c in contexts],
-            elapsed_ms=elapsed_ms,
         )
 
     # ----------- resurfacing (Phase 2B) -------------------------------
@@ -762,23 +699,6 @@ def create_app(deps: AppDeps) -> FastAPI:
         )
 
     @app.post(
-        "/v1/threads/{thread_id}/forget",
-        response_model=ThreadForgetResponse,
-        tags=["threads"],
-        summary=(
-            "Drop one thread from the local cache. Its events stay; "
-            "the next rebuild may re-derive a new id if the topic "
-            "remains active."
-        ),
-    )
-    async def thread_forget(
-        thread_id: str,
-        deps: AppDeps = Depends(get_deps),
-    ) -> ThreadForgetResponse:
-        ok = await run_in_threadpool(deps.threads.forget_thread, thread_id)
-        return ThreadForgetResponse(forgotten=ok, thread_id=thread_id)
-
-    @app.post(
         "/v1/threads/cache/clear",
         response_model=ThreadsClearResponse,
         tags=["threads"],
@@ -791,21 +711,6 @@ def create_app(deps: AppDeps) -> FastAPI:
         deps: AppDeps = Depends(get_deps),
     ) -> ThreadsClearResponse:
         await run_in_threadpool(deps.threads.clear_cache)
-        return ThreadsClearResponse(cleared=True)
-
-    @app.post(
-        "/v1/threads/evolution/clear",
-        response_model=ThreadsClearResponse,
-        tags=["threads"],
-        summary=(
-            "Drop the evolution cache at ~/.recall/evolution.json. "
-            "Phases are recomputed from events on the next call."
-        ),
-    )
-    async def threads_clear_evolution_cache(
-        deps: AppDeps = Depends(get_deps),
-    ) -> ThreadsClearResponse:
-        await run_in_threadpool(deps.evolution.clear_cache)
         return ThreadsClearResponse(cleared=True)
 
     # ----------- recovery (Phase 3B) ----------------------------------

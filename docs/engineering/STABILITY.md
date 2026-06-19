@@ -88,7 +88,6 @@ the budget is a bug, not a slowdown:
 | `GET /v1/recovery/recent` | <80 ms wall (best-of-3) |
 | `POST /v1/recovery/{id}/restore` | <10 ms |
 | `POST /v1/events/{kind}` | <2 ms |
-| `POST /v1/replay/day` | <5 ms per file |
 | `GET /v1/health` | <1 ms |
 
 The smoke test asserts every one of these. A pull request that

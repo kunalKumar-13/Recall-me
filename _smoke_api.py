@@ -260,32 +260,7 @@ print("[OK] digest sources reachable via API")
 
 
 # ----------------------------------------------------------------------
-section("8. GET /v1/sessions/recent + /v1/contexts/recent")
-# ----------------------------------------------------------------------
-r = client.get("/v1/sessions/recent", params={"days": 7, "n": 5})
-assert r.status_code == 200
-print(f"  /v1/sessions/recent → {len(r.json()['sessions'])} sessions")
-
-r = client.get("/v1/contexts/recent", params={"days": 7, "n": 5})
-assert r.status_code == 200
-print(f"  /v1/contexts/recent → {len(r.json()['contexts'])} contexts")
-print("[OK] recent-sessions + recent-contexts endpoints work")
-
-
-# ----------------------------------------------------------------------
-section("9. POST /v1/replay/day reconstructs from a specific date")
-# ----------------------------------------------------------------------
-today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-r = client.post("/v1/replay/day", json={"date": today})
-assert r.status_code == 200, r.text
-body = r.json()
-print(f"  replay {today} → {body['event_count']} events, {len(body['sessions'])} sessions, {len(body['contexts'])} contexts in {body['elapsed_ms']}ms")
-assert body["event_count"] >= 4
-print("[OK] replay/day reconstructs from the per-day file")
-
-
-# ----------------------------------------------------------------------
-section("10. /docs-api serves Swagger; /openapi.json has all routes")
+section("8. /docs-api serves Swagger; /openapi.json has all routes")
 # ----------------------------------------------------------------------
 r = client.get("/docs-api")
 assert r.status_code == 200
@@ -298,16 +273,14 @@ paths = set(schema["paths"].keys())
 expected = {
     "/v1/events/browser", "/v1/events/search",
     "/v1/events/chat", "/v1/events/open",
-    "/v1/search", "/v1/sessions/recent", "/v1/contexts/recent",
+    "/v1/search",
     "/v1/events/recent", "/v1/queries/recent",
-    "/v1/replay/day",
     "/v1/resurface/idle", "/v1/resurface/history/clear",
     # Phase 2C
     "/v1/threads/recent", "/v1/threads/{thread_id}",
-    "/v1/threads/{thread_id}/forget", "/v1/threads/cache/clear",
+    "/v1/threads/cache/clear",
     # Phase 3A
     "/v1/threads/{thread_id}/evolution",
-    "/v1/threads/evolution/clear",
     # Phase 3B
     "/v1/recovery/recent",
     "/v1/recovery/{candidate_id}/restore",
@@ -320,7 +293,7 @@ print("[OK] OpenAPI doc + Swagger UI both online")
 
 
 # ----------------------------------------------------------------------
-section("11. Performance — 10K events answered in <100 ms")
+section("9. Performance — 10K events answered in <100 ms")
 # ----------------------------------------------------------------------
 # Seed 10K browser_visit events across ~10 topics + days. We bypass
 # the HTTP path for seeding (much faster); the query goes through HTTP.
@@ -372,7 +345,7 @@ print("[OK] 10K-event search inside <100 ms budget")
 
 
 # ----------------------------------------------------------------------
-section("12. APIService surface mirrors the legacy IngestServer")
+section("10. APIService surface mirrors the legacy IngestServer")
 # ----------------------------------------------------------------------
 # We don't actually start uvicorn here (would conflict with the
 # TestClient) — just construct the wrapper and verify the methods
@@ -432,7 +405,7 @@ print("[OK] APIService exposes the full IngestServer-compatible surface "
 
 
 # ----------------------------------------------------------------------
-section("13. Resurfacing — multi-day, multi-session topic surfaces")
+section("11. Resurfacing — multi-day, multi-session topic surfaces")
 # ----------------------------------------------------------------------
 # The resurfacing engine refuses to surface anything younger than
 # _MIN_TOPIC_AGE_HOURS or built from a single session. We seed three
@@ -587,9 +560,9 @@ print("[OK] resurfacing surfaces a real multi-day bucket "
 
 
 # ----------------------------------------------------------------------
-section("14. Resurfacing — <25ms on 10K events")
+section("12. Resurfacing — <25ms on 10K events")
 # ----------------------------------------------------------------------
-# The 10K-event log from section 11 has all events on the same day in
+# The 10K-event log from section 9 has all events on the same day in
 # one session, so the engine should (correctly) return nothing —
 # what we're measuring is the *scan* cost on that log.
 
@@ -612,7 +585,7 @@ print("[OK] resurfacing inside <25 ms server-side budget on 10K events")
 
 
 # ----------------------------------------------------------------------
-section("15. Resurfacing — disable + clear history both work")
+section("13. Resurfacing — disable + clear history both work")
 # ----------------------------------------------------------------------
 # Disabling the engine should make /v1/resurface/idle return [] with
 # enabled=False, without scanning the log.
@@ -640,7 +613,7 @@ print("[OK] disable, re-enable, and clear-history all behave")
 
 
 # ----------------------------------------------------------------------
-section("16. Threads — multi-day topic crystallizes into a thread")
+section("14. Threads — multi-day topic crystallizes into a thread")
 # ----------------------------------------------------------------------
 # The Phase 2B fixture already seeded a websocket topic with browser
 # visits + queries across 3 days + 3 sessions. The threads engine
@@ -673,7 +646,7 @@ print("[OK] thread crystallizes with stable id + signals + timeline")
 
 
 # ----------------------------------------------------------------------
-section("17. Threads — stabilization (rebuild keeps the same id)")
+section("15. Threads — stabilization (rebuild keeps the same id)")
 # ----------------------------------------------------------------------
 # Second rebuild on the same data should produce the same thread id
 # and preserve created_at — that's the stabilization guarantee. We
@@ -694,7 +667,7 @@ print("[OK] thread identity persists across rebuilds")
 
 
 # ----------------------------------------------------------------------
-section("18. Threads — detail returns sessions + contexts + events")
+section("16. Threads — detail returns sessions + contexts + events")
 # ----------------------------------------------------------------------
 r = res_client.get(f"/v1/threads/{first_id}")
 assert r.status_code == 200, r.text
@@ -714,7 +687,7 @@ print("[OK] thread detail reconstructs through existing sessions + contexts")
 
 
 # ----------------------------------------------------------------------
-section("19. Threads — disable + forget + clear-cache all work")
+section("17. Threads — disable + forget + clear-cache all work")
 # ----------------------------------------------------------------------
 # Disable → empty list, regardless of seed data.
 res_threads.set_enabled(False)
@@ -726,9 +699,9 @@ print("  disable → []  ·  re-enable → returns")
 
 # Forget — the id disappears from the next rebuild. The topic may
 # return with a new id if events still match; that's expected and
-# matches the muted-or-forgotten model.
-r = res_client.post(f"/v1/threads/{first_id}/forget")
-assert r.status_code == 200 and r.json()["forgotten"] is True
+# matches the muted-or-forgotten model. The HTTP route was retired as
+# dead surface; the engine capability is exercised directly.
+assert _thr_builder.forget_thread(first_id) is True
 
 # Clear cache wipes the identity file.
 r = res_client.post("/v1/threads/cache/clear")
@@ -739,9 +712,9 @@ print("[OK] forget + clear-cache both behave")
 
 
 # ----------------------------------------------------------------------
-section("20. Threads — <50ms rebuild on 10K events")
+section("18. Threads — <50ms rebuild on 10K events")
 # ----------------------------------------------------------------------
-# The 10K-event log on the `client` fixture (built in section 11) is
+# The 10K-event log on the `client` fixture (built in section 9) is
 # all same-day + same-session, so the engine will reject every bucket.
 # Still meaningful: we measure the *scan* cost on 10K events.
 
@@ -783,7 +756,7 @@ print("[OK] threads inside <75 ms warm-cache server-side budget on 10K events")
 
 
 # ----------------------------------------------------------------------
-section("21. Evolution — multi-phase thread (research → impl → revisit)")
+section("19. Evolution — multi-phase thread (research → impl → revisit)")
 # ----------------------------------------------------------------------
 # Augment the Phase 2B websocket fixture with two more phases:
 #   • implementation phase: file opens on a `code/websocket.py` path,
@@ -817,7 +790,7 @@ for j in range(3):
         "browser": "chrome",
     })
 
-# Re-resolve the thread id (forget + clear-cache from section 19 wiped
+# Re-resolve the thread id (forget + clear-cache from section 17 wiped
 # the previous identity).
 r = res_client.get("/v1/threads/recent", params={"n": 6})
 assert r.status_code == 200
@@ -855,7 +828,7 @@ print("[OK] evolution segments thread into chronological phases "
 
 
 # ----------------------------------------------------------------------
-section("22. Evolution — stabilization (same input → same phase ids)")
+section("20. Evolution — stabilization (same input → same phase ids)")
 # ----------------------------------------------------------------------
 # Identity must be deterministic: a second call with no new events
 # returns the same phase ids. This is what powers the on-disk cache.
@@ -871,7 +844,7 @@ print("[OK] evolution is deterministic across rebuilds")
 
 
 # ----------------------------------------------------------------------
-section("23. Evolution — disable + cache-clear both work")
+section("21. Evolution — disable + cache-clear both work")
 # ----------------------------------------------------------------------
 res_evolution.set_enabled(False)
 r = res_client.get(f"/v1/threads/{ws_thread_id}/evolution")
@@ -884,9 +857,10 @@ res_evolution.set_enabled(True)
 r = res_client.get("/v1/threads/thr_deadbeef/evolution")
 assert r.status_code == 404
 
-# Clear cache wipes the cache file.
-r = res_client.post("/v1/threads/evolution/clear")
-assert r.status_code == 200 and r.json()["cleared"] is True
+# Clear cache wipes the cache file. The HTTP route was retired as dead
+# surface; the engine capability is exercised directly (also reachable
+# via APIService.clear_evolution_cache for Settings).
+res_evolution.clear_cache()
 evo_cache_path = res_evolution.store.path
 assert not evo_cache_path.exists(), (
     f"evolution cache still present: {evo_cache_path}"
@@ -895,7 +869,7 @@ print("[OK] disable, re-enable, and clear-cache all behave")
 
 
 # ----------------------------------------------------------------------
-section("24. Evolution — <70ms reconstruction on 10K events")
+section("22. Evolution — <70ms reconstruction on 10K events")
 # ----------------------------------------------------------------------
 # Build a thread in the 10K-event fixture, then time evolution
 # reconstruction. The thread engine refuses to surface threads from
@@ -948,7 +922,7 @@ print("[OK] evolution inside <70 ms median budget on 10K events")
 
 
 # ----------------------------------------------------------------------
-section("25. Recovery — produces a candidate from the multi-phase thread")
+section("23. Recovery — produces a candidate from the multi-phase thread")
 # ----------------------------------------------------------------------
 # The Phase 3A fixture (`res_*` rig) seeded a thread with three real
 # phases (Reading → Implementation → Revisit) plus the additional
@@ -988,7 +962,7 @@ print("[OK] recovery produces a real candidate with signals + caption "
 
 
 # ----------------------------------------------------------------------
-section("26. Recovery — restore returns an orchestrated plan (Phase 3C)")
+section("24. Recovery — restore returns an orchestrated plan (Phase 3C)")
 # ----------------------------------------------------------------------
 candidate_id = top["id"]
 r = res_client.post(f"/v1/recovery/{candidate_id}/restore")
@@ -1032,7 +1006,7 @@ assert r404.status_code == 404, r404.status_code
 
 
 # ----------------------------------------------------------------------
-section("27. Recovery — disable + ceiling protections both behave")
+section("25. Recovery — disable + ceiling protections both behave")
 # ----------------------------------------------------------------------
 # Disabled engine: recent returns [], restore returns 404.
 res_recovery.set_enabled(False)
@@ -1058,7 +1032,7 @@ print("[OK] disable + restore-404 + n>3 ceiling all enforced")
 
 
 # ----------------------------------------------------------------------
-section("28. Recovery — <80ms generation on 10K events")
+section("26. Recovery — <80ms generation on 10K events")
 # ----------------------------------------------------------------------
 # The 10K-event log on the `client` fixture is same-day, single-
 # session, so the threads engine surfaces nothing and the recovery
@@ -1099,7 +1073,7 @@ print("[OK] recovery inside <80 ms warm-cache budget on 10K events")
 
 
 # ----------------------------------------------------------------------
-section("29. Recovery — Phase 3C suppression: shallow browsing rejected")
+section("27. Recovery — Phase 3C suppression: shallow browsing rejected")
 # ----------------------------------------------------------------------
 # Seed a fixture that *looks* like a thread (multi-day, multi-session)
 # but consists entirely of browser_visit events with no file opens,
@@ -1225,7 +1199,7 @@ print("[OK] shallow browsing is suppressed by the Phase 3C depth filter")
 
 
 # ----------------------------------------------------------------------
-section("30. Demo seeder — deterministic event production (Phase 4B)")
+section("28. Demo seeder — deterministic event production (Phase 4B)")
 # ----------------------------------------------------------------------
 # `RECALL_DEMO_MODE=1` seeds a believable trace into a dedicated
 # events-demo/ directory. Two requirements: (a) same call → same
@@ -1341,7 +1315,7 @@ print("[OK] demo seed is deterministic and produces real surfaces")
 
 
 # ----------------------------------------------------------------------
-section("31. Error recovery — corrupt JSONL line never aborts a file")
+section("29. Error recovery — corrupt JSONL line never aborts a file")
 # ----------------------------------------------------------------------
 # Phase 4C STABILITY.md guarantee: one bad line doesn't break
 # the read for the rest of the file. Hand-write a per-day file
@@ -1400,7 +1374,7 @@ print("[OK] corrupt JSONL — bad lines skipped, good lines preserved")
 
 
 # ----------------------------------------------------------------------
-section("32. Upgrade compat — old-shape event records still parse")
+section("30. Upgrade compat — old-shape event records still parse")
 # ----------------------------------------------------------------------
 # Phase 4D stability axis. A user upgrading from an earlier
 # build may have JSONL records that omit fields the current
@@ -1465,7 +1439,7 @@ print("[OK] legacy + forward-compat records all parse with safe defaults")
 
 
 # ----------------------------------------------------------------------
-section("33. Restoration plan ordering is deterministic")
+section("31. Restoration plan ordering is deterministic")
 # ----------------------------------------------------------------------
 # Phase 3C contract: files → chats → tabs → searches, with
 # newest-first within each group. A user clicking the same
@@ -1492,7 +1466,7 @@ print("[OK] restoration plan order is deterministic and group-monotonic")
 
 
 # ----------------------------------------------------------------------
-section("34. Recovery determinism — ids stable across rebuilds")
+section("32. Recovery determinism — ids stable across rebuilds")
 # ----------------------------------------------------------------------
 # A user opening the launcher twice within seconds should see
 # the same recovery candidates with the same ids. The Phase
@@ -1517,7 +1491,7 @@ print("[OK] recovery is deterministic across rebuilds within a window")
 
 
 # ----------------------------------------------------------------------
-section("35. Extension disconnect — API stays healthy, ingest still works")
+section("33. Extension disconnect — API stays healthy, ingest still works")
 # ----------------------------------------------------------------------
 # Brief scenario: the browser extension is uninstalled or
 # paused. The launcher process must keep running, the API

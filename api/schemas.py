@@ -175,38 +175,12 @@ class SearchResponse(BaseModel):
     elapsed_ms: float
 
 
-class RecentSessionsResponse(BaseModel):
-    sessions: List[SessionOut]
-
-
-class RecentContextsResponse(BaseModel):
-    contexts: List[MicroContextOut]
-
-
 class RecentEventsResponse(BaseModel):
     events: List[EventOut]
 
 
 class RecentQueriesResponse(BaseModel):
     queries: List[EventOut]
-
-
-# --------------------------------------------------------------- replay
-
-
-class ReplayDayIn(BaseModel):
-    """`date` is `YYYY-MM-DD` (UTC). Matches the EventStore's
-    per-day JSONL filename — no parsing ambiguity."""
-
-    date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
-
-
-class ReplayDayResponse(BaseModel):
-    date: str
-    event_count: int
-    sessions: List[SessionOut]
-    contexts: List[MicroContextOut]
-    elapsed_ms: float
 
 
 # --------------------------------------------------------------- resurfacing
@@ -304,11 +278,6 @@ class ThreadDetailResponse(BaseModel):
     sessions: List[SessionOut]
     contexts: List[MicroContextOut]
     events: List[EventOut]
-
-
-class ThreadForgetResponse(BaseModel):
-    forgotten: bool
-    thread_id: str
 
 
 class ThreadsClearResponse(BaseModel):

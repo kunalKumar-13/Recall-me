@@ -214,7 +214,6 @@ the `~/.recall/evolution.json` cache would be wrong.
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/v1/threads/{id}/evolution` | Full chronology for one thread |
-| `POST` | `/v1/threads/evolution/clear` | Wipe `~/.recall/evolution.json` |
 
 `GET` returns the `ThreadEvolution` shape: `thread_id`, ordered
 `phases`, `span_start` / `span_end`, and `elapsed_ms`. Unknown thread

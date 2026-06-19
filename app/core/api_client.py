@@ -186,12 +186,6 @@ class APIClient:
             return None
         return _evolution_from(data)
 
-    def clear_evolution_cache(self, timeout: float = 2.0) -> bool:
-        data = self._post_json(
-            "/v1/threads/evolution/clear", {}, timeout=timeout
-        )
-        return bool(data and data.get("cleared"))
-
     # -- recovery (Phase 3B) --------------------------------------------
 
     def recovery_recent(
