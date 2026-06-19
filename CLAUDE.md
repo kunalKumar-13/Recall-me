@@ -246,7 +246,7 @@ verification is performed — see
 │   └── services/              ingestion / retrieval / reconstruction /
 │                              resurfacing / threads / evolution /
 │                              recovery / storage
-├── _smoke_api.py              29-section end-to-end test + perf budgets
+├── _smoke_api.py              35-section end-to-end test + perf budgets
 ├── recall.py                  CLI entry point
 ├── recall.spec                PyInstaller spec
 └── requirements.txt
@@ -326,7 +326,7 @@ tests, that's one commit, not three.
 ## Verifying changes
 
 ```bash
-# Full end-to-end test (29 sections, ~5s)
+# Full end-to-end test (35 sections, ~5s)
 python _smoke_api.py
 
 # Single-command dev bootstrap

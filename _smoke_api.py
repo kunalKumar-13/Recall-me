@@ -1236,9 +1236,14 @@ from app.core import demo_seed as _demo_seed  # noqa: E402
 
 _DEMO_DIR = TMP / "demo-events"
 _demo_seed.reset(_DEMO_DIR)
-# Anchor the seed to a fixed `now` so successive runs in this
-# section produce byte-identical files.
-_demo_now = datetime(2026, 5, 14, 18, 0, 0, tzinfo=timezone.utc)
+# Anchor the seed to a single `now` captured once at section start.
+# Computing it once (rather than per-seed) keeps the two passes below
+# byte-identical, while keeping the trace anchored to *real* now — the
+# threads/recovery engines bucket against `time.time()` with a 30-day
+# lookback, so a hardcoded calendar date silently ages out of the
+# window and the seed stops surfacing. Relative-to-now is the only
+# anchor that survives the passage of wall-clock time.
+_demo_now = datetime.now(timezone.utc).replace(microsecond=0)
 _demo_seed.seed(_DEMO_DIR, now=_demo_now, force=True)
 
 # Record the file shapes.
@@ -1322,11 +1327,11 @@ demo_deps = AppDeps(
 )
 demo_client = TestClient(create_app(demo_deps))
 
-# The demo seed was anchored to 2026-05-14 18:00 UTC; recovery's
-# last-phase recency guard uses *real* `now`, so this slice of
-# the seed may be too old by smoke-test runtime. Verify the
-# weaker invariant — at least one thread exists — and treat the
-# recovery surface as a soft expectation.
+# The seed is anchored to real `now` (see `_demo_now` above), so its
+# strongest arc — the WebSocket-retry thread — lands inside the
+# threads engine's 30-day lookback and crosses the 0.40 confidence
+# floor on its own merits. Assert the real invariant: the seed
+# produces at least one genuine thread, no floor relaxation involved.
 r = demo_client.get("/v1/threads/recent", params={"n": 6})
 assert r.status_code == 200
 demo_threads_seen = r.json()["threads"]
