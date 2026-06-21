@@ -30,6 +30,9 @@ apps/admin/web/.next/
 .DS_Store
 Thumbs.db
 
+# Claude Code local, machine-specific settings (permission allowlist, etc.) — never shared
+.claude/settings.local.json
+
 # Demo media — large; produced artifacts live in releases/ or CDN
 demo/*.mp4
 demo/*.mov

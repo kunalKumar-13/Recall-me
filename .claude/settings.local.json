@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(npx next *)",
-      "Bash(python -c \"from app.core.recovery import RecoveryEngine, _LAST_PHASE_RECENCY_DAYS, _MIN_CONFIDENCE; print\\(f'floor={_MIN_CONFIDENCE} last_phase_days={_LAST_PHASE_RECENCY_DAYS}'\\)\")",
-      "Bash(python -c \"from app.core.events import EventStore; print\\('ok'\\)\")"
-    ]
-  }
-}
