@@ -3,9 +3,12 @@
 The browser side of Recall. It does two things, kept deliberately
 separate:
 
-1. **Capture** (`background.js`) — quietly records page visits,
-   search queries, and chat-platform sessions and POSTs them to the
-   local Recall daemon at `127.0.0.1:4545`.
+1. **Capture** (`background.js` + `capture/`) — quietly records page
+   visits, search queries, and chat-platform sessions and delivers
+   them to the local Recall daemon at `127.0.0.1:4545` through a
+   **durable outbox**: events are queued in `chrome.storage.local`
+   and flushed in batches to `/v1/events/batch` with retry, so nothing
+   is lost when the daemon is briefly down.
 2. **The popup** (`popup/`, built from `ui/`) — a small memory
    *surface*. Open it and it answers one question: *what was I
    doing?* It is not a telemetry dashboard, not browser analytics,
@@ -20,7 +23,12 @@ loopback Recall daemon.
 ```
 apps/extension/
 ├── manifest.json     MV3 manifest (hand-written)
-├── background.js     capture service worker (hand-written)
+├── background.js     capture service-worker entry (ES module, hand-written)
+├── capture/          capture core (hand-written ES modules)
+│   ├── normalize.js     pure URL → event classifier (node-tested)
+│   ├── outbox.js        durable, batched, retrying sender
+│   ├── sources.js       tab + SPA listeners with title-settle
+│   └── normalize.test.js
 ├── popup/            ← BUILT popup — what Chrome loads (generated)
 │   ├── index.html
 │   └── assets/
@@ -36,8 +44,9 @@ apps/extension/
 ```
 
 Chrome loads `apps/extension/` as the unpacked extension.
-`manifest.json` and `background.js` are hand-written at that root;
-`popup/` is a build artifact produced from `ui/`.
+`manifest.json`, `background.js`, and the `capture/` modules are
+hand-written; `popup/` is a build artifact produced from `ui/`. The
+capture core has a node test: `node capture/normalize.test.js`.
 
 ## Build the popup
 
@@ -100,7 +109,8 @@ and data flow.
 |---|---|
 | Any normal page (`https://…`) | `browser_visit` |
 | Google / DuckDuckGo / Bing / Kagi search | `browser_search` |
-| chatgpt.com / chat.openai.com / claude.ai | `chat_session` |
+| chatgpt.com / claude.ai / gemini / copilot / deepseek / grok / poe / … | `chat_session` |
+| SPA route changes (pushState) on the above | captured via `webNavigation` |
 
 ## What it never captures
 

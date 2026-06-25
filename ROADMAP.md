@@ -45,16 +45,19 @@ telemetry. See the capture audit for the full diagnosis.
       the engine; surface an honest "events captured today" self-check. Fix
       the build/doc drift the audit found (stale committed popup bundle,
       README/architecture component-name mismatch).
-- [ ] **Capture C2 — Refactor core (modular + tested).** Split
-      `background.js` into `sources` / `normalizer` / `sender`; lift
-      `classify()` + title-settle into a pure, node-tested normalizer.
-      No behaviour change.
-- [ ] **Capture C3 — Robust capture (zero loss).** Persistent outbox in
+- [x] **Capture C2 — Refactor core (modular + tested).** `background.js`
+      split into `capture/sources.js` (listeners + title-settle),
+      `capture/normalize.js` (pure `(url,title)→{kind,payload}`, node-tested
+      via `capture/normalize.test.js`), and `capture/outbox.js` (delivery).
+      ES-module service worker; no behaviour change to what lands on disk.
+- [x] **Capture C3 — Robust capture (zero loss).** Persistent outbox in
       `chrome.storage.local`; batched POST to **`/v1/events/batch`** with
-      backoff + `chrome.alarms` retry (survives MV3 worker eviction *and*
-      daemon downtime); `webNavigation.onHistoryStateUpdated` for reliable
-      SPA-route capture; hardened title-settle for ChatGPT/Claude/Gemini.
-      *Server side: `POST /v1/events/batch` shipped (smoke §34).*
+      `chrome.alarms` retry (survives MV3 worker eviction *and* daemon
+      downtime); `webNavigation.onHistoryStateUpdated` for SPA-route capture;
+      capture-time `ts` preserved through delayed flushes. Server side:
+      `POST /v1/events/batch` shipped (smoke §34). *Code-complete; the
+      remaining open item is C1 — load the extension and confirm organic
+      events flow end-to-end (only reproducible in a real browser).*
 - [ ] **Capture C4 — Work-session signal (the moat).** Capture focus/dwell/
       active-tab context and a client work-session hint, so the engine can
       group *work-blocks* behaviourally, not just by 30-minute clock windows.
