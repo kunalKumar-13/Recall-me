@@ -273,6 +273,7 @@ paths = set(schema["paths"].keys())
 expected = {
     "/v1/events/browser", "/v1/events/search",
     "/v1/events/chat", "/v1/events/open",
+    "/v1/events/batch",
     "/v1/search",
     "/v1/events/recent", "/v1/queries/recent",
     "/v1/resurface/idle", "/v1/resurface/history/clear",
@@ -1525,6 +1526,64 @@ assert n_after == n_before + 1, (
 )
 print(f"  no-extension ingest path → counter moved {n_before} → {n_after}")
 print("[OK] the product is operational without the extension installed")
+
+
+# ----------------------------------------------------------------------
+section("34. POST /v1/events/batch ingests an array in one round-trip")
+# ----------------------------------------------------------------------
+# The durable extension sender flushes its offline outbox here: one
+# request carrying many {kind, payload} pairs. Each event runs the
+# same validation + filtering as the single-event routes, so a
+# blocked scheme inside the batch is dropped while the rest land.
+batch = {
+    "events": [
+        {"kind": "browser_visit", "payload": {
+            "url": f"https://example.com/batch-{i}",
+            "title": f"Batch page {i}",
+            "domain": "example.com",
+            "browser": "chrome",
+        }}
+        for i in range(50)
+    ]
+}
+# Slip one blocked-scheme event in to prove per-event filtering.
+batch["events"].append({"kind": "browser_visit", "payload": {
+    "url": "chrome://settings", "title": "settings", "browser": "chrome",
+}})
+
+before = client.get("/v1/health").json()["ingested_total"]
+r = client.post("/v1/events/batch", json=batch)
+assert r.status_code == 200, r.text
+body = r.json()
+assert body["received"] == 51, body
+assert body["ingested"] == 50, body          # the chrome:// one is filtered out
+assert body["reason"] is not None, body      # partial drop is reported
+after = client.get("/v1/health").json()["ingested_total"]
+assert after == before + 50, f"counter moved {before}->{after}, expected +50"
+print(f"  batch of 51 → ingested {body['ingested']}, "
+      f"dropped {body['received'] - body['ingested']}; counter {before}->{after}")
+
+# Empty / oversized batches are rejected by the schema (422), never written.
+assert client.post("/v1/events/batch", json={"events": []}).status_code == 422
+oversized = {"events": [
+    {"kind": "browser_visit", "payload": {"url": "https://x.com/"}}
+    for _ in range(501)
+]}
+assert client.post("/v1/events/batch", json=oversized).status_code == 422
+print("  empty + 501-event batches rejected with 422 (nothing written)")
+
+# Amortized cost stays inside the per-event ingest budget (best of 3).
+samples_ms = []
+for _ in range(3):
+    t0 = time.perf_counter()
+    rr = client.post("/v1/events/batch", json=batch)
+    samples_ms.append((time.perf_counter() - t0) * 1000)
+    assert rr.status_code == 200
+per_event_ms = min(samples_ms) / 51.0
+print(f"  batch latency {min(samples_ms):.1f} ms / 51 events = "
+      f"{per_event_ms:.3f} ms/event (best of 3)")
+assert per_event_ms < 2.0, f"per-event budget blown: {per_event_ms:.3f} ms > 2 ms"
+print("[OK] batch ingest writes, filters per-event, rejects bad sizes, stays in budget")
 
 
 # Cleanup

@@ -39,6 +39,7 @@ from app.core.threads import Thread, ThreadBuilder
 
 from .logging_config import log_with, setup_logging
 from .schemas import (
+    BatchEventsIn,
     BrowserSearchIn,
     BrowserVisitIn,
     ChatSessionIn,
@@ -462,6 +463,31 @@ def create_app(deps: AppDeps) -> FastAPI:
         _post_ingest_hook(ok)
         return IngestResponse(
             received=1, ingested=1 if ok else 0, reason=reason,
+        )
+
+    @app.post(
+        "/v1/events/batch",
+        response_model=IngestResponse,
+        tags=["ingestion"],
+        summary=(
+            "Ingest a batch of events in one round-trip. The extension's "
+            "durable sender drains its offline outbox here; each event is "
+            "validated and filtered exactly as the single-event routes are, "
+            "so a blocked event inside the batch is dropped while the rest "
+            "land."
+        ),
+    )
+    async def ingest_events_batch(
+        body: BatchEventsIn, deps: AppDeps = Depends(get_deps)
+    ) -> IngestResponse:
+        items = [(e.kind, e.payload) for e in body.events]
+        received, ingested = await run_in_threadpool(
+            deps.ingestion.ingest_batch, items
+        )
+        _post_ingest_hook(ingested > 0)
+        reason = None if ingested == received else "some events dropped by filters"
+        return IngestResponse(
+            received=received, ingested=ingested, reason=reason,
         )
 
     # Legacy compat: pre-2A extension posts `{kind, payload}` to a
