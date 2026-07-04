@@ -43,3 +43,95 @@ export interface HealthResponse {
   status: string;
   events_dir: string;
 }
+
+// ---- search surface (mirrors api/schemas.py SearchResponse) ----
+
+export interface EpisodicResult {
+  kind: string;
+  title: string;
+  subtitle: string;
+  url: string;
+  ts_epoch: number;
+  score: number;
+  session_id: string;
+}
+
+export interface SessionResult {
+  session_id: string;
+  topic: string;
+  label: string;
+  time_label: string;
+  score: number;
+  event_count: number;
+  kinds: string[];
+  preview_events: EventOut[];
+  openable_targets: OpenableTarget[];
+}
+
+export interface MicroContextResult {
+  topic: string;
+  label: string;
+  time_label: string;
+  event_count: number;
+  kinds: string[];
+  match_count: number;
+  preview_events: EventOut[];
+  openable_targets: OpenableTarget[];
+}
+
+export interface SearchResponse {
+  query: string;
+  episodic: EpisodicResult[];
+  contexts: MicroContextResult[];
+  sessions: SessionResult[];
+  elapsed_ms: number;
+}
+
+// ---- threads & evolution (mirrors api/schemas.py) ----
+
+export interface Thread {
+  id: string;
+  topic_key: string;
+  title: string;
+  confidence: number;
+  created_at: number;
+  updated_at: number;
+  event_count: number;
+  session_count: number;
+  surface_types: string[];
+  representative_queries: string[];
+  representative_targets: OpenableTarget[];
+  timeline_summary: string;
+  signals: Record<string, unknown>;
+  why: string[];
+}
+
+export interface ThreadsRecentResponse {
+  threads: Thread[];
+  elapsed_ms: number;
+}
+
+export interface EvolutionPhase {
+  id: string;
+  thread_id: string;
+  title: string;
+  start_at: number;
+  end_at: number;
+  event_count: number;
+  dominant_surface: string;
+  representative_queries: string[];
+  representative_targets: OpenableTarget[];
+  momentum_score: number;
+  revisit_score: number;
+  transition: string;
+  signals: Record<string, unknown>;
+  why: string[];
+}
+
+export interface ThreadEvolutionResponse {
+  thread_id: string;
+  phases: EvolutionPhase[];
+  span_start: number;
+  span_end: number;
+  elapsed_ms: number;
+}

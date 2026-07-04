@@ -64,6 +64,11 @@ async fn threads_recent(n: Option<u32>) -> Result<Value, String> {
     engine_get(&format!("/v1/threads/recent?n={}", n.unwrap_or(6))).await
 }
 
+#[tauri::command]
+async fn thread_evolution(id: String) -> Result<Value, String> {
+    engine_get(&format!("/v1/threads/{id}/evolution")).await
+}
+
 // Resolve the candidate's restoration plan, then open every step in the
 // engine's choreographed order (files → chats → tabs → searches). The
 // endpoint orders the steps; we just execute them and return the plan.
@@ -85,6 +90,21 @@ async fn recovery_restore(app: AppHandle, id: String) -> Result<Value, String> {
         }
     }
     Ok(plan)
+}
+
+// Open a single target — the search surface's Enter action. Same
+// opener the restoration path uses; `kind` chooses url vs path.
+#[tauri::command]
+async fn open_target(app: AppHandle, kind: String, target: String) -> Result<(), String> {
+    if target.is_empty() {
+        return Ok(());
+    }
+    let opener = app.opener();
+    let _ = match kind.as_str() {
+        "url" => opener.open_url(&target, None::<&str>),
+        _ => opener.open_path(&target, None::<&str>),
+    };
+    Ok(())
 }
 
 #[tauri::command]
@@ -156,7 +176,9 @@ pub fn run() {
             recovery_recent,
             search,
             threads_recent,
+            thread_evolution,
             recovery_restore,
+            open_target,
             resize_height,
         ])
         .setup(move |app| {

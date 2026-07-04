@@ -5,8 +5,9 @@ never call each other directly.
 
 ```
         ┌──────────────────────────────────────────┐
-        │  background.js  (capture service worker)  │
-        │   tab events → POST /v1/events/*          │
+        │  background.js + capture/ (service worker)│
+        │   sources → normalize → durable outbox    │
+        │   → POST /v1/events/batch  (retry on fail) │
         └───────────────────┬──────────────────────┘
                             │ 127.0.0.1:4545
         ┌───────────────────┴──────────────────────┐
@@ -23,6 +24,25 @@ never call each other directly.
 Capture *writes*; the popup *reads*. They are decoupled on purpose:
 capture must keep working even when the popup has never been opened,
 and the popup must render even when capture is paused.
+
+## Capture module model
+
+```
+background.js          thin entry: load config, register sources + retry alarm
+└── capture/
+    ├── sources.js      tab.onUpdated + webNavigation (SPA) + onRemoved,
+    │                   with the title-settle timer
+    ├── normalize.js    pure (url, title) → {kind, payload} | null  (node-tested)
+    └── outbox.js       durable queue in chrome.storage.local →
+                        batched POST /v1/events/batch → retry via chrome.alarms
+```
+
+The split is deliberate: `normalize.js` is pure and unit-tested
+without a browser; `sources.js` owns the stateful listeners; and
+`outbox.js` owns delivery. Coalescing (title-settle) is best-effort,
+but *delivery* is durable — an event captured while the daemon is down
+is queued and flushed when it returns, surviving service-worker
+eviction because the queue lives in `chrome.storage.local`, not memory.
 
 ## Popup component model
 
@@ -81,8 +101,10 @@ pure function of the state — there is never a half-rendered surface.
 type-checks (`tsc --noEmit`) then emits to `apps/extension/popup/`
 with `base: "./"` so asset URLs resolve from the
 `chrome-extension://` origin. `manifest.json`'s `default_popup`
-points at `popup/index.html`. The manifest and `background.js` are
-never built — they are hand-written at the extension root.
+points at `popup/index.html`. The manifest, `background.js`, and the
+`capture/` modules are never built — they are hand-written ES modules
+at the extension root (`background.service_worker` is loaded with
+`"type": "module"`).
 
 ## Design constraints (enforced by review)
 

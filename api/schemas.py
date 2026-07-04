@@ -104,6 +104,43 @@ class LegacyEventIn(BaseModel):
     payload: dict
 
 
+class BatchEventIn(BaseModel):
+    """One entry in a batched ingest. Same envelope as the legacy
+    `/events` shape — a `kind` + an open `payload` — because the
+    extension's durable sender stores raw `{kind, payload}` pairs in
+    its outbox and replays them verbatim. Per-field validation and
+    the field allowlist run in `IngestionService`, identical to every
+    single-event ingest route."""
+
+    kind: Literal[
+        "browser_visit",
+        "browser_search",
+        "chat_session",
+        "desktop_window",
+        "open",
+        "reveal",
+    ]
+    payload: dict
+
+
+class BatchEventsIn(BaseModel):
+    """A batched ingest envelope (`POST /v1/events/batch`).
+
+    The extension's durable sender flushes its local outbox here in a
+    single round-trip rather than one POST per event, so a backlog
+    that accumulated while the daemon was down (or the laptop asleep)
+    drains the moment the daemon is reachable again. Capped at 500
+    events per request so a misbehaving client cannot submit an
+    unbounded body; oversized or empty batches are rejected (422)."""
+
+    events: List[BatchEventIn] = Field(
+        ...,
+        min_length=1,
+        max_length=500,
+        description="1–500 events, applied in order. Each is filtered independently.",
+    )
+
+
 class IngestResponse(BaseModel):
     received: int = Field(..., description="Events submitted in this request.")
     ingested: int = Field(..., description="Events actually written after filters.")

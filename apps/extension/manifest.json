@@ -2,17 +2,20 @@
   "manifest_version": 3,
   "name": "Recall — Continuity Companion",
   "short_name": "Recall",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "A small memory surface for your browser. See the work you can step back into — locally, on your machine. Activity goes only to the local Recall daemon. Nothing leaves the device.",
   "permissions": [
     "tabs",
-    "storage"
+    "storage",
+    "alarms",
+    "webNavigation"
   ],
   "host_permissions": [
     "http://127.0.0.1:4545/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "action": {
     "default_popup": "popup/index.html",
