@@ -86,3 +86,52 @@ export interface SearchResponse {
   sessions: SessionResult[];
   elapsed_ms: number;
 }
+
+// ---- threads & evolution (mirrors api/schemas.py) ----
+
+export interface Thread {
+  id: string;
+  topic_key: string;
+  title: string;
+  confidence: number;
+  created_at: number;
+  updated_at: number;
+  event_count: number;
+  session_count: number;
+  surface_types: string[];
+  representative_queries: string[];
+  representative_targets: OpenableTarget[];
+  timeline_summary: string;
+  signals: Record<string, unknown>;
+  why: string[];
+}
+
+export interface ThreadsRecentResponse {
+  threads: Thread[];
+  elapsed_ms: number;
+}
+
+export interface EvolutionPhase {
+  id: string;
+  thread_id: string;
+  title: string;
+  start_at: number;
+  end_at: number;
+  event_count: number;
+  dominant_surface: string;
+  representative_queries: string[];
+  representative_targets: OpenableTarget[];
+  momentum_score: number;
+  revisit_score: number;
+  transition: string;
+  signals: Record<string, unknown>;
+  why: string[];
+}
+
+export interface ThreadEvolutionResponse {
+  thread_id: string;
+  phases: EvolutionPhase[];
+  span_start: number;
+  span_end: number;
+  elapsed_ms: number;
+}

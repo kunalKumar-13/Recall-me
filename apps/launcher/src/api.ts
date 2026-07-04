@@ -6,6 +6,8 @@ import type {
   HealthResponse,
   RecoveryRecentResponse,
   SearchResponse,
+  ThreadsRecentResponse,
+  ThreadEvolutionResponse,
 } from "./types";
 
 export const engineHealth = () => invoke<HealthResponse>("engine_health");
@@ -17,6 +19,12 @@ export const recoveryRestore = (id: string) =>
   invoke<unknown>("recovery_restore", { id });
 
 export const search = (q: string) => invoke<SearchResponse>("search", { q });
+
+export const threadsRecent = (n = 6) =>
+  invoke<ThreadsRecentResponse>("threads_recent", { n });
+
+export const threadEvolution = (id: string) =>
+  invoke<ThreadEvolutionResponse>("thread_evolution", { id });
 
 export const openTarget = (kind: string, target: string) =>
   invoke<void>("open_target", { kind, target });

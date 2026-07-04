@@ -22,8 +22,13 @@ phases land so any session resumes from the right place.
       opens the selected result via the `open_target` command.
       *Code-complete + type/compile-checked; visual verification in-app
       pending (needs a real window + captured data).*
-- [ ] **Phase 3 — Threads & evolution.** Open a thread to see its phases
-      (research → impl → revisit).
+- [x] **Phase 3 — Threads & evolution.** Resting state now carries an
+      "Active threads" section (`/v1/threads/recent`) alongside the Recovery
+      hero; `↵`/`→` on a thread (or a recovery candidate — it carries a
+      `thread_id`) drills into a **detail view** rendering the thread's
+      evolution phases on the spine (`/v1/threads/{id}/evolution`); `←`/`esc`
+      returns. Enter on a phase opens its representative target.
+      *Code-complete + type/compile-checked; visual verification pending.*
 - [ ] **Phase 4 — Restore choreography.** Enter on a candidate reopens the
       work in order (files → chats → tabs by domain → searches).
 - [ ] **Phase 5 — Settings & polish.** Configurable hotkey, folder picker,

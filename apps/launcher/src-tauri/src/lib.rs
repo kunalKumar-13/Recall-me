@@ -64,6 +64,11 @@ async fn threads_recent(n: Option<u32>) -> Result<Value, String> {
     engine_get(&format!("/v1/threads/recent?n={}", n.unwrap_or(6))).await
 }
 
+#[tauri::command]
+async fn thread_evolution(id: String) -> Result<Value, String> {
+    engine_get(&format!("/v1/threads/{id}/evolution")).await
+}
+
 // Resolve the candidate's restoration plan, then open every step in the
 // engine's choreographed order (files → chats → tabs → searches). The
 // endpoint orders the steps; we just execute them and return the plan.
@@ -171,6 +176,7 @@ pub fn run() {
             recovery_recent,
             search,
             threads_recent,
+            thread_evolution,
             recovery_restore,
             open_target,
             resize_height,

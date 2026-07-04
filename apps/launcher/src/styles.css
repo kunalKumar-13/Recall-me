@@ -237,3 +237,13 @@ body {
 .node.context {
   background: var(--violet);
 }
+
+/* detail (thread evolution) header — the thread title with a back chevron.
+   Overrides .header's dim color so the title reads as the surface title. */
+.detail-header {
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
