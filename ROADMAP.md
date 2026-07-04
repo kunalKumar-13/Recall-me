@@ -14,8 +14,14 @@ phases land so any session resumes from the right place.
 - [ ] **Phase 1 — Launcher foundation** *(in progress)*. Tauri panel on
       Ctrl+Space, Recovery hero on real `/v1/recovery/recent` data,
       hide-on-blur, content-fit resize, vibrancy.
-- [ ] **Phase 2 — Search surface.** Typing renders the episodic + session +
-      micro-context bundle on the spine.
+- [x] **Phase 2 — Search surface.** Persistent search field at the top
+      (Raycast-style); empty = the Recovery hero, typing renders the
+      episodic + session + micro-context bundle on the thread spine with
+      per-layer node hues (moment/session/context), keyboard-first (↑↓
+      move, ↵ open, esc clear). Backed by the live `/v1/search`; Enter
+      opens the selected result via the `open_target` command.
+      *Code-complete + type/compile-checked; visual verification in-app
+      pending (needs a real window + captured data).*
 - [ ] **Phase 3 — Threads & evolution.** Open a thread to see its phases
       (research → impl → revisit).
 - [ ] **Phase 4 — Restore choreography.** Enter on a candidate reopens the

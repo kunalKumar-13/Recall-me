@@ -43,3 +43,46 @@ export interface HealthResponse {
   status: string;
   events_dir: string;
 }
+
+// ---- search surface (mirrors api/schemas.py SearchResponse) ----
+
+export interface EpisodicResult {
+  kind: string;
+  title: string;
+  subtitle: string;
+  url: string;
+  ts_epoch: number;
+  score: number;
+  session_id: string;
+}
+
+export interface SessionResult {
+  session_id: string;
+  topic: string;
+  label: string;
+  time_label: string;
+  score: number;
+  event_count: number;
+  kinds: string[];
+  preview_events: EventOut[];
+  openable_targets: OpenableTarget[];
+}
+
+export interface MicroContextResult {
+  topic: string;
+  label: string;
+  time_label: string;
+  event_count: number;
+  kinds: string[];
+  match_count: number;
+  preview_events: EventOut[];
+  openable_targets: OpenableTarget[];
+}
+
+export interface SearchResponse {
+  query: string;
+  episodic: EpisodicResult[];
+  contexts: MicroContextResult[];
+  sessions: SessionResult[];
+  elapsed_ms: number;
+}

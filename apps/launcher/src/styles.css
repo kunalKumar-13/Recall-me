@@ -188,3 +188,52 @@ body {
   font-family: var(--font-mono);
   font-feature-settings: "tnum" 1;
 }
+
+/* ----------------------------------------------------------- search bar */
+
+.searchbar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.search-icon {
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-sf);
+  font-size: 15px;
+  line-height: 1.2;
+  caret-color: var(--amber);
+  user-select: text;
+  cursor: text;
+}
+
+.search-input::placeholder {
+  color: var(--hint);
+}
+
+/* per-layer node hues on the thread: moment = amber, session = slate,
+   context = violet. A selected row's node still brightens to amber
+   (`.row.sel .node` wins on specificity), so the accent stays reserved
+   for the current selection. */
+.node.moment {
+  background: var(--amber-dim);
+}
+.node.session {
+  background: var(--slate);
+}
+.node.context {
+  background: var(--violet);
+}

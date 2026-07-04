@@ -87,6 +87,21 @@ async fn recovery_restore(app: AppHandle, id: String) -> Result<Value, String> {
     Ok(plan)
 }
 
+// Open a single target — the search surface's Enter action. Same
+// opener the restoration path uses; `kind` chooses url vs path.
+#[tauri::command]
+async fn open_target(app: AppHandle, kind: String, target: String) -> Result<(), String> {
+    if target.is_empty() {
+        return Ok(());
+    }
+    let opener = app.opener();
+    let _ = match kind.as_str() {
+        "url" => opener.open_url(&target, None::<&str>),
+        _ => opener.open_path(&target, None::<&str>),
+    };
+    Ok(())
+}
+
 #[tauri::command]
 fn resize_height(window: WebviewWindow, height: f64) {
     let h = height.clamp(64.0, 720.0);
@@ -157,6 +172,7 @@ pub fn run() {
             search,
             threads_recent,
             recovery_restore,
+            open_target,
             resize_height,
         ])
         .setup(move |app| {
