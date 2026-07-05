@@ -1,3 +1,4 @@
+import { Extension } from "./components/v2/Extension";
 import { Film } from "./components/v2/Film";
 import { How } from "./components/v2/How";
 import { ScreensTrio } from "./components/v2/ScreensTrio";
@@ -27,6 +28,7 @@ export default function Page() {
         <How />
         <ScreensTrio />
         <Terminal />
+        <Extension />
       </main>
       <SiteFooter />
     </>
