@@ -29,6 +29,7 @@ from .core.config import CHROMA_DIR, CONFIG_DIR, Config
 from .core.embeddings import EmbeddingModel
 from .core.events import EventLogger
 from .core.indexer import Indexer
+from .core.search import SearchEngine
 from .core.watcher import IndexWatcher
 from .db.store import VectorStore
 from api import APIService  # type: ignore[import-not-found]
@@ -139,6 +140,10 @@ def run_service() -> int:
         threads_enabled=getattr(config, "threads_enabled", True),
         evolution_enabled=getattr(config, "evolution_enabled", True),
         recovery_enabled=getattr(config, "recovery_enabled", True),
+        # Same store + model the watcher indexes into — the daemon now
+        # answers /v1/search/files for every client (launcher,
+        # extension, editors) instead of keeping file search in-process.
+        file_search_engine=SearchEngine(store, model),
     )
     api_started = api.start()
     log.info("api service: %s on 127.0.0.1:%d",
