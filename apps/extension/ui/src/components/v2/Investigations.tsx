@@ -117,7 +117,7 @@ function StrengthDot({ strong }: { strong: boolean }) {
         borderRadius: 4,
         background: strong ? "var(--accent)" : "var(--ink-4)",
         boxShadow: strong
-          ? "0 0 0 3px rgba(139, 127, 227, 0.18)"
+          ? "0 0 0 3px rgba(191, 59, 43, 0.16)"
           : "none",
         flexShrink: 0,
       }}

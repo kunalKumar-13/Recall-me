@@ -56,9 +56,9 @@ export function Header({
           width: 26,
           height: 26,
           borderRadius: 8,
-          background: "linear-gradient(135deg, #b5a8ff, #8b7fe3)",
+          background: "linear-gradient(135deg, #d4523f, #bf3b2b)",
           flexShrink: 0,
-          boxShadow: "0 4px 10px rgba(139, 127, 227, 0.30)",
+          boxShadow: "0 4px 10px rgba(191, 59, 43, 0.30)",
         }}
       />
       <div

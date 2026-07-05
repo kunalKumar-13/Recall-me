@@ -179,7 +179,7 @@ function ResumeButton({ onClick }: { onClick: () => void }) {
         fontSize: 12,
         fontWeight: 600,
         letterSpacing: "0.1px",
-        boxShadow: "0 4px 12px rgba(139, 127, 227, 0.32)",
+        boxShadow: "0 4px 12px rgba(191, 59, 43, 0.28)",
       }}
     >
       Resume

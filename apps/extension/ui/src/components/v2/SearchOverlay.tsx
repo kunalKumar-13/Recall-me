@@ -73,7 +73,7 @@ export function SearchOverlay({
             style={{
               position: "absolute",
               inset: 0,
-              background: "rgba(22, 17, 43, 0.32)",
+              background: "rgba(27, 26, 24, 0.32)",
               zIndex: 10,
             }}
           />
