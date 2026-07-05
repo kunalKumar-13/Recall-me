@@ -218,6 +218,46 @@ export function openTab(url: string): void {
 }
 
 /**
+ * Plan-driven resume. Asks the engine for the candidate's
+ * restoration plan (files → chats → tabs → searches) and opens the
+ * URL steps *in that order*, gently staggered so the tab strip
+ * reads like the work coming back rather than an explosion.
+ * `path` steps (files) can't be opened from a browser — the daemon
+ * side handles those; we just report how many were left to it.
+ * Returns null when the endpoint is unreachable so the caller can
+ * fall back to the raw suggested URLs.
+ */
+export async function restoreRecovery(
+  id: string,
+): Promise<{ opened: number; files: number } | null> {
+  try {
+    const r = await fetch(
+      `${BASE}/v1/recovery/${encodeURIComponent(id)}/restore`,
+      { method: "POST" },
+    );
+    if (!r.ok) return null;
+    const plan = (await r.json()) as {
+      steps?: Array<{ kind?: string; target?: string }>;
+    };
+    const steps = Array.isArray(plan.steps) ? plan.steps : [];
+    let opened = 0;
+    let files = 0;
+    for (const s of steps) {
+      if (s?.kind === "url" && s.target) {
+        const url = s.target;
+        setTimeout(() => openTab(url), opened * 140);
+        opened += 1;
+      } else if (s?.kind === "path") {
+        files += 1;
+      }
+    }
+    return { opened, files };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Outcome of an `openRecall()` attempt.
  *
  *   - `launched`     — `recall://` was dispatched (the OS may or may

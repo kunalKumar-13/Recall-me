@@ -16,6 +16,15 @@ import {
   wasEverConnected,
 } from "./lib/api";
 import { calm, slideView } from "./lib/motion";
+import { restoreRecovery } from "./lib/api";
+import type { Recovery as RecoveryT } from "./lib/types";
+
+/** Resume through the engine's choreographed plan; fall back to the
+ *  candidate's raw suggested URLs when the daemon can't answer. */
+async function resumeRecovery(recovery: RecoveryT): Promise<void> {
+  const plan = await restoreRecovery(recovery.id);
+  if (!plan) recovery.urls.forEach(openTab);
+}
 import {
   DEFAULT_SETTINGS,
   type ConnectionState,
@@ -144,7 +153,7 @@ export function App() {
       ) {
         if (recovery) {
           e.preventDefault();
-          recovery.urls.forEach(openTab);
+          void resumeRecovery(recovery);
         }
       }
     }
@@ -158,7 +167,7 @@ export function App() {
   }, []);
 
   const onResume = useCallback(() => {
-    if (recovery) recovery.urls.forEach(openTab);
+    if (recovery) void resumeRecovery(recovery);
   }, [recovery]);
 
   const forced = readForcedState();
