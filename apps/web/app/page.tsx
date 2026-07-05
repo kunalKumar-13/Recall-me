@@ -2,11 +2,11 @@ import { Download } from "./components/v2/Download";
 import { Engine } from "./components/v2/Engine";
 import { Extension } from "./components/v2/Extension";
 import { Faq } from "./components/v2/Faq";
-import { Film } from "./components/v2/Film";
 import { Finale } from "./components/v2/Finale";
 import { How } from "./components/v2/How";
 import { ScreensTrio } from "./components/v2/ScreensTrio";
 import { Stats } from "./components/v2/Stats";
+import { Story } from "./components/v2/Story";
 import { Terminal } from "./components/v2/Terminal";
 import { Hero } from "./components/v2/Hero";
 import { Privacy } from "./components/v2/Privacy";
@@ -29,7 +29,7 @@ export default function Page() {
       <main>
         <Hero />
         <Stats />
-        <Film />
+        <Story />
         <How />
         <ScreensTrio />
         <Terminal />
