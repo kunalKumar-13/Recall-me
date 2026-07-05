@@ -1,57 +1,44 @@
-import { AmbientBackground } from "./components/AmbientBackground";
-import { Download } from "./components/Download";
-import { FAQ } from "./components/FAQ";
-import { Features } from "./components/Features";
-import { FinalCTA } from "./components/FinalCTA";
-import { Footer } from "./components/Footer";
-import { Hero } from "./components/Hero";
-import { HowItWorks } from "./components/HowItWorks";
-import { Nav } from "./components/Nav";
-import { Privacy } from "./components/Privacy";
-import { Problem } from "./components/Problem";
-import { Screens } from "./components/Screens";
-import { Story } from "./components/Story";
-import { ThreadConstellation } from "./components/ThreadConstellation";
+import { Download } from "./components/v2/Download";
+import { Engine } from "./components/v2/Engine";
+import { Extension } from "./components/v2/Extension";
+import { Faq } from "./components/v2/Faq";
+import { Finale } from "./components/v2/Finale";
+import { ScreensTrio } from "./components/v2/ScreensTrio";
+import { Stats } from "./components/v2/Stats";
+import { Story } from "./components/v2/Story";
+import { Terminal } from "./components/v2/Terminal";
+import { Hero } from "./components/v2/Hero";
+import { Privacy } from "./components/v2/Privacy";
+import { ReadingThread } from "./components/v2/ReadingThread";
+import { SiteNav } from "./components/v2/SiteNav";
+import { SiteFooter } from "./components/v2/SiteFooter";
 
 /**
- * Page narrative — one calm scroll, Phase 6G alpha-public order:
+ * v2 landing — porcelain, ink, one red thread.
  *
- *     Hero                  the launcher + the promise
- *     Problem               the context-loss tax this fixes
- *     HowItWorks            capture → group → ask → restore
- *     Story                 three real-shape investigations
- *                           (WebSocket / Proposal / Research)
- *     Features              what the system actually exposes
- *     ThreadConstellation   threads, connected — no metaphor
- *     Screens               launcher + extension v2 captures
- *     Privacy               trust — local / no cloud / no telemetry /
- *                           counts only / export only
- *     Download              four artifacts, one calm grid
- *     FAQ                   the open questions
- *     FinalCTA              calm close
- *
- * Each section is its own act. The page does not loop animations,
- * does not parallax, does not glow. Motion exists only on entrance.
+ * Assembled section by section:
+ *   Hero → Stats → Film → How → Screens → Terminal → Extension →
+ *   Engine → Privacy → FAQ → Download → Finale
  */
 export default function Page() {
   return (
     <>
-      <AmbientBackground />
-      <Nav />
-      <main className="relative">
+      <SiteNav />
+      <ReadingThread />
+      <main>
         <Hero />
-        <Problem />
-        <HowItWorks />
         <Story />
-        <Features />
-        <ThreadConstellation />
-        <Screens />
+        <Stats />
+        <ScreensTrio />
+        <Terminal />
+        <Extension />
+        <Engine />
         <Privacy />
+        <Faq />
         <Download />
-        <FAQ />
-        <FinalCTA />
+        <Finale />
       </main>
-      <Footer />
+      <SiteFooter />
     </>
   );
 }

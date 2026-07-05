@@ -36,9 +36,9 @@ apps/extension/
     ├── index.html
     ├── src/
     │   ├── App.tsx               two-view shell + connection state machine
-    │   ├── components/           ContinueCard, InvestigationCard,
-    │   │                         MemoryList, TrustSurface, SettingsPanel,
-    │   │                         Section, states, icons
+    │   ├── components/           SettingsPanel, icons + v2/: Header, Hero,
+    │   │                         Investigations, Timeline, Activity,
+    │   │                         SearchOverlay, TrustStrip, States
     │   └── lib/                  api, types, motion
     └── package.json
 ```
@@ -139,6 +139,6 @@ and data flow.
 
 ## Icons
 
-Icons are intentionally not bundled — Chrome falls back to a default
-glyph. Add `icons/icon-{16,48,128}.png` plus an `"icons"` block in
-`manifest.json` for a custom toolbar icon.
+`icons/{16,32,48,128}.png` — the thread-and-node mark (ink square,
+white thread, red node) wired into both `icons` and
+`action.default_icon` in the manifest.

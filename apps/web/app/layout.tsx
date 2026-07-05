@@ -1,53 +1,31 @@
-import type { Metadata } from "next";
-import { Caveat, Fraunces, Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-// Inter — every body, every UI element, every caption.
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-// Fraunces — the editorial serif. Used for display moments only:
-// hero headline, section titles, the FinalCTA close. Restraint is
-// what makes it feel deliberate.
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-fraunces",
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
-});
-
-// Caveat — the script font. Reserved for the peripheral handwritten
-// annotations ("Not filenames. Thoughts.", "Try the launcher in your
-// browser"). Two or three uses across the page, never inside body
-// text.
-const caveat = Caveat({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-caveat",
-  weight: ["400", "500", "600", "700"],
-});
-
+/**
+ * System type on purpose: SF Pro / New York / SF Mono are the same
+ * faces the product itself renders in, load in zero milliseconds,
+ * and keep the page feeling native rather than "web font'd".
+ */
 export const metadata: Metadata = {
-  title: "Recall — A local-first continuity operating system",
+  title: "Recall — never lose the thread",
   description:
-    "Open Ctrl + Space, type a half-thought, get back the tabs, files, and chats you were working with — in a coherent sequence. Local-first, deterministic, no cloud, no telemetry.",
+    "Recall quietly reconstructs what you were working on — the tabs, the files, the half-finished chat — and hands it back the moment you return. 100% local, no cloud, no telemetry.",
   openGraph: {
-    title: "Recall — A local-first continuity operating system",
+    title: "Recall — never lose the thread",
     description:
-      "Cognitive restart, one keystroke. Local-first. Deterministic. No cloud, no telemetry.",
+      "A local-first continuity OS. One keystroke brings back the exact work you left — files, chats, tabs — in order.",
     type: "website",
   },
   twitter: {
-    card: "summary_large_image",
-    title: "Recall — A local-first continuity operating system",
+    card: "summary",
+    title: "Recall — never lose the thread",
     description:
-      "Cognitive restart, one keystroke. Local-first. Deterministic. No cloud, no telemetry.",
+      "A local-first continuity OS. One keystroke brings back the exact work you left.",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#fbfbfa",
 };
 
 export default function RootLayout({
@@ -56,13 +34,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${fraunces.variable} ${caveat.variable}`}
-    >
-      <body className="font-sans antialiased text-ink-bright bg-bg-page">
-        {children}
-      </body>
+    <html lang="en">
+      <body>{children}</body>
     </html>
   );
 }
