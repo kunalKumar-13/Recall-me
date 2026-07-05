@@ -164,6 +164,28 @@ export async function fetchMemory(): Promise<MemoryItem[]> {
   return out;
 }
 
+/**
+ * Episodic search against the daemon — the overlay's remote corpus.
+ * Fast timeout: a slow search is worse than a local-only one.
+ */
+export async function searchDaemon(
+  q: string,
+): Promise<Array<{ label: string; detail: string; url?: string }>> {
+  const data = await getJSON<Record<string, unknown>>(
+    `/v1/search?q=${encodeURIComponent(q)}`,
+    1500,
+  );
+  const list = asArray(data?.episodic);
+  return list.slice(0, 8).map((raw) => {
+    const e = raw as Record<string, unknown>;
+    return {
+      label: stringOf(e.title) || stringOf(e.subtitle) || "Moment",
+      detail: stringOf(e.subtitle) || stringOf(e.kind),
+      url: stringOf(e.url) || undefined,
+    };
+  });
+}
+
 // ── settings (chrome.storage) ───────────────────────────────────────
 
 const SETTINGS_KEY = "recall.settings";

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Investigation, MemoryItem, Recovery } from "../../lib/types";
 import { calm, calmFast } from "../../lib/motion";
-import { openTab } from "../../lib/api";
+import { openTab, searchDaemon } from "../../lib/api";
 import { Icon } from "../icons";
 
 /**
@@ -57,7 +57,36 @@ export function SearchOverlay({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  const results = useResults(q, recovery, investigations, memory);
+  const local = useResults(q, recovery, investigations, memory);
+
+  /* Remote corpus: the daemon's episodic search, debounced. The
+   * in-memory matches stay instant; the engine's deeper matches
+   * arrive a beat later at the top. */
+  const [remote, setRemote] = useState<ResultRow[]>([]);
+  useEffect(() => {
+    const needle = q.trim();
+    if (needle.length < 2) {
+      setRemote([]);
+      return;
+    }
+    let dead = false;
+    const t = setTimeout(async () => {
+      const hits = await searchDaemon(needle);
+      if (!dead) setRemote(hits);
+    }, 160);
+    return () => {
+      dead = true;
+      clearTimeout(t);
+    };
+  }, [q]);
+
+  const results = useMemo<ResultGroupT[]>(
+    () =>
+      remote.length
+        ? [{ label: "From your memory", rows: remote }, ...local]
+        : local,
+    [remote, local],
+  );
 
   return (
     <AnimatePresence>
