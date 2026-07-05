@@ -4,7 +4,7 @@ export function Privacy() {
   return (
     <Section id="trust" className="sec">
       <div className="wrap sechead">
-        <SectionHead index="08" eyebrow="Local-first is the point">
+        <SectionHead index="07" eyebrow="Local-first is the point">
           <h2>
             <Words>It stays on </Words>
             <em className="thread-mark">

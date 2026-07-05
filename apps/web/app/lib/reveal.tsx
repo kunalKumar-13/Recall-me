@@ -78,7 +78,7 @@ export function Words({ children }: { children: ReactNode }) {
  *  right (the Obys slot), then the display heading. */
 export function SectionHead({
   index,
-  total = "09",
+  total = "08",
   eyebrow,
   children,
 }: {

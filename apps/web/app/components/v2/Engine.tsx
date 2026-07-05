@@ -14,7 +14,7 @@ export function Engine() {
   return (
     <Section id="engine" className="sec">
       <div className="wrap sechead">
-        <SectionHead index="07" eyebrow="The engine">
+        <SectionHead index="06" eyebrow="The engine">
           <h2>
             <Words>Seven layers, strictly upward.</Words>
           </h2>

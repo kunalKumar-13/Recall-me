@@ -3,7 +3,6 @@ import { Engine } from "./components/v2/Engine";
 import { Extension } from "./components/v2/Extension";
 import { Faq } from "./components/v2/Faq";
 import { Finale } from "./components/v2/Finale";
-import { How } from "./components/v2/How";
 import { ScreensTrio } from "./components/v2/ScreensTrio";
 import { Stats } from "./components/v2/Stats";
 import { Story } from "./components/v2/Story";
@@ -28,9 +27,8 @@ export default function Page() {
       <ReadingThread />
       <main>
         <Hero />
-        <Stats />
         <Story />
-        <How />
+        <Stats />
         <ScreensTrio />
         <Terminal />
         <Extension />

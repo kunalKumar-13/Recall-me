@@ -6,7 +6,7 @@ export function Extension() {
   return (
     <Section id="extension" className="sec">
       <div className="wrap sechead">
-        <SectionHead index="06" eyebrow="The browser extension">
+        <SectionHead index="05" eyebrow="The browser extension">
           <h2>
             <Words>A quiet witness, </Words>
             <br />

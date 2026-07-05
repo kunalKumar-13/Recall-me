@@ -5,7 +5,7 @@ export function ScreensTrio() {
   return (
     <Section id="screens" className="sec">
       <div className="wrap sechead">
-        <SectionHead index="04" eyebrow="One panel · Ctrl-Space">
+        <SectionHead index="03" eyebrow="One panel · Ctrl-Space">
           <h2>
             <Words>Three states, </Words>
             <em>
