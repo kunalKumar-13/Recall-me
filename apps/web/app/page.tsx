@@ -1,3 +1,4 @@
+import { Engine } from "./components/v2/Engine";
 import { Extension } from "./components/v2/Extension";
 import { Film } from "./components/v2/Film";
 import { How } from "./components/v2/How";
@@ -5,6 +6,7 @@ import { ScreensTrio } from "./components/v2/ScreensTrio";
 import { Stats } from "./components/v2/Stats";
 import { Terminal } from "./components/v2/Terminal";
 import { Hero } from "./components/v2/Hero";
+import { Privacy } from "./components/v2/Privacy";
 import { ReadingThread } from "./components/v2/ReadingThread";
 import { SiteNav } from "./components/v2/SiteNav";
 import { SiteFooter } from "./components/v2/SiteFooter";
@@ -29,6 +31,8 @@ export default function Page() {
         <ScreensTrio />
         <Terminal />
         <Extension />
+        <Engine />
+        <Privacy />
       </main>
       <SiteFooter />
     </>
