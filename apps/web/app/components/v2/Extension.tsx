@@ -159,6 +159,29 @@ export function Extension() {
             </p>
           </div>
         </div>
+
+        <p className="body rise" style={{ marginTop: "clamp(30px, 4vw, 52px)" }}>
+          And the browser is only the first source. Memory has one door —
+          a loopback API — so anything you work in can feed it.
+        </p>
+        <div className="cap-table stagger">
+          <div className="cap-tr">
+            <span className="a">Browser — visits, searches, AI chats</span>
+            <span className="b">built in</span>
+          </div>
+          <div className="cap-tr">
+            <span className="a">VS Code — the files you settle on and save</span>
+            <span className="b">companion extension</span>
+          </div>
+          <div className="cap-tr">
+            <span className="a">Git — commits and branch switches</span>
+            <span className="b">one-line hook</span>
+          </div>
+          <div className="cap-tr">
+            <span className="a">Anything else — scripts, notebooks, window managers</span>
+            <span className="b">POST /v1/events/batch</span>
+          </div>
+        </div>
       </div>
     </Section>
   );
