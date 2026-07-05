@@ -36,6 +36,25 @@ async function getJSON<T>(path: string, timeoutMs = 2500): Promise<T | null> {
   }
 }
 
+/**
+ * Durable-outbox depth. The capture worker queues events in
+ * chrome.storage.local and drains them to /v1/events/batch; when the
+ * daemon is down the queue holds everything. Surfacing the count is
+ * the honest version of "nothing is lost". Returns 0 outside an
+ * extension context (npm run dev in a plain tab).
+ */
+export async function getQueuedCount(): Promise<number> {
+  try {
+    const c = (globalThis as { chrome?: any }).chrome;
+    if (!c?.storage?.local) return 0;
+    const got = await c.storage.local.get("outbox");
+    const q = got?.outbox;
+    return Array.isArray(q) ? q.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export async function fetchHealth(): Promise<Health | null> {
   const data = await getJSON<Record<string, unknown>>(
     "/v1/health",

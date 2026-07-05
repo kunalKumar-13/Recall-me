@@ -7,6 +7,7 @@ import {
   fetchInvestigations,
   fetchMemory,
   fetchRecovery,
+  getQueuedCount,
   isOnline,
   loadSettings,
   markConnected,
@@ -74,8 +75,12 @@ export function App() {
   const [everConnected, setEverConnected] = useState(true);
   const [demo, setDemo] = useState<DemoState | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [queued, setQueued] = useState(0);
 
   const load = useCallback(async (reconnect = false) => {
+    // Outbox depth matters most when the daemon is unreachable, so
+    // read it before any early return below.
+    void getQueuedCount().then(setQueued);
     if (!isOnline()) {
       setConnection("offline");
       return;
@@ -273,7 +278,7 @@ export function App() {
         )}
       </main>
 
-      <TrustStrip connection={connection} />
+      <TrustStrip connection={connection} queued={queued} />
 
       <SearchOverlay
         open={searchOpen}

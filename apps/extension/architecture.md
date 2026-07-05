@@ -48,15 +48,17 @@ eviction because the queue lives in `chrome.storage.local`, not memory.
 
 ```
 App                       two views + the connection state machine
-├── Header                brand · connection dot · gear
+├── Header                brand · daemon dot · Search / Settings buttons
 ├── Body (view: main)
-│   ├── ContinueCard       the one strongest interrupted investigation
-│   ├── InvestigationCard  ×≤4   ongoing topics
-│   ├── MemoryList         recent searches / tabs / chats, grouped
-│   └── TrustSurface       local-only · daemon status · events today
+│   ├── Hero               the one strongest interrupted investigation
+│   ├── Investigations     ≤4 ongoing topics, stacked rows
+│   ├── Timeline           today's event rail
+│   └── Activity           Browser + Desktop capture status cards
+├── TrustStrip             local-only · no cloud · 0 uploads · daemon ·
+│                          N queued (durable outbox, when non-empty)
+├── SearchOverlay          Cmd/Ctrl+K, slide-in episodic search
 ├── SettingsPanel (view: settings)   capture toggles + links
-├── Section                titled zone wrapper, staggered entrance
-└── states                 Loading / Reconnecting / Disconnected /
+└── States                 Loading / Reconnecting / Disconnected /
                             Offline / Empty
 ```
 
