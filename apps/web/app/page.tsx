@@ -2,6 +2,7 @@ import { Film } from "./components/v2/Film";
 import { How } from "./components/v2/How";
 import { ScreensTrio } from "./components/v2/ScreensTrio";
 import { Stats } from "./components/v2/Stats";
+import { Terminal } from "./components/v2/Terminal";
 import { Hero } from "./components/v2/Hero";
 import { ReadingThread } from "./components/v2/ReadingThread";
 import { SiteNav } from "./components/v2/SiteNav";
@@ -25,6 +26,7 @@ export default function Page() {
         <Film />
         <How />
         <ScreensTrio />
+        <Terminal />
       </main>
       <SiteFooter />
     </>
