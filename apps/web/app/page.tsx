@@ -1,3 +1,5 @@
+import { Hero } from "./components/v2/Hero";
+import { ReadingThread } from "./components/v2/ReadingThread";
 import { SiteNav } from "./components/v2/SiteNav";
 import { SiteFooter } from "./components/v2/SiteFooter";
 
@@ -12,7 +14,10 @@ export default function Page() {
   return (
     <>
       <SiteNav />
-      <main id="top" />
+      <ReadingThread />
+      <main>
+        <Hero />
+      </main>
       <SiteFooter />
     </>
   );
