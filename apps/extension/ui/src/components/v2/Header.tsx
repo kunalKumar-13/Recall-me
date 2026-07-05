@@ -15,10 +15,15 @@ import { Icon } from "../icons";
  */
 export function Header({
   connection,
+  paused = false,
+  onPause = () => {},
   onSearch,
   onSettings,
 }: {
   connection: ConnectionState;
+  /** Capture temporarily paused (pauseUntil in the future). */
+  paused?: boolean;
+  onPause?: () => void;
   onSearch: () => void;
   onSettings: () => void;
 }) {
@@ -112,6 +117,12 @@ export function Header({
       </div>
       <span style={{ flex: 1 }} />
       <IconButton
+        label={paused ? "Resume capture" : "Pause capture for 1 hour"}
+        title={paused ? "Capture paused — click to resume" : "Pause capture for 1 hour"}
+        onClick={onPause}
+        icon={<PauseGlyph paused={paused} />}
+      />
+      <IconButton
         label="Search"
         title="Search (Ctrl+K)"
         onClick={onSearch}
@@ -123,6 +134,30 @@ export function Header({
         icon={<Icon.gear size={17} />}
       />
     </header>
+  );
+}
+
+/** Pause bars while capturing; a play triangle while paused. The
+ *  paused state tints warn so the header quietly says "not writing". */
+function PauseGlyph({ paused }: { paused: boolean }) {
+  return (
+    <svg
+      width={15}
+      height={15}
+      viewBox="0 0 15 15"
+      fill="none"
+      style={{ color: paused ? "var(--warn)" : "currentColor" }}
+      aria-hidden
+    >
+      {paused ? (
+        <path d="M4.5 3.2v8.6l7-4.3-7-4.3z" fill="currentColor" />
+      ) : (
+        <>
+          <rect x="3.6" y="3" width="2.6" height="9" rx="1" fill="currentColor" />
+          <rect x="8.8" y="3" width="2.6" height="9" rx="1" fill="currentColor" />
+        </>
+      )}
+    </svg>
   );
 }
 

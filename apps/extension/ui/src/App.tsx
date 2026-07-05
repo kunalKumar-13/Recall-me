@@ -16,7 +16,7 @@ import {
   wasEverConnected,
 } from "./lib/api";
 import { calm, slideView } from "./lib/motion";
-import { restoreRecovery } from "./lib/api";
+import { getPauseUntil, restoreRecovery, setPauseUntil } from "./lib/api";
 import type { Recovery as RecoveryT } from "./lib/types";
 
 /** Resume through the engine's choreographed plan; fall back to the
@@ -170,6 +170,19 @@ export function App() {
     if (recovery) void resumeRecovery(recovery);
   }, [recovery]);
 
+  /* capture pause — one hour, or resume immediately */
+  const [pausedUntil, setPausedUntil] = useState(0);
+  useEffect(() => {
+    void getPauseUntil().then(setPausedUntil);
+  }, []);
+  const togglePause = useCallback(() => {
+    setPausedUntil((prev) => {
+      const next = prev > Date.now() ? 0 : Date.now() + 60 * 60 * 1000;
+      void setPauseUntil(next);
+      return next;
+    });
+  }, []);
+
   const forced = readForcedState();
   const previewMissing = forced === "missing";
   const effEverConnected = previewMissing ? false : everConnected;
@@ -227,6 +240,8 @@ export function App() {
     >
       <Header
         connection={connection}
+        paused={pausedUntil > Date.now()}
+        onPause={togglePause}
         onSearch={() => setSearchOpen(true)}
         onSettings={() => setView("settings")}
       />

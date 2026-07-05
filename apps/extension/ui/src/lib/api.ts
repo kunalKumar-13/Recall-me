@@ -164,6 +164,28 @@ export async function fetchMemory(): Promise<MemoryItem[]> {
   return out;
 }
 
+// ── capture pause ────────────────────────────────────────────────────
+//
+// The worker honours a `pauseUntil` epoch in chrome.storage.local —
+// privacy at your fingertips without touching Settings.
+
+export async function getPauseUntil(): Promise<number> {
+  if (!hasChromeStorage()) return 0;
+  return new Promise((resolve) => {
+    chrome.storage.local.get(["pauseUntil"], (r) => {
+      const v = r?.pauseUntil;
+      resolve(typeof v === "number" ? v : 0);
+    });
+  });
+}
+
+export async function setPauseUntil(ts: number): Promise<void> {
+  if (!hasChromeStorage()) return;
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ pauseUntil: ts }, () => resolve());
+  });
+}
+
 /**
  * Episodic search against the daemon — the overlay's remote corpus.
  * Fast timeout: a slow search is worse than a local-only one.

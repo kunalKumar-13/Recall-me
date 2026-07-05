@@ -20,25 +20,37 @@ import { registerRetryAlarm, flush } from "./capture/outbox.js";
 
 let enabled = true;
 let excludedDomains = new Set();
+// Temporary pause (epoch ms). The popup writes it; capture skips
+// everything until the moment passes — no restart, no alarm needed.
+let pauseUntil = 0;
 
-chrome.storage.local.get(["enabled", "excludedDomains"], (result) => {
-  if (typeof result.enabled === "boolean") enabled = result.enabled;
-  if (Array.isArray(result.excludedDomains)) {
-    excludedDomains = new Set(result.excludedDomains);
-  }
-  // A backlog may have built up while the worker was evicted/asleep.
-  void flush();
-});
+chrome.storage.local.get(
+  ["enabled", "excludedDomains", "pauseUntil"],
+  (result) => {
+    if (typeof result.enabled === "boolean") enabled = result.enabled;
+    if (Array.isArray(result.excludedDomains)) {
+      excludedDomains = new Set(result.excludedDomains);
+    }
+    if (typeof result.pauseUntil === "number") pauseUntil = result.pauseUntil;
+    // A backlog may have built up while the worker was evicted/asleep.
+    void flush();
+  },
+);
 
 chrome.storage.onChanged.addListener((changes) => {
   if ("enabled" in changes) enabled = changes.enabled.newValue !== false;
   if ("excludedDomains" in changes) {
     excludedDomains = new Set(changes.excludedDomains.newValue || []);
   }
+  if ("pauseUntil" in changes) {
+    pauseUntil = typeof changes.pauseUntil.newValue === "number"
+      ? changes.pauseUntil.newValue
+      : 0;
+  }
 });
 
 registerRetryAlarm();
 registerSources({
-  isEnabled: () => enabled,
+  isEnabled: () => enabled && Date.now() >= pauseUntil,
   excluded: () => excludedDomains,
 });
