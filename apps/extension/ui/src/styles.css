@@ -213,3 +213,15 @@ a {
   }
 }
 
+/* Options page (chrome://extensions → Details → Extension options).
+   Same App, rendered in a full tab — unpin the popup's fixed box. */
+body.options-tab,
+body.options-tab #root {
+  width: 100%;
+  height: auto;
+  min-height: 100vh;
+}
+body.options-tab #root {
+  max-width: 560px;
+  margin: 0 auto;
+}

@@ -129,6 +129,12 @@ export function App() {
     loadSettings().then(setSettings);
     wasEverConnected().then(setEverConnected);
     load();
+    // chrome://extensions → Extension options opens this same app in
+    // a tab, deep-linked straight to Settings.
+    if (window.location.hash === "#settings") {
+      setView("settings");
+      document.body.classList.add("options-tab");
+    }
   }, [load]);
 
   // Cmd/Ctrl+K opens the search overlay. `1` resumes the visible
