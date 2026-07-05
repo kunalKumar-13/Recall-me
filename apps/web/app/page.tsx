@@ -1,6 +1,9 @@
+import { Download } from "./components/v2/Download";
 import { Engine } from "./components/v2/Engine";
 import { Extension } from "./components/v2/Extension";
+import { Faq } from "./components/v2/Faq";
 import { Film } from "./components/v2/Film";
+import { Finale } from "./components/v2/Finale";
 import { How } from "./components/v2/How";
 import { ScreensTrio } from "./components/v2/ScreensTrio";
 import { Stats } from "./components/v2/Stats";
@@ -33,6 +36,9 @@ export default function Page() {
         <Extension />
         <Engine />
         <Privacy />
+        <Faq />
+        <Download />
+        <Finale />
       </main>
       <SiteFooter />
     </>
