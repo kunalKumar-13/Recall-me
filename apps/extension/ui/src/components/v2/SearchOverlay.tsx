@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Investigation, MemoryItem, Recovery } from "../../lib/types";
 import { calm, calmFast } from "../../lib/motion";
-import { openTab, searchDaemon } from "../../lib/api";
+import { openTab, searchDaemon, searchFilesDaemon } from "../../lib/api";
 import { Icon } from "../icons";
 
 /**
@@ -63,16 +63,23 @@ export function SearchOverlay({
    * in-memory matches stay instant; the engine's deeper matches
    * arrive a beat later at the top. */
   const [remote, setRemote] = useState<ResultRow[]>([]);
+  const [fileHits, setFileHits] = useState<ResultRow[]>([]);
   useEffect(() => {
     const needle = q.trim();
     if (needle.length < 2) {
       setRemote([]);
+      setFileHits([]);
       return;
     }
     let dead = false;
     const t = setTimeout(async () => {
-      const hits = await searchDaemon(needle);
-      if (!dead) setRemote(hits);
+      const [hits, files] = await Promise.all([
+        searchDaemon(needle),
+        searchFilesDaemon(needle),
+      ]);
+      if (dead) return;
+      setRemote(hits);
+      setFileHits(files);
     }, 160);
     return () => {
       dead = true;
@@ -80,13 +87,13 @@ export function SearchOverlay({
     };
   }, [q]);
 
-  const results = useMemo<ResultGroupT[]>(
-    () =>
-      remote.length
-        ? [{ label: "From your memory", rows: remote }, ...local]
-        : local,
-    [remote, local],
-  );
+  const results = useMemo<ResultGroupT[]>(() => {
+    const groups: ResultGroupT[] = [];
+    if (remote.length) groups.push({ label: "From your memory", rows: remote });
+    if (fileHits.length) groups.push({ label: "Files on disk", rows: fileHits });
+    groups.push(...local);
+    return groups;
+  }, [remote, fileHits, local]);
 
   return (
     <AnimatePresence>

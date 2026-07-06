@@ -208,6 +208,28 @@ export async function searchDaemon(
   });
 }
 
+/**
+ * Semantic file search via the daemon's vector index. Returns []
+ * when the index isn't wired (enabled=false) — the overlay simply
+ * skips the group.
+ */
+export async function searchFilesDaemon(
+  q: string,
+): Promise<Array<{ label: string; detail: string }>> {
+  const data = await getJSON<Record<string, unknown>>(
+    `/v1/search/files?q=${encodeURIComponent(q)}&n=4`,
+    1800,
+  );
+  if (!data || data.enabled === false) return [];
+  return asArray(data.results).map((raw) => {
+    const h = raw as Record<string, unknown>;
+    return {
+      label: stringOf(h.name) || "File",
+      detail: stringOf(h.path).replace(/^\/Users\/[^/]+/, "~"),
+    };
+  });
+}
+
 // ── settings (chrome.storage) ───────────────────────────────────────
 
 const SETTINGS_KEY = "recall.settings";
