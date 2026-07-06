@@ -6,6 +6,7 @@ import type {
   FileSearchResponse,
   HealthResponse,
   RecoveryRecentResponse,
+  ResurfaceIdleResponse,
   SearchResponse,
   ThreadsRecentResponse,
   ThreadEvolutionResponse,
@@ -23,6 +24,9 @@ export const search = (q: string) => invoke<SearchResponse>("search", { q });
 
 export const searchFiles = (q: string, n = 4) =>
   invoke<FileSearchResponse>("search_files", { q, n });
+
+export const resurfaceIdle = (n = 3) =>
+  invoke<ResurfaceIdleResponse>("resurface_idle", { n });
 
 export const threadsRecent = (n = 6) =>
   invoke<ThreadsRecentResponse>("threads_recent", { n });

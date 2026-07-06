@@ -75,6 +75,11 @@ async fn search_files(q: String, n: Option<u32>) -> Result<Value, String> {
     engine_get(&format!("/v1/search/files?q={q}&n={}", n.unwrap_or(4))).await
 }
 
+#[tauri::command]
+async fn resurface_idle(n: Option<u32>) -> Result<Value, String> {
+    engine_get(&format!("/v1/resurface/idle?n={}", n.unwrap_or(3))).await
+}
+
 // Resolve the candidate's restoration plan, then open every step in the
 // engine's choreographed order (files → chats → tabs → searches). The
 // endpoint orders the steps; we just execute them and return the plan.
@@ -182,6 +187,7 @@ pub fn run() {
             recovery_recent,
             search,
             search_files,
+            resurface_idle,
             threads_recent,
             thread_evolution,
             recovery_restore,

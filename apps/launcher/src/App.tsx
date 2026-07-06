@@ -11,6 +11,7 @@ import {
   engineHealth,
   recoveryRecent,
   recoveryRestore,
+  resurfaceIdle,
   search as searchEngine,
   searchFiles,
   threadsRecent,
@@ -21,6 +22,7 @@ import {
 import type {
   FileHit,
   RecoveryCandidate,
+  ResurfacedContext,
   SearchResponse,
   Thread,
   ThreadEvolutionResponse,
@@ -38,6 +40,7 @@ interface Row {
   caption: string;
   action: Action;
   hint: string;
+  group?: "recovery" | "thread" | "radar";
   threadId?: string;
   recoveryId?: string;
   target?: { kind: string; target: string };
@@ -58,6 +61,7 @@ export default function App() {
   const [status, setStatus] = useState<Status>("loading");
   const [candidates, setCandidates] = useState<RecoveryCandidate[]>([]);
   const [threads, setThreads] = useState<Thread[]>([]);
+  const [radar, setRadar] = useState<ResurfacedContext[]>([]);
   const [query, setQuery] = useState("");
   const [bundle, setBundle] = useState<SearchResponse | null>(null);
   const [files, setFiles] = useState<FileHit[]>([]);
@@ -82,13 +86,15 @@ export default function App() {
       return;
     }
     try {
-      const [rec, thr] = await Promise.all([
+      const [rec, thr, rad] = await Promise.all([
         recoveryRecent(3),
         threadsRecent(6).catch(() => ({ threads: [], elapsed_ms: 0 })),
+        resurfaceIdle(3).catch(() => ({ contexts: [], enabled: false, elapsed_ms: 0 })),
       ]);
       const cands = rec.candidates ?? [];
       setCandidates(cands);
       setThreads(thr.threads ?? []);
+      setRadar(rad.enabled ? rad.contexts ?? [] : []);
       setStatus(cands.length ? "ready" : "empty");
     } catch {
       setStatus("offline");
@@ -143,6 +149,7 @@ export default function App() {
           caption: c.preview_caption || relTime(c.last_active_at),
           action: "restore",
           hint: "↵ resume",
+          group: "recovery",
           recoveryId: c.id,
           threadId: c.thread_id,
         });
@@ -156,11 +163,32 @@ export default function App() {
         caption: t.timeline_summary || `${t.event_count} events`,
         action: "detail",
         hint: "↵ phases",
+        group: "thread",
         threadId: t.id,
       });
     });
+    // On your radar — topics set aside long enough to have cooled.
+    // Anything already shown as a thread stays a thread; the radar
+    // only carries what would otherwise be forgotten.
+    const threadTitles = new Set(threads.map((t) => t.title));
+    radar
+      .filter((r) => !threadTitles.has(r.label || r.topic))
+      .slice(0, 3)
+      .forEach((r, i) => {
+        const target = r.openable_targets[0];
+        rows.push({
+          key: `rad-${i}`,
+          layer: "context",
+          title: r.label || r.topic,
+          caption: `${r.time_label} · set aside`,
+          action: target ? "open" : "none",
+          hint: "↵ open",
+          group: "radar",
+          target,
+        });
+      });
     return rows;
-  }, [status, candidates, threads]);
+  }, [status, candidates, threads, radar]);
 
   const searchRows = useMemo<Row[]>(() => {
     if (!bundle && files.length === 0) return [];
@@ -488,14 +516,24 @@ export default function App() {
             </div>
           )}
           {status === "ready" &&
-            renderRows(restingRows.filter((r) => r.action === "restore"))}
+            renderRows(restingRows.filter((r) => r.group === "recovery"))}
 
           {threads.length > 0 && (
             <>
               <div className="header">Active threads</div>
               {renderRows(
-                restingRows.filter((r) => r.action === "detail"),
-                restingRows.filter((r) => r.action === "restore").length,
+                restingRows.filter((r) => r.group === "thread"),
+                restingRows.filter((r) => r.group === "recovery").length,
+              )}
+            </>
+          )}
+
+          {restingRows.some((r) => r.group === "radar") && (
+            <>
+              <div className="header">On your radar</div>
+              {renderRows(
+                restingRows.filter((r) => r.group === "radar"),
+                restingRows.filter((r) => r.group !== "radar").length,
               )}
             </>
           )}
