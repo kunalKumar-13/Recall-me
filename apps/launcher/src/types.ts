@@ -87,6 +87,23 @@ export interface SearchResponse {
   elapsed_ms: number;
 }
 
+// ---- file search (mirrors api/schemas.py FileSearchResponse) ----
+
+export interface FileHit {
+  path: string;
+  name: string;
+  snippet: string;
+  score: number;
+  ext: string;
+}
+
+export interface FileSearchResponse {
+  query: string;
+  results: FileHit[];
+  enabled: boolean;
+  elapsed_ms: number;
+}
+
 // ---- threads & evolution (mirrors api/schemas.py) ----
 
 export interface Thread {

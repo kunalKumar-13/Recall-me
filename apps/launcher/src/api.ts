@@ -3,6 +3,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  FileSearchResponse,
   HealthResponse,
   RecoveryRecentResponse,
   SearchResponse,
@@ -19,6 +20,9 @@ export const recoveryRestore = (id: string) =>
   invoke<unknown>("recovery_restore", { id });
 
 export const search = (q: string) => invoke<SearchResponse>("search", { q });
+
+export const searchFiles = (q: string, n = 4) =>
+  invoke<FileSearchResponse>("search_files", { q, n });
 
 export const threadsRecent = (n = 6) =>
   invoke<ThreadsRecentResponse>("threads_recent", { n });

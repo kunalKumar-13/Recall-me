@@ -12,12 +12,14 @@ import {
   recoveryRecent,
   recoveryRestore,
   search as searchEngine,
+  searchFiles,
   threadsRecent,
   threadEvolution,
   openTarget,
   resizeHeight,
 } from "./api";
 import type {
+  FileHit,
   RecoveryCandidate,
   SearchResponse,
   Thread,
@@ -26,7 +28,7 @@ import type {
 
 type Status = "loading" | "ready" | "empty" | "offline";
 type Mode = "list" | "detail";
-type Layer = "moment" | "session" | "context";
+type Layer = "moment" | "session" | "context" | "file";
 type Action = "restore" | "open" | "detail" | "none";
 
 interface Row {
@@ -58,6 +60,7 @@ export default function App() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [query, setQuery] = useState("");
   const [bundle, setBundle] = useState<SearchResponse | null>(null);
+  const [files, setFiles] = useState<FileHit[]>([]);
   const [searching, setSearching] = useState(false);
   const [mode, setMode] = useState<Mode>("list");
   const [detail, setDetail] = useState<ThreadEvolutionResponse | null>(null);
@@ -97,27 +100,29 @@ export default function App() {
   }, [load]);
 
   // ---- search: opt-in once the user types (debounced) ----
+  // Two corpora in parallel: the episodic bundle and the semantic
+  // file index. Files failing (older daemon, no index) never blocks
+  // the memory results.
   useEffect(() => {
     const q = query.trim();
     if (q === "") {
       setBundle(null);
+      setFiles([]);
       setSelected(0);
       return;
     }
     let cancelled = false;
     setSearching(true);
     const t = setTimeout(async () => {
-      try {
-        const res = await searchEngine(q);
-        if (!cancelled) {
-          setBundle(res);
-          setSelected(0);
-        }
-      } catch {
-        if (!cancelled) setBundle(null);
-      } finally {
-        if (!cancelled) setSearching(false);
-      }
+      const [res, fh] = await Promise.all([
+        searchEngine(q).catch(() => null),
+        searchFiles(q, 4).catch(() => null),
+      ]);
+      if (cancelled) return;
+      setBundle(res);
+      setFiles(fh && fh.enabled ? fh.results : []);
+      setSelected(0);
+      setSearching(false);
     }, 130);
     return () => {
       cancelled = true;
@@ -158,8 +163,22 @@ export default function App() {
   }, [status, candidates, threads]);
 
   const searchRows = useMemo<Row[]>(() => {
-    if (!bundle) return [];
+    if (!bundle && files.length === 0) return [];
     const rows: Row[] = [];
+    if (!bundle) {
+      files.forEach((f, i) =>
+        rows.push({
+          key: `f${i}`,
+          layer: "file",
+          title: f.name,
+          caption: f.path.replace(/^\/Users\/[^/]+/, "~"),
+          action: "open",
+          hint: "↵ open",
+          target: { kind: "path", target: f.path },
+        }),
+      );
+      return rows;
+    }
     bundle.episodic.forEach((e, i) =>
       rows.push({
         key: `m${i}`,
@@ -193,8 +212,19 @@ export default function App() {
         target: c.openable_targets[0],
       }),
     );
+    files.forEach((f, i) =>
+      rows.push({
+        key: `f${i}`,
+        layer: "file",
+        title: f.name,
+        caption: f.path.replace(/^\/Users\/[^/]+/, "~"),
+        action: "open",
+        hint: "↵ open",
+        target: { kind: "path", target: f.path },
+      }),
+    );
     return rows;
-  }, [bundle]);
+  }, [bundle, files]);
 
   const detailRows = useMemo<Row[]>(() => {
     if (!detail) return [];
