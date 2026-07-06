@@ -274,7 +274,7 @@ expected = {
     "/v1/events/browser", "/v1/events/search",
     "/v1/events/chat", "/v1/events/open",
     "/v1/events/batch",
-    "/v1/search",
+    "/v1/search", "/v1/search/files",
     "/v1/events/recent", "/v1/queries/recent",
     "/v1/resurface/idle", "/v1/resurface/history/clear",
     # Phase 2C
@@ -1584,6 +1584,52 @@ print(f"  batch latency {min(samples_ms):.1f} ms / 51 events = "
       f"{per_event_ms:.3f} ms/event (best of 3)")
 assert per_event_ms < 2.0, f"per-event budget blown: {per_event_ms:.3f} ms > 2 ms"
 print("[OK] batch ingest writes, filters per-event, rejects bad sizes, stays in budget")
+
+
+# ----------------------------------------------------------------------
+section("35. GET /v1/search/files — honest when absent, mapped when wired")
+# ----------------------------------------------------------------------
+# The smoke harness has no vector index (downloading an embedding
+# model is out of scope here), so the primary contract to pin is the
+# *absent* shape: enabled=false, empty results, HTTP 200 — a calm
+# state, not an error. A stub engine then proves the mapping path.
+r = client.get("/v1/search/files", params={"q": "quarterly report"})
+assert r.status_code == 200, r.text
+body = r.json()
+assert body["enabled"] is False and body["results"] == [], body
+print(f"  no index wired → enabled={body['enabled']} results={body['results']}")
+
+from dataclasses import replace as _dc_replace  # noqa: E402
+
+
+class _FakeHit:
+    path = "/home/user/notes/rlhf-notes.md"
+    name = "rlhf-notes.md"
+    snippet = "…reward shaping notes from the RLHF reading group…"
+    score = 0.8123456
+    ext = ".md"
+
+
+class _FakeFileSearch:
+    def search(self, query, top_k=8):
+        assert query == "rlhf notes"
+        assert top_k == 5
+        return [_FakeHit()]
+
+
+fs_app = create_app(_dc_replace(deps, file_search=_FakeFileSearch()))
+fs_client = TestClient(fs_app)
+r = fs_client.get("/v1/search/files", params={"q": "rlhf notes", "n": 5})
+assert r.status_code == 200, r.text
+body = r.json()
+assert body["enabled"] is True
+assert len(body["results"]) == 1
+hit = body["results"][0]
+assert hit["path"].endswith("rlhf-notes.md")
+assert hit["score"] == 0.8123  # rounded to 4 places on the wire
+assert hit["snippet"].startswith("…reward")
+print(f"  wired engine → 1 hit, score {hit['score']}, snippet ok")
+print("[OK] /v1/search/files serves the honest-absent and wired shapes")
 
 
 # Cleanup

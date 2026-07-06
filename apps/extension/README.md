@@ -103,6 +103,18 @@ on a single calm easing curve, never a bounce or a float.
 See [`architecture.md`](architecture.md) for the component model
 and data flow.
 
+## What the popup can do
+
+- **Resume** runs the engine's real restoration plan — tabs, chats and
+  searches reopen in the choreographed order (files are counted and
+  left to the desktop app).
+- **Search (Cmd/Ctrl+K)** blends instant in-memory matches with the
+  daemon's episodic search.
+- **Pause** (header) stops capture for one hour — the worker honours
+  `pauseUntil` from storage; click again to resume early.
+- **Options page** — chrome://extensions → Details → Extension
+  options opens the same Settings surface in a full tab.
+
 ## What it captures
 
 | Page | Becomes |

@@ -1,0 +1,35 @@
+{
+  "name": "recall-vscode",
+  "displayName": "Recall — Continuity Companion",
+  "description": "Feeds your editing activity into Recall's local memory. File opens and saves go to the daemon on 127.0.0.1 — nothing leaves the machine.",
+  "version": "0.1.0",
+  "publisher": "recall",
+  "private": true,
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Recall",
+      "properties": {
+        "recall.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Capture file opens and saves into Recall's local memory (~/.recall/events)."
+        },
+        "recall.endpoint": {
+          "type": "string",
+          "default": "http://127.0.0.1:4545",
+          "description": "The local Recall daemon. Loopback only — the companion never talks to any other host."
+        }
+      }
+    }
+  }
+}

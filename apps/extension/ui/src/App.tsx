@@ -16,6 +16,15 @@ import {
   wasEverConnected,
 } from "./lib/api";
 import { calm, slideView } from "./lib/motion";
+import { getPauseUntil, restoreRecovery, setPauseUntil } from "./lib/api";
+import type { Recovery as RecoveryT } from "./lib/types";
+
+/** Resume through the engine's choreographed plan; fall back to the
+ *  candidate's raw suggested URLs when the daemon can't answer. */
+async function resumeRecovery(recovery: RecoveryT): Promise<void> {
+  const plan = await restoreRecovery(recovery.id);
+  if (!plan) recovery.urls.forEach(openTab);
+}
 import {
   DEFAULT_SETTINGS,
   type ConnectionState,
@@ -120,6 +129,12 @@ export function App() {
     loadSettings().then(setSettings);
     wasEverConnected().then(setEverConnected);
     load();
+    // chrome://extensions → Extension options opens this same app in
+    // a tab, deep-linked straight to Settings.
+    if (window.location.hash === "#settings") {
+      setView("settings");
+      document.body.classList.add("options-tab");
+    }
   }, [load]);
 
   // Cmd/Ctrl+K opens the search overlay. `1` resumes the visible
@@ -144,7 +159,7 @@ export function App() {
       ) {
         if (recovery) {
           e.preventDefault();
-          recovery.urls.forEach(openTab);
+          void resumeRecovery(recovery);
         }
       }
     }
@@ -158,8 +173,21 @@ export function App() {
   }, []);
 
   const onResume = useCallback(() => {
-    if (recovery) recovery.urls.forEach(openTab);
+    if (recovery) void resumeRecovery(recovery);
   }, [recovery]);
+
+  /* capture pause — one hour, or resume immediately */
+  const [pausedUntil, setPausedUntil] = useState(0);
+  useEffect(() => {
+    void getPauseUntil().then(setPausedUntil);
+  }, []);
+  const togglePause = useCallback(() => {
+    setPausedUntil((prev) => {
+      const next = prev > Date.now() ? 0 : Date.now() + 60 * 60 * 1000;
+      void setPauseUntil(next);
+      return next;
+    });
+  }, []);
 
   const forced = readForcedState();
   const previewMissing = forced === "missing";
@@ -218,6 +246,8 @@ export function App() {
     >
       <Header
         connection={connection}
+        paused={pausedUntil > Date.now()}
+        onPause={togglePause}
         onSearch={() => setSearchOpen(true)}
         onSettings={() => setView("settings")}
       />

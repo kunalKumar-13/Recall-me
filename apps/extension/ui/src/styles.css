@@ -9,20 +9,19 @@
  */
 
 :root {
-  /* ── Phase 7A visual tokens ────────────────────────────────────
-     The extension's *frozen-product* paint. Warm-paper page
-     (#F5F2ED), pure-white cards, lavender accent, warm-grey
-     hairline (#E6DED4), single soft shadow `0 12 32 .06`. No
-     glass, no neon, no blur. */
+  /* ── Red-thread visual tokens ─────────────────────────────────
+     One brand across every surface: porcelain paper, ink type,
+     and a single red thread — the same language as the launcher,
+     the site and the toolbar icon. No glass, no neon, no blur. */
 
   /* Surfaces. */
-  --surface-0: #f5f2ed;   /* page          */
+  --surface-0: #fbfbfa;   /* page          */
   --surface-1: #ffffff;   /* cards         */
-  --surface-2: #f0ece5;   /* sunken hover  */
+  --surface-2: #f3f2ef;   /* sunken hover  */
 
   /* Borders. */
-  --border-soft: #e6ded4;
-  --border-strong: #d9ceba;
+  --border-soft: #e8e7e4;
+  --border-strong: #d8d6d1;
 
   /* Shadows — single resting drop + a lift for the search overlay. */
   --shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.06);
@@ -44,17 +43,17 @@
   --line-strong: var(--border-strong);
   --shadow: var(--shadow-soft);
 
-  /* Ink — four weights, slight purple warmth. */
-  --ink: #16112b;
-  --ink-2: #4a4458;
-  --ink-3: #847b8e;
-  --ink-4: #b3acbd;
+  /* Ink — four weights, warm neutral. */
+  --ink: #1b1a18;
+  --ink-2: #5e5b55;
+  --ink-3: #8f8c85;
+  --ink-4: #c1beb8;
 
-  /* Accent — lavender, used sparingly. */
-  --accent: #8b7fe3;
-  --accent-hover: #7a6fd4;
-  --accent-soft: #ede9fb;
-  --accent-line: rgba(139, 127, 227, 0.28);
+  /* Accent — the red thread, used sparingly. */
+  --accent: #bf3b2b;
+  --accent-hover: #a83526;
+  --accent-soft: #f9edeb;
+  --accent-line: rgba(191, 59, 43, 0.28);
 
   /* Status. */
   --ok: #4fa784;
@@ -125,18 +124,18 @@ a {
   width: 9px;
 }
 .scroll-area::-webkit-scrollbar-thumb {
-  background: rgba(139, 127, 227, 0.22);
+  background: rgba(27, 26, 24, 0.18);
   border-radius: 5px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 .scroll-area::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 127, 227, 0.36);
+  background: rgba(27, 26, 24, 0.3);
   background-clip: content-box;
 }
 
 ::selection {
-  background: rgba(139, 127, 227, 0.26);
+  background: rgba(191, 59, 43, 0.16);
 }
 
 :focus-visible {
@@ -212,4 +211,17 @@ a {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Options page (chrome://extensions → Details → Extension options).
+   Same App, rendered in a full tab — unpin the popup's fixed box. */
+body.options-tab,
+body.options-tab #root {
+  width: 100%;
+  height: auto;
+  min-height: 100vh;
+}
+body.options-tab #root {
+  max-width: 560px;
+  margin: 0 auto;
 }

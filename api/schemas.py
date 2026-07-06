@@ -212,6 +212,28 @@ class SearchResponse(BaseModel):
     elapsed_ms: float
 
 
+class FileHitOut(BaseModel):
+    """One file-search hit — the best chunk of a file, deduped by
+    path, with a boundary-snapped snippet for preview."""
+
+    path: str
+    name: str
+    snippet: str
+    score: float
+    ext: str = ""
+
+
+class FileSearchResponse(BaseModel):
+    """`GET /v1/search/files`. `enabled=false` (with empty results)
+    when the hosting process has no vector index wired — the launcher
+    embeds one; a bare test harness may not."""
+
+    query: str
+    results: List[FileHitOut]
+    enabled: bool = True
+    elapsed_ms: float = 0.0
+
+
 class RecentEventsResponse(BaseModel):
     events: List[EventOut]
 

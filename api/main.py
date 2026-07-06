@@ -34,6 +34,7 @@ from app.core.evolution import EvolutionBuilder, EvolutionPhase
 from app.core.microcontexts import MicroContext, MicroContextReconstructor
 from app.core.recovery import RecoveryCandidate, RecoveryEngine
 from app.core.resurfacing import ResurfacedContext, ResurfacingEngine
+from app.core.search import SearchEngine
 from app.core.sessions import Session, SessionReconstructor
 from app.core.threads import Thread, ThreadBuilder
 
@@ -58,7 +59,9 @@ from .schemas import (
     EventOut,
     EvolutionPhaseOut,
     DesktopWindowIn,
+    FileHitOut,
     FileOpenIn,
+    FileSearchResponse,
     HealthResponse,
     IngestResponse,
     LegacyEventIn,
@@ -113,6 +116,11 @@ class AppDeps:
     threads: ThreadsService
     evolution: EvolutionService
     recovery: RecoveryService
+    # Optional: the semantic file index. The daemon wires the same
+    # SearchEngine the launcher uses; hosts without an index (tests,
+    # minimal embeds) leave it None and /v1/search/files reports
+    # enabled=false instead of failing.
+    file_search: Optional[SearchEngine] = None
 
 
 def _event_to_out(ev: Event) -> EventOut:
@@ -547,6 +555,51 @@ def create_app(deps: AppDeps) -> FastAPI:
             episodic=[_episodic_to_out(r) for r in episodic],
             sessions=[_session_to_out(s) for s in sessions],
             contexts=[_context_to_out(c) for c in contexts],
+            elapsed_ms=elapsed_ms,
+        )
+
+    @app.get(
+        "/v1/search/files",
+        response_model=FileSearchResponse,
+        tags=["retrieval"],
+        summary=(
+            "Semantic file search over the indexed folders. The only "
+            "embeddings path in the product (charter: embeddings live at "
+            "the file layer and nowhere above). Budget: <150 ms warm on "
+            "10K chunks; the first query pays the model load."
+        ),
+    )
+    async def search_files(
+        q: str = Query(..., min_length=1, description="User query string."),
+        n: int = Query(default=8, ge=1, le=20),
+        deps: AppDeps = Depends(get_deps),
+    ) -> FileSearchResponse:
+        engine = deps.file_search
+        if engine is None:
+            return FileSearchResponse(query=q, results=[], enabled=False)
+        t0 = time.perf_counter()
+        try:
+            hits = await run_in_threadpool(engine.search, q, n)
+        except Exception:  # noqa: BLE001 — a broken index is a calm empty, never a 500
+            log_with(log, logging.WARNING, "file search failed", query=q[:60])
+            hits = []
+        elapsed_ms = round((time.perf_counter() - t0) * 1000, 2)
+        log_with(
+            log, logging.INFO, "search.files",
+            query=q[:60], elapsed_ms=elapsed_ms, n_results=len(hits),
+        )
+        return FileSearchResponse(
+            query=q,
+            results=[
+                FileHitOut(
+                    path=h.path,
+                    name=h.name,
+                    snippet=h.snippet,
+                    score=round(float(h.score), 4),
+                    ext=h.ext,
+                )
+                for h in hits
+            ],
             elapsed_ms=elapsed_ms,
         )
 
@@ -988,6 +1041,7 @@ class APIService:
         evolution_builder: Optional[EvolutionBuilder] = None,
         recovery_enabled: bool = True,
         recovery_engine: Optional[RecoveryEngine] = None,
+        file_search_engine: Optional[SearchEngine] = None,
     ) -> None:
         self.port = port
         self._server: Optional[uvicorn.Server] = None
@@ -1058,6 +1112,7 @@ class APIService:
             threads=threads,
             evolution=evolution,
             recovery=recovery,
+            file_search=file_search_engine,
         )
         self.app = create_app(self.deps)
 

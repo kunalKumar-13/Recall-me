@@ -164,6 +164,50 @@ export async function fetchMemory(): Promise<MemoryItem[]> {
   return out;
 }
 
+// ── capture pause ────────────────────────────────────────────────────
+//
+// The worker honours a `pauseUntil` epoch in chrome.storage.local —
+// privacy at your fingertips without touching Settings.
+
+export async function getPauseUntil(): Promise<number> {
+  if (!hasChromeStorage()) return 0;
+  return new Promise((resolve) => {
+    chrome.storage.local.get(["pauseUntil"], (r) => {
+      const v = r?.pauseUntil;
+      resolve(typeof v === "number" ? v : 0);
+    });
+  });
+}
+
+export async function setPauseUntil(ts: number): Promise<void> {
+  if (!hasChromeStorage()) return;
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ pauseUntil: ts }, () => resolve());
+  });
+}
+
+/**
+ * Episodic search against the daemon — the overlay's remote corpus.
+ * Fast timeout: a slow search is worse than a local-only one.
+ */
+export async function searchDaemon(
+  q: string,
+): Promise<Array<{ label: string; detail: string; url?: string }>> {
+  const data = await getJSON<Record<string, unknown>>(
+    `/v1/search?q=${encodeURIComponent(q)}`,
+    1500,
+  );
+  const list = asArray(data?.episodic);
+  return list.slice(0, 8).map((raw) => {
+    const e = raw as Record<string, unknown>;
+    return {
+      label: stringOf(e.title) || stringOf(e.subtitle) || "Moment",
+      detail: stringOf(e.subtitle) || stringOf(e.kind),
+      url: stringOf(e.url) || undefined,
+    };
+  });
+}
+
 // ── settings (chrome.storage) ───────────────────────────────────────
 
 const SETTINGS_KEY = "recall.settings";
@@ -214,6 +258,46 @@ export function openTab(url: string): void {
     chrome.tabs.create({ url, active: false });
   } else {
     window.open(url, "_blank", "noopener");
+  }
+}
+
+/**
+ * Plan-driven resume. Asks the engine for the candidate's
+ * restoration plan (files → chats → tabs → searches) and opens the
+ * URL steps *in that order*, gently staggered so the tab strip
+ * reads like the work coming back rather than an explosion.
+ * `path` steps (files) can't be opened from a browser — the daemon
+ * side handles those; we just report how many were left to it.
+ * Returns null when the endpoint is unreachable so the caller can
+ * fall back to the raw suggested URLs.
+ */
+export async function restoreRecovery(
+  id: string,
+): Promise<{ opened: number; files: number } | null> {
+  try {
+    const r = await fetch(
+      `${BASE}/v1/recovery/${encodeURIComponent(id)}/restore`,
+      { method: "POST" },
+    );
+    if (!r.ok) return null;
+    const plan = (await r.json()) as {
+      steps?: Array<{ kind?: string; target?: string }>;
+    };
+    const steps = Array.isArray(plan.steps) ? plan.steps : [];
+    let opened = 0;
+    let files = 0;
+    for (const s of steps) {
+      if (s?.kind === "url" && s.target) {
+        const url = s.target;
+        setTimeout(() => openTab(url), opened * 140);
+        opened += 1;
+      } else if (s?.kind === "path") {
+        files += 1;
+      }
+    }
+    return { opened, files };
+  } catch {
+    return null;
   }
 }
 

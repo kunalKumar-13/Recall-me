@@ -85,7 +85,7 @@ export function EmptyPlate({
           height: 22,
           borderRadius: 6,
           background: "var(--accent)",
-          boxShadow: "0 6px 18px rgba(139, 127, 227, 0.35)",
+          boxShadow: "0 6px 18px rgba(191, 59, 43, 0.30)",
         }}
       />
       <Headline>Recall notices unfinished work</Headline>
@@ -198,7 +198,7 @@ function PrimaryButton({
         fontSize: 12.5,
         fontWeight: 600,
         cursor: "pointer",
-        boxShadow: "0 4px 12px rgba(139, 127, 227, 0.30)",
+        boxShadow: "0 4px 12px rgba(191, 59, 43, 0.28)",
         transition: "background var(--motion-fast) var(--motion-ease)",
       }}
       onMouseEnter={(e) => ((e.currentTarget.style.background = "var(--accent-hover)"))}
