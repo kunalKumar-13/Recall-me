@@ -82,6 +82,15 @@ class Config:
     # no persistent cache, the surface is derived on demand).
     recovery_enabled: bool = True
 
+    # ── Phase 6M: desktop focus capture ─────────────────────────
+    # When True the daemon runs the foreground-window watcher and
+    # writes `desktop_window` events (app + window title + focus
+    # duration — metadata only, never contents). Off by default:
+    # watching every app you focus is the most intimate capture
+    # source, so it is an explicit opt-in. RECALL_DESKTOP=off in
+    # the environment silences the layer regardless of this flag.
+    desktop_capture_enabled: bool = False
+
     @classmethod
     def load(cls) -> "Config":
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)

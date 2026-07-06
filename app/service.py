@@ -149,6 +149,18 @@ def run_service() -> int:
     log.info("api service: %s on 127.0.0.1:%d",
              "running" if api_started else "NOT started", config.browser_ingest_port)
 
+    # Desktop focus capture — explicit opt-in (config + RECALL_DESKTOP).
+    # Windows and macOS have probes; anywhere else this is a quiet no-op.
+    desktop_watcher = None
+    if getattr(config, "desktop_capture_enabled", False):
+        from .core.desktop.watcher import start_watcher as start_desktop_watcher
+
+        desktop_watcher = start_desktop_watcher(event_logger)
+        log.info("desktop watcher: %s",
+                 "running" if desktop_watcher else "not started")
+    else:
+        log.info("desktop watcher: disabled by config.")
+
     # Block until a termination signal. launchd sends SIGTERM on logout
     # or `launchctl bootout`; Ctrl-C sends SIGINT when run by hand.
     stop = threading.Event()
@@ -167,6 +179,11 @@ def run_service() -> int:
         if watcher is not None:
             try:
                 watcher.stop()
+            except Exception:
+                pass
+        if desktop_watcher is not None:
+            try:
+                desktop_watcher.stop()  # flushes any open focus block
             except Exception:
                 pass
         try:

@@ -17,9 +17,9 @@ A future `recall doctor` check will surface its state.
 
 Disable rules:
 
-  - The watcher refuses to start on non-Windows hosts (Windows is
-    the only platform with a probe today). Future macOS / Linux
-    siblings drop in next to ``windows.py``.
+  - The watcher refuses to start on hosts without a probe
+    (Windows via ``windows.py``, macOS via ``darwin.py``; a Linux
+    sibling drops in next to them).
   - ``RECALL_DESKTOP=off`` in the environment makes start_watcher
     a no-op — the directive's *metadata only* contract gives the
     user a single env flag to silence the whole layer.
@@ -38,9 +38,11 @@ import threading
 from typing import Optional
 
 from ..events import EventLogger
+from . import darwin
 from .events import KIND, DesktopWindowEvent
 from .sessions import FocusAggregator
-from .windows import is_supported as windows_is_supported, probe_foreground
+from .windows import is_supported as windows_is_supported
+from .windows import probe_foreground as _probe_windows
 
 
 log = logging.getLogger("recall.core.desktop.watcher")
@@ -55,9 +57,18 @@ def _env_disabled() -> bool:
 
 
 def _platform_supported() -> bool:
-    if not sys.platform.startswith("win"):
-        return False
-    return windows_is_supported()
+    if sys.platform.startswith("win"):
+        return windows_is_supported()
+    if sys.platform == "darwin":
+        return darwin.is_supported()
+    return False
+
+
+def probe_foreground():
+    """Platform-dispatched foreground probe (Windows / macOS)."""
+    if sys.platform == "darwin":
+        return darwin.probe_foreground()
+    return _probe_windows()
 
 
 class DesktopWatcher:
