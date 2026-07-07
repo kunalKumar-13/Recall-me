@@ -172,6 +172,14 @@ body {
   color: var(--provenance);
 }
 
+/* One quiet line under the settings rows — outcome of the last
+   change ("that combination is unavailable"), never a toast. */
+.settings-note {
+  padding: 2px 18px 10px;
+  font-size: 11px;
+  color: var(--provenance);
+}
+
 /* ----------------------------------------------------------- footer hints */
 
 .footer {

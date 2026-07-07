@@ -41,8 +41,14 @@ phases land so any session resumes from the right place.
       executes it with a 140 ms stagger so the OS layers windows in plan
       order, tallies `opened`/`requested` onto the returned plan, and the
       row reads "reopening your work…" while it runs.
-- [ ] **Phase 5 — Settings & polish.** Configurable hotkey, folder picker,
-      tray, onboarding, launch-on-login UX.
+- [x] **Phase 5 — Settings & polish.** ⌘, opens a settings view inside the
+      panel: **summon hotkey** re-recorded live (persisted to
+      `~/.recall/launcher.json`, parser unit-tested, falls back to ⌃Space on
+      any bad spec — the panel can never end up unsummonable), **start at
+      login** (tauri-plugin-autostart LaunchAgent), **indexed folders** row
+      opening `~/.recall/config.json`. Resting data now re-reads the engine
+      on every summon (stale panels and "engine offline" self-heal), and the
+      empty/offline states carry honest copy.
 - [ ] **Phase 6 — Ship.** Signed + notarized `.dmg`, clean install, demo
       script on real sessions.
 

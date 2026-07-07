@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type {
   FileSearchResponse,
   HealthResponse,
+  LauncherSettings,
   RecoveryRecentResponse,
   RestorationPlan,
   ResurfaceIdleResponse,
@@ -37,6 +38,14 @@ export const threadEvolution = (id: string) =>
 
 export const openTarget = (kind: string, target: string) =>
   invoke<void>("open_target", { kind, target });
+
+export const settingsGet = () => invoke<LauncherSettings>("settings_get");
+
+export const settingsSetHotkey = (spec: string) =>
+  invoke<string>("settings_set_hotkey", { spec });
+
+export const settingsSetAutostart = (on: boolean) =>
+  invoke<boolean>("settings_set_autostart", { on });
 
 export const resizeHeight = (height: number) =>
   invoke<void>("resize_height", { height });

@@ -14,6 +14,9 @@ import {
   resurfaceIdle,
   search as searchEngine,
   searchFiles,
+  settingsGet,
+  settingsSetAutostart,
+  settingsSetHotkey,
   threadsRecent,
   threadEvolution,
   openTarget,
@@ -21,6 +24,7 @@ import {
 } from "./api";
 import type {
   FileHit,
+  LauncherSettings,
   RecoveryCandidate,
   ResurfacedContext,
   SearchResponse,
@@ -29,7 +33,7 @@ import type {
 } from "./types";
 
 type Status = "loading" | "ready" | "empty" | "offline";
-type Mode = "list" | "detail";
+type Mode = "list" | "detail" | "settings";
 type Layer = "moment" | "session" | "context" | "file";
 type Action = "restore" | "open" | "detail" | "none";
 
@@ -72,6 +76,9 @@ export default function App() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [selected, setSelected] = useState(0);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [settings, setSettings] = useState<LauncherSettings | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [settingsNote, setSettingsNote] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -267,8 +274,46 @@ export default function App() {
     }));
   }, [detail]);
 
+  const settingsRows = useMemo<Row[]>(() => {
+    if (!settings) return [];
+    return [
+      {
+        key: "set-hotkey",
+        layer: "file",
+        title: "Summon hotkey",
+        caption: recording
+          ? "press the new combination · esc cancels"
+          : settings.hotkey,
+        action: "open",
+        hint: "↵ change",
+      },
+      {
+        key: "set-login",
+        layer: "file",
+        title: "Start Recall when you log in",
+        caption: settings.autostart ? "on" : "off",
+        action: "open",
+        hint: settings.autostart ? "↵ turn off" : "↵ turn on",
+      },
+      {
+        key: "set-folders",
+        layer: "file",
+        title: "Indexed folders",
+        caption: `${settings.folders} folder${settings.folders === 1 ? "" : "s"} · ~/.recall/config.json`,
+        action: "open",
+        hint: "↵ open config",
+      },
+    ];
+  }, [settings, recording]);
+
   const activeRows =
-    mode === "detail" ? detailRows : searchMode ? searchRows : restingRows;
+    mode === "detail"
+      ? detailRows
+      : mode === "settings"
+        ? settingsRows
+        : searchMode
+          ? searchRows
+          : restingRows;
 
   // ---- content-fit: window height tracks rendered content ----
   useLayoutEffect(() => {
@@ -299,26 +344,45 @@ export default function App() {
     setMode("list");
     setDetail(null);
     setSelected(0);
+    setRecording(false);
+    setSettingsNote("");
   }, []);
 
   // Every summon is a fresh surface: refocus the field, reset to the
-  // resting list, clear the query (Raycast-like).
+  // resting list, clear the query (Raycast-like) — and re-read the
+  // engine so the resting data is never stale (this is also how an
+  // "engine offline" panel quietly recovers).
   useEffect(() => {
     const win = getCurrentWindow();
     const unlisten = win.onFocusChanged(({ payload: focused }) => {
       if (focused) {
         inputRef.current?.focus();
         inputRef.current?.select();
+        void load();
       } else {
         setQuery("");
         setSelected(0);
         setMode("list");
         setDetail(null);
+        setRecording(false);
+        setSettingsNote("");
       }
     });
     return () => {
       void unlisten.then((f) => f());
     };
+  }, [load]);
+
+  const openSettings = useCallback(async () => {
+    setMode("settings");
+    setSelected(0);
+    setSettingsNote("");
+    try {
+      setSettings(await settingsGet());
+    } catch {
+      setSettings(null);
+      setSettingsNote("settings unavailable");
+    }
   }, []);
 
   const openDetail = useCallback(
@@ -349,6 +413,27 @@ export default function App() {
   const perform = useCallback(
     async (row: Row | undefined) => {
       if (!row) return;
+      if (mode === "settings") {
+        if (row.key === "set-hotkey") {
+          setRecording(true);
+          setSettingsNote("");
+        } else if (row.key === "set-login" && settings) {
+          try {
+            const now = await settingsSetAutostart(!settings.autostart);
+            setSettings({ ...settings, autostart: now });
+            setSettingsNote("");
+          } catch {
+            setSettingsNote("couldn't change the login item");
+          }
+        } else if (row.key === "set-folders" && settings) {
+          try {
+            await openTarget("path", settings.config_path);
+          } finally {
+            hide();
+          }
+        }
+        return;
+      }
       if (row.action === "detail" && row.threadId) {
         void openDetail(row.threadId, row.title);
       } else if (row.action === "restore" && row.recoveryId) {
@@ -372,22 +457,65 @@ export default function App() {
         }
       }
     },
-    [openDetail, restoringId, hide],
+    [mode, settings, openDetail, restoringId, hide],
   );
 
   // ---- keyboard-first navigation ----
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const len = activeRows.length;
+
+      // Hotkey recording swallows everything until a combination
+      // lands or esc cancels.
+      if (mode === "settings" && recording) {
+        e.preventDefault();
+        if (e.key === "Escape") {
+          setRecording(false);
+          setSettingsNote("");
+          return;
+        }
+        if (["Control", "Alt", "Shift", "Meta"].includes(e.key)) return;
+        const mods = [
+          e.ctrlKey && "ctrl",
+          e.altKey && "alt",
+          e.shiftKey && "shift",
+          e.metaKey && "cmd",
+        ].filter(Boolean) as string[];
+        if (mods.length === 0) {
+          setSettingsNote("include a modifier — ⌃ ⌥ ⇧ ⌘");
+          return;
+        }
+        const key = e.code
+          .replace(/^Key/, "")
+          .replace(/^Digit/, "")
+          .toLowerCase();
+        setRecording(false);
+        void settingsSetHotkey([...mods, key].join("+")).then(
+          (normalized) => {
+            setSettings((s) => (s ? { ...s, hotkey: normalized } : s));
+            setSettingsNote("");
+          },
+          () => setSettingsNote("that combination is unavailable — kept the old one"),
+        );
+        return;
+      }
+
+      if (e.key === "," && e.metaKey) {
+        e.preventDefault();
+        if (mode === "settings") backToList();
+        else void openSettings();
+        return;
+      }
+
       if (e.key === "Escape") {
         e.preventDefault();
-        if (mode === "detail") backToList();
+        if (mode === "detail" || mode === "settings") backToList();
         else if (searchMode) {
           setQuery("");
           setSelected(0);
         } else hide();
       } else if (e.key === "ArrowLeft") {
-        if (mode === "detail") {
+        if (mode === "detail" || mode === "settings") {
           e.preventDefault();
           backToList();
         }
@@ -412,10 +540,12 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [
     mode,
+    recording,
     searchMode,
     activeRows,
     selected,
     openDetail,
+    openSettings,
     perform,
     backToList,
     hide,
@@ -445,6 +575,29 @@ export default function App() {
       })}
     </div>
   );
+
+  // ---- settings view: launcher-only preferences, honest labels ----
+  if (mode === "settings") {
+    return (
+      <div className="panel" ref={rootRef}>
+        <div className="header detail-header">← Settings</div>
+        {settingsRows.length > 0 ? (
+          renderRows(settingsRows)
+        ) : (
+          <div className="state">
+            <div className="state-title">Settings unavailable</div>
+            <div className="state-sub mono">~/.recall could not be read</div>
+          </div>
+        )}
+        {settingsNote && <div className="settings-note mono">{settingsNote}</div>}
+        <div className="footer mono">
+          <span>↑↓ move</span>
+          <span>↵ change</span>
+          <span>esc back</span>
+        </div>
+      </div>
+    );
+  }
 
   // ---- detail view: one thread's evolution ----
   if (mode === "detail") {
@@ -511,14 +664,16 @@ export default function App() {
           {status === "offline" && (
             <div className="state">
               <div className="state-title">Engine offline</div>
-              <div className="state-sub mono">start Recall · 127.0.0.1:4545</div>
+              <div className="state-sub mono">
+                start Recall · the panel retries on your next summon
+              </div>
             </div>
           )}
           {status === "empty" && (
             <div className="state">
               <div className="state-title">Nothing to resume yet</div>
               <div className="state-sub mono">
-                unfinished work surfaces here as you go
+                work normally — unfinished threads surface here on their own
               </div>
             </div>
           )}
@@ -550,6 +705,7 @@ export default function App() {
       <div className="footer mono">
         <span>↑↓ move</span>
         <span>{searchMode ? "↵ open" : "↵ open · → phases"}</span>
+        <span>⌘, settings</span>
         <span>{searchMode ? "esc clear" : "esc close"}</span>
       </div>
     </div>

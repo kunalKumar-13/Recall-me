@@ -125,6 +125,15 @@ export interface RestorationPlan {
   opened?: number;
 }
 
+// ---- launcher settings (mirrors lib.rs settings_get) ----
+
+export interface LauncherSettings {
+  hotkey: string;
+  autostart: boolean;
+  folders: number;
+  config_path: string;
+}
+
 // ---- resurfacing (mirrors api/schemas.py ResurfacedContextOut) ----
 
 export interface ResurfacedContext {
