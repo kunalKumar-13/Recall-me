@@ -275,7 +275,7 @@ expected = {
     "/v1/events/chat", "/v1/events/open",
     "/v1/events/batch",
     "/v1/search", "/v1/search/files",
-    "/v1/events/recent", "/v1/queries/recent",
+    "/v1/events/recent", "/v1/events/today", "/v1/queries/recent",
     "/v1/resurface/idle", "/v1/resurface/history/clear",
     # Phase 2C
     "/v1/threads/recent", "/v1/threads/{thread_id}",
@@ -1630,6 +1630,37 @@ assert hit["score"] == 0.8123  # rounded to 4 places on the wire
 assert hit["snippet"].startswith("…reward")
 print(f"  wired engine → 1 hit, score {hit['score']}, snippet ok")
 print("[OK] /v1/search/files serves the honest-absent and wired shapes")
+
+
+# ----------------------------------------------------------------------
+section("36. GET /v1/events/today — the capture self-check")
+# ----------------------------------------------------------------------
+# Earlier sections ingested events stamped at receipt time, so
+# today's UTC day file must tally them. The shape is the contract:
+# date, count, per-kind tally that sums to the count. Budget is the
+# server-side median, same convention as the charter table — the
+# first read after a write pays the shared day-file parse.
+samples = []
+body = None
+for _ in range(5):
+    r = client.get("/v1/events/today")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    samples.append(body["elapsed_ms"])
+assert body is not None
+assert body["date"] == datetime.now(timezone.utc).strftime("%Y-%m-%d"), body
+assert body["count"] >= 1, body
+assert isinstance(body["kinds"], dict) and body["kinds"], body
+assert sum(body["kinds"].values()) == body["count"], body
+median_ms = sorted(samples)[len(samples) // 2]
+assert median_ms < 10, (
+    f"today self-check median {median_ms}ms, budget is 10ms ({samples})"
+)
+print(
+    f"  {body['count']} events today across {len(body['kinds'])} kinds — "
+    f"median {median_ms}ms server (cold {samples[0]}ms)"
+)
+print("[OK] /v1/events/today tallies the day file within budget")
 
 
 # Cleanup

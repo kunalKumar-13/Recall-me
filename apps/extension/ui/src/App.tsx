@@ -8,6 +8,7 @@ import {
   fetchMemory,
   fetchRecovery,
   getQueuedCount,
+  getTodayCount,
   isOnline,
   loadSettings,
   markConnected,
@@ -85,6 +86,7 @@ export function App() {
   const [demo, setDemo] = useState<DemoState | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [queued, setQueued] = useState(0);
+  const [today, setToday] = useState<number | null>(null);
 
   const load = useCallback(async (reconnect = false) => {
     // Outbox depth matters most when the daemon is unreachable, so
@@ -103,6 +105,8 @@ export function App() {
     setHealth(h);
     markConnected();
     setEverConnected(true);
+    // Capture self-check — engine-side ground truth, never a guess.
+    void getTodayCount().then(setToday);
     const [rec, inv, mem, dem] = await Promise.all([
       fetchRecovery(),
       fetchInvestigations(),
@@ -308,7 +312,7 @@ export function App() {
         )}
       </main>
 
-      <TrustStrip connection={connection} queued={queued} />
+      <TrustStrip connection={connection} queued={queued} today={today} />
 
       <SearchOverlay
         open={searchOpen}

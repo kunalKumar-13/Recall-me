@@ -85,5 +85,6 @@ The same daemon answers retrieval for any client:
 | `GET /v1/threads/recent` | active threads |
 | `GET /v1/recovery/recent` | resumable work |
 | `POST /v1/recovery/{id}/restore` | the choreographed restoration plan |
+| `GET /v1/events/today` | events captured today (UTC), by kind — verify your integration is landing |
 
 Swagger for all of it: `http://127.0.0.1:4545/docs-api`.

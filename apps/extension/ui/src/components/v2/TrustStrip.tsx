@@ -12,10 +12,14 @@ import type { ConnectionState } from "../../lib/types";
 export function TrustStrip({
   connection,
   queued = 0,
+  today = null,
 }: {
   connection: ConnectionState;
   /** Durable-outbox depth — events captured but not yet delivered. */
   queued?: number;
+  /** Events the engine received today (UTC) — the capture
+   *  self-check. null = daemon unreachable, say nothing. */
+  today?: number | null;
 }) {
   const daemon =
     connection === "connected"
@@ -44,6 +48,12 @@ export function TrustStrip({
       <TrustPill label="no cloud" tone="muted" />
       <TrustPill label="0 uploads" tone="muted" />
       <TrustPill label={daemon.label} tone={daemon.tone} />
+      {today != null && (
+        <TrustPill
+          label={`${today} event${today === 1 ? "" : "s"} today`}
+          tone="muted"
+        />
+      )}
       {queued > 0 && (
         <TrustPill
           label={`${queued} queued`}

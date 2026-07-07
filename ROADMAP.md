@@ -67,11 +67,15 @@ telemetry. See the capture audit for the full diagnosis.
       extension was not loaded (reserved-underscore filename blocked Chrome,
       now removed), capture used a fire-and-forget sender with no queue, and
       only 2 stale test events were on disk.
-- [ ] **Capture C1 — Make capture real & verifiable** *(in progress)*. Load
-      the extension; confirm organic `browser`/`search`/`chat` events reach
-      the engine; surface an honest "events captured today" self-check. Fix
-      the build/doc drift the audit found (stale committed popup bundle,
-      README/architecture component-name mismatch).
+- [x] **Capture C1 — Make capture real & verifiable.** Extension loaded and
+      capturing organically (a live day shows `browser_visit` + `chat` +
+      `search` + `desktop_window` kinds side by side). The honest
+      self-check shipped as **`GET /v1/events/today`** (count + per-kind
+      tally read straight from the day file, <10 ms median, smoke §36) and
+      surfaces as an "N events today" pill in the extension's trust strip.
+      Doc drift fixed: README ingest/retrieval tables now carry
+      `/v1/events/batch`, `/v1/search/files`, `/v1/events/today`; popup
+      bundle rebuilt from source.
 - [x] **Capture C2 — Refactor core (modular + tested).** `background.js`
       split into `capture/sources.js` (listeners + title-settle),
       `capture/normalize.js` (pure `(url,title)→{kind,payload}`, node-tested

@@ -55,6 +55,17 @@ export async function getQueuedCount(): Promise<number> {
   }
 }
 
+/**
+ * The capture self-check: how many events the engine actually
+ * received today (UTC). Read from the daemon's day file, so it is
+ * ground truth, not a client-side guess — null when the daemon is
+ * unreachable (the strip then says nothing rather than guessing).
+ */
+export async function getTodayCount(): Promise<number | null> {
+  const data = await getJSON<{ count?: number }>("/v1/events/today");
+  return typeof data?.count === "number" ? data.count : null;
+}
+
 export async function fetchHealth(): Promise<Health | null> {
   const data = await getJSON<Record<string, unknown>>(
     "/v1/health",

@@ -366,6 +366,7 @@ docs at `http://127.0.0.1:4545/docs-api`. OpenAPI JSON at
 | `POST` | `/v1/events/search` | `BrowserSearchIn` | Search-engine query |
 | `POST` | `/v1/events/chat` | `ChatSessionIn` | ChatGPT / Claude / etc. session |
 | `POST` | `/v1/events/open` | `FileOpenIn` | File open or reveal-in-Finder |
+| `POST` | `/v1/events/batch` | `BatchEventsIn` (1–500) | Durable batched ingest — extension outbox, VS Code companion, integrations |
 | `POST` | `/events` | `{kind, payload}` | Legacy generic ingest; backward compat |
 
 ### Retrieval
@@ -373,7 +374,9 @@ docs at `http://127.0.0.1:4545/docs-api`. OpenAPI JSON at
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/v1/search?q=…` | Episodic + session + micro-context bundle for a query |
+| `GET` | `/v1/search/files?q=…` | Semantic file search over indexed folders (honest `enabled:false` when no index) |
 | `GET` | `/v1/events/recent` | Newest-first event stream, filterable by kind |
+| `GET` | `/v1/events/today` | Events captured today (UTC), by kind — the capture self-check |
 | `GET` | `/v1/queries/recent` | Distinct recent launcher queries |
 | `GET` | `/v1/health` | Liveness + counters |
 

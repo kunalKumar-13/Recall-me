@@ -65,6 +65,16 @@ class StorageService:
         """
         return self.event_store.iter_events_for_date(date_str)
 
+    def day_summary(self, date_str: str) -> tuple[int, dict[str, int]]:
+        """Count + per-kind tally for one UTC day file. Powers the
+        "events captured today" self-check surfaces."""
+        count = 0
+        kinds: dict[str, int] = {}
+        for ev in self.iter_events_for_date(date_str):
+            count += 1
+            kinds[ev.kind] = kinds.get(ev.kind, 0) + 1
+        return count, kinds
+
     def recent_queries(self, n: int = 5, days: int = 14) -> List[Event]:
         return self.event_store.recent_queries(n=n, days=days)
 

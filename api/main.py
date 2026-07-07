@@ -83,6 +83,7 @@ from .schemas import (
     ThreadOut,
     ThreadsClearResponse,
     ThreadsRecentResponse,
+    TodayEventsResponse,
 )
 from .services import (
     EvolutionService,
@@ -655,6 +656,30 @@ def create_app(deps: AppDeps) -> FastAPI:
         )
         return RecentQueriesResponse(
             queries=[_event_to_out(e) for e in queries]
+        )
+
+    @app.get(
+        "/v1/events/today",
+        response_model=TodayEventsResponse,
+        tags=["retrieval"],
+        summary=(
+            "Count of events captured today (UTC), by kind — the "
+            "honest capture self-check behind 'N events today'."
+        ),
+    )
+    async def events_today(
+        deps: AppDeps = Depends(get_deps),
+    ) -> TodayEventsResponse:
+        started = time.perf_counter()
+        date_str = time.strftime("%Y-%m-%d", time.gmtime())
+        count, kinds = await run_in_threadpool(
+            deps.storage.day_summary, date_str
+        )
+        return TodayEventsResponse(
+            date=date_str,
+            count=count,
+            kinds=kinds,
+            elapsed_ms=round((time.perf_counter() - started) * 1000, 2),
         )
 
     # ----------- resurfacing (Phase 2B) -------------------------------
