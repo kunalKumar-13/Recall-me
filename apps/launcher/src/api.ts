@@ -6,6 +6,7 @@ import type {
   FileSearchResponse,
   HealthResponse,
   RecoveryRecentResponse,
+  RestorationPlan,
   ResurfaceIdleResponse,
   SearchResponse,
   ThreadsRecentResponse,
@@ -18,7 +19,7 @@ export const recoveryRecent = (n = 3) =>
   invoke<RecoveryRecentResponse>("recovery_recent", { n });
 
 export const recoveryRestore = (id: string) =>
-  invoke<unknown>("recovery_restore", { id });
+  invoke<RestorationPlan>("recovery_restore", { id });
 
 export const search = (q: string) => invoke<SearchResponse>("search", { q });
 

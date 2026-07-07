@@ -2793,6 +2793,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-global-shortcut",
  "tauri-plugin-opener",
+ "tokio",
  "window-vibrancy 0.7.1",
 ]
 

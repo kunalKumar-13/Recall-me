@@ -17,6 +17,12 @@ use tauri_plugin_opener::OpenerExt;
 const ENGINE: &str = "http://127.0.0.1:4545";
 const PANEL_WIDTH: f64 = 720.0;
 
+// Gap between restoration opens. Racing `open` calls land in random
+// z-order; a short stagger lets the OS layer windows in the plan's
+// order (files → chats → tabs → searches), matching the extension's
+// resume cadence.
+const RESTORE_STAGGER_MS: u64 = 140;
+
 // ----------------------------------------------------------------- engine I/O
 
 async fn engine_get(path: &str) -> Result<Value, String> {
@@ -82,23 +88,40 @@ async fn resurface_idle(n: Option<u32>) -> Result<Value, String> {
 
 // Resolve the candidate's restoration plan, then open every step in the
 // engine's choreographed order (files → chats → tabs → searches). The
-// endpoint orders the steps; we just execute them and return the plan.
+// endpoint orders the steps; we execute them with a stagger so the OS
+// presents the windows in that order, tally what actually opened, and
+// return the plan annotated with `requested`/`opened` — the plan is
+// advisory, the tally is what happened.
 #[tauri::command]
 async fn recovery_restore(app: AppHandle, id: String) -> Result<Value, String> {
-    let plan = engine_post(&format!("/v1/recovery/{id}/restore")).await?;
-    if let Some(steps) = plan.get("steps").and_then(|s| s.as_array()) {
-        for step in steps {
+    let mut plan = engine_post(&format!("/v1/recovery/{id}/restore")).await?;
+    let mut requested: u64 = 0;
+    let mut opened: u64 = 0;
+    if let Some(steps) = plan.get("steps").and_then(|s| s.as_array()).cloned() {
+        for step in &steps {
             let kind = step.get("kind").and_then(|v| v.as_str()).unwrap_or("");
             let target = step.get("target").and_then(|v| v.as_str()).unwrap_or("");
             if target.is_empty() {
                 continue;
             }
+            requested += 1;
+            if requested > 1 {
+                tokio::time::sleep(std::time::Duration::from_millis(RESTORE_STAGGER_MS))
+                    .await;
+            }
             let opener = app.opener();
-            let _ = match kind {
-                "url" => opener.open_url(target, None::<&str>),
-                _ => opener.open_path(target, None::<&str>),
+            let ok = match kind {
+                "url" => opener.open_url(target, None::<&str>).is_ok(),
+                _ => opener.open_path(target, None::<&str>).is_ok(),
             };
+            if ok {
+                opened += 1;
+            }
         }
+    }
+    if let Some(obj) = plan.as_object_mut() {
+        obj.insert("requested".into(), requested.into());
+        obj.insert("opened".into(), opened.into());
     }
     Ok(plan)
 }

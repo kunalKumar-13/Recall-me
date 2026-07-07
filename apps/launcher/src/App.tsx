@@ -71,7 +71,7 @@ export default function App() {
   const [detailTitle, setDetailTitle] = useState("");
   const [detailLoading, setDetailLoading] = useState(false);
   const [selected, setSelected] = useState(0);
-  const [restoring, setRestoring] = useState(false);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -352,12 +352,16 @@ export default function App() {
       if (row.action === "detail" && row.threadId) {
         void openDetail(row.threadId, row.title);
       } else if (row.action === "restore" && row.recoveryId) {
-        if (restoring) return;
-        setRestoring(true);
+        if (restoringId) return;
+        setRestoringId(row.recoveryId);
         try {
+          // The Rust command walks the engine's plan in order with a
+          // stagger; the panel hides itself the moment the first
+          // target takes focus. By the time this resolves the work
+          // is back on screen.
           await recoveryRestore(row.recoveryId);
         } finally {
-          setRestoring(false);
+          setRestoringId(null);
           hide();
         }
       } else if (row.action === "open" && row.target) {
@@ -368,7 +372,7 @@ export default function App() {
         }
       }
     },
-    [openDetail, restoring, hide],
+    [openDetail, restoringId, hide],
   );
 
   // ---- keyboard-first navigation ----
@@ -421,6 +425,7 @@ export default function App() {
     <div className="thread">
       {rows.map((r, i) => {
         const sel = offset + i === selected;
+        const busy = r.recoveryId != null && r.recoveryId === restoringId;
         return (
           <div className={`row${sel ? " sel" : ""}`} key={r.key}>
             <div className="node-col">
@@ -428,10 +433,12 @@ export default function App() {
             </div>
             <div className="row-main">
               <div className="row-title">{r.title}</div>
-              <div className="row-caption mono">{r.caption}</div>
+              <div className="row-caption mono">
+                {busy ? "reopening your work…" : r.caption}
+              </div>
             </div>
             <div className="row-hint mono">
-              {sel && r.action !== "none" ? r.hint : ""}
+              {busy ? "…" : sel && r.action !== "none" ? r.hint : ""}
             </div>
           </div>
         );

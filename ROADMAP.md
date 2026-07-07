@@ -35,8 +35,12 @@ phases land so any session resumes from the right place.
       **file results** group (`/v1/search/files`, also in the extension
       popup); and macOS **desktop-focus capture** (`darwin.py` probe,
       opt-in `desktop_capture_enabled`) feeds the engine a third source.
-- [ ] **Phase 4 — Restore choreography.** Enter on a candidate reopens the
-      work in order (files → chats → tabs by domain → searches).
+- [x] **Phase 4 — Restore choreography.** Enter on a candidate reopens the
+      work in order (files → chats → tabs by domain → searches). The engine
+      orders the plan (`plan_for`, with per-step reasons); the Rust command
+      executes it with a 140 ms stagger so the OS layers windows in plan
+      order, tallies `opened`/`requested` onto the returned plan, and the
+      row reads "reopening your work…" while it runs.
 - [ ] **Phase 5 — Settings & polish.** Configurable hotkey, folder picker,
       tray, onboarding, launch-on-login UX.
 - [ ] **Phase 6 — Ship.** Signed + notarized `.dmg`, clean install, demo
