@@ -49,8 +49,14 @@ phases land so any session resumes from the right place.
       opening `~/.recall/config.json`. Resting data now re-reads the engine
       on every summon (stale panels and "engine offline" self-heal), and the
       empty/offline states carry honest copy.
-- [ ] **Phase 6 — Ship.** Signed + notarized `.dmg`, clean install, demo
-      script on real sessions.
+- [x] **Phase 6 — Ship (build path).** `pnpm tauri build` produces a 2.4 MB
+      `Recall.app` + `Recall_0.1.0_aarch64.dmg` (release profile, fat LTO;
+      window-vibrancy pinned to tauri's minor to fix a duplicate-ObjC-class
+      LTO link failure). Ad-hoc signed today; the Developer-ID signing +
+      notarization path is documented in
+      [RELEASE.md](docs/release/RELEASE.md) and needs only the certificate —
+      no code changes. *Still open before a public cut: notarized artifact +
+      demo script on real sessions.*
 
 ---
 
