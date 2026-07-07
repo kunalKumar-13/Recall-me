@@ -116,6 +116,7 @@ class BatchEventIn(BaseModel):
         "browser_visit",
         "browser_search",
         "chat_session",
+        "browser_focus",
         "desktop_window",
         "open",
         "reveal",

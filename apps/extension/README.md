@@ -28,7 +28,8 @@ apps/extension/
 │   ├── normalize.js     pure URL → event classifier (node-tested)
 │   ├── outbox.js        durable, batched, retrying sender
 │   ├── sources.js       tab + SPA listeners with title-settle
-│   └── normalize.test.js
+│   ├── dwell.js         attention tracker → browser_focus dwell events
+│   └── *.test.js        node tests (normalize, dwell)
 ├── popup/            ← BUILT popup — what Chrome loads (generated)
 │   ├── index.html
 │   └── assets/
@@ -46,7 +47,8 @@ apps/extension/
 Chrome loads `apps/extension/` as the unpacked extension.
 `manifest.json`, `background.js`, and the `capture/` modules are
 hand-written; `popup/` is a build artifact produced from `ui/`. The
-capture core has a node test: `node capture/normalize.test.js`.
+capture core has node tests: `node capture/normalize.test.js` and
+`node capture/dwell.test.js`.
 
 ## Build the popup
 

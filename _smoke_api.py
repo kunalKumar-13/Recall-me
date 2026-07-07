@@ -1550,18 +1550,37 @@ batch = {
 batch["events"].append({"kind": "browser_visit", "payload": {
     "url": "chrome://settings", "title": "settings", "browser": "chrome",
 }})
+# And one dwell signal (Capture C4) — kind accepted, numeric dwell_ms
+# and the work-block hint both survive the payload allowlist.
+batch["events"].append({"kind": "browser_focus", "payload": {
+    "url": "https://example.com/batch-3",
+    "title": "Batch page 3",
+    "domain": "example.com",
+    "dwell_ms": 12400,
+    "block": "wb-1751882400",
+}})
 
 before = client.get("/v1/health").json()["ingested_total"]
 r = client.post("/v1/events/batch", json=batch)
 assert r.status_code == 200, r.text
 body = r.json()
-assert body["received"] == 51, body
-assert body["ingested"] == 50, body          # the chrome:// one is filtered out
+assert body["received"] == 52, body
+assert body["ingested"] == 51, body          # the chrome:// one is filtered out
 assert body["reason"] is not None, body      # partial drop is reported
 after = client.get("/v1/health").json()["ingested_total"]
-assert after == before + 50, f"counter moved {before}->{after}, expected +50"
-print(f"  batch of 51 → ingested {body['ingested']}, "
+assert after == before + 51, f"counter moved {before}->{after}, expected +51"
+print(f"  batch of 52 → ingested {body['ingested']}, "
       f"dropped {body['received'] - body['ingested']}; counter {before}->{after}")
+
+# The dwell event landed intact: kind on disk, payload allowlisted.
+focus_events = [
+    e for e in deps.storage.iter_events(days=1)
+    if e.kind == "browser_focus"
+]
+assert focus_events, "browser_focus event missing from the day file"
+fe = focus_events[0]
+assert fe.payload.get("dwell_ms") == 12400, fe.payload
+assert fe.payload.get("block") == "wb-1751882400", fe.payload
 
 # Empty / oversized batches are rejected by the schema (422), never written.
 assert client.post("/v1/events/batch", json={"events": []}).status_code == 422
@@ -1579,8 +1598,8 @@ for _ in range(3):
     rr = client.post("/v1/events/batch", json=batch)
     samples_ms.append((time.perf_counter() - t0) * 1000)
     assert rr.status_code == 200
-per_event_ms = min(samples_ms) / 51.0
-print(f"  batch latency {min(samples_ms):.1f} ms / 51 events = "
+per_event_ms = min(samples_ms) / 52.0
+print(f"  batch latency {min(samples_ms):.1f} ms / 52 events = "
       f"{per_event_ms:.3f} ms/event (best of 3)")
 assert per_event_ms < 2.0, f"per-event budget blown: {per_event_ms:.3f} ms > 2 ms"
 print("[OK] batch ingest writes, filters per-event, rejects bad sizes, stays in budget")

@@ -27,6 +27,7 @@ Content-Type: application/json
 | `chat_session` | `url, title, platform, domain` | an AI conversation |
 | `open` | `path, title` | a file you worked in |
 | `desktop_window` | `app, title, duration, focus_start, focus_end` | app focus |
+| `browser_focus` | `url, title, domain, dwell_ms, block` | attention: how long focus stayed on a page, plus a work-block hint (grouping signal only — never a search result) |
 
 Unknown fields are dropped server-side; unknown kinds are refused.
 Timestamps: include `ts` (ISO 8601) to log retroactively — the

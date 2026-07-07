@@ -53,6 +53,12 @@ ALLOWED_KINDS: frozenset[str] = frozenset({
     # schema lives in `api/schemas.py:DesktopWindowIn` and the
     # watcher in `app/core/desktop/`.
     "desktop_window",
+    # Capture C4 — browser dwell. One event when focus *leaves* a
+    # page after ≥ the extension's minimum dwell; carries a client
+    # work-block hint so sessions can eventually group behaviourally.
+    # Deliberately absent from episodic.RETRIEVABLE_KINDS: it is a
+    # grouping signal, never a search result.
+    "browser_focus",
 })
 
 # URL schemes we never store. Browsers expose plenty of internal
@@ -92,6 +98,11 @@ _FIELD_LIMITS: dict[str, int] = {
     "platform": 60,
     "browser": 60,
     "source": 60,
+    # Capture C4 — browser_focus. `dwell_ms` is numeric (the cap
+    # only applies to strings); `block` is the client work-block
+    # hint, an epoch-derived id like "wb-1751882400".
+    "dwell_ms": 24,
+    "block": 32,
 }
 
 # Whitelisted payload keys per event kind. The handler drops any

@@ -95,6 +95,14 @@ telemetry. See the capture audit for the full diagnosis.
       `POST /v1/events/batch` shipped (smoke §34). *Code-complete; the
       remaining open item is C1 — load the extension and confirm organic
       events flow end-to-end (only reproducible in a real browser).*
-- [ ] **Capture C4 — Work-session signal (the moat).** Capture focus/dwell/
-      active-tab context and a client work-session hint, so the engine can
-      group *work-blocks* behaviourally, not just by 30-minute clock windows.
+- [x] **Capture C4 — Work-session signal (the moat).** `capture/dwell.js`
+      tracks attention (tabs.onActivated, windows.onFocusChanged, same-tab
+      navs, SPA routes) and emits one **`browser_focus`** event when focus
+      leaves a page — dwell ≥8 s, capped at 30 min, deduped by construction
+      (one event per interval) — carrying `dwell_ms` and a deterministic
+      work-block hint (`block: wb-<epoch>`; a new block after 5 min of
+      browser silence). Pure tracker core node-tested (7 checks); engine
+      opted in via `ALLOWED_KINDS` + payload allowlist + smoke §34, with the
+      kind **deliberately absent from `RETRIEVABLE_KINDS`** — it is a
+      grouping signal for behavioural work-blocks, never a search result.
+      *The consumer (sessions grouping on dwell/blocks) is the follow-on.*

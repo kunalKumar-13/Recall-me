@@ -8,6 +8,7 @@
  *   capture/normalize.js  pure URL → event classifier (node-tested)
  *   capture/outbox.js     durable, batched, retrying sender
  *   capture/sources.js    tab + SPA listeners with title-settle
+ *   capture/dwell.js      attention tracker → browser_focus events
  *
  * No remote networking, no DOM scraping, no telemetry. The manifest
  * permits exactly one network origin — http://127.0.0.1:4545 — so the
@@ -15,6 +16,7 @@
  * to the durable outbox, which drains to POST /v1/events/batch.
  */
 
+import { registerDwell } from "./capture/dwell.js";
 import { registerSources } from "./capture/sources.js";
 import { registerRetryAlarm, flush } from "./capture/outbox.js";
 
@@ -50,7 +52,9 @@ chrome.storage.onChanged.addListener((changes) => {
 });
 
 registerRetryAlarm();
-registerSources({
+const gates = {
   isEnabled: () => enabled && Date.now() >= pauseUntil,
   excluded: () => excludedDomains,
-});
+};
+registerSources(gates);
+registerDwell(gates);
