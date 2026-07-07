@@ -28,9 +28,13 @@ const MAX_WAIT_MS = 4000;
 
 const pending = new Map();
 
+// The per-kind Settings gate. Checked at emit time (not schedule
+// time) so a toggle flipped mid-settle is still honoured.
+let _allowKind = () => true;
+
 function _emit(url, title) {
   const cls = classify(url, title || "");
-  if (cls) void enqueue(cls);
+  if (cls && _allowKind(cls.kind)) void enqueue(cls);
 }
 
 function _scheduleFire(tabId, url, title, isEnabled, excluded) {
@@ -70,10 +74,12 @@ function _scheduleFire(tabId, url, title, isEnabled, excluded) {
 }
 
 /**
- * Register all capture listeners. `isEnabled` / `excluded` are getters
- * so a live Settings toggle is honoured without re-registering.
+ * Register all capture listeners. `isEnabled` / `excluded` /
+ * `allowKind` are getters so a live Settings toggle is honoured
+ * without re-registering.
  */
-export function registerSources({ isEnabled, excluded }) {
+export function registerSources({ isEnabled, excluded, allowKind }) {
+  if (typeof allowKind === "function") _allowKind = allowKind;
   chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (!isEnabled()) return;
     if (!tab || !tab.url || tab.incognito) return;

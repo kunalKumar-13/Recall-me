@@ -81,14 +81,18 @@ export function createDwellTracker({
 
 /**
  * Register the dwell listeners. Same getter contract as
- * registerSources: `isEnabled` / `excluded` are read live so the
- * Settings toggle and pause are honoured without re-registering.
+ * registerSources: `isEnabled` / `excluded` / `allowKind` are read
+ * live so the Settings toggles and pause are honoured without
+ * re-registering. Dwell rides the browsing switch.
  */
-export function registerDwell({ isEnabled, excluded }) {
+export function registerDwell({ isEnabled, excluded, allowKind }) {
   const tracker = createDwellTracker();
+  const allowed =
+    typeof allowKind === "function" ? allowKind : () => true;
 
   function emit(record) {
     if (!record) return;
+    if (!allowed("browser_focus")) return;
     if (shouldSkipScheme(record.url)) return;
     const domain = getDomain(record.url);
     if (isExcluded(domain, excluded())) return;
