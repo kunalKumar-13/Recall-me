@@ -7,8 +7,8 @@ import {
   fetchInvestigations,
   fetchMemory,
   fetchRecovery,
+  fetchToday,
   getQueuedCount,
-  getTodayCount,
   isOnline,
   loadSettings,
   markConnected,
@@ -36,6 +36,7 @@ import {
   type PopupState,
   type Recovery,
   type Settings,
+  type TodaySummary,
 } from "./lib/types";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { Activity } from "./components/v2/Activity";
@@ -86,7 +87,7 @@ export function App() {
   const [demo, setDemo] = useState<DemoState | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [queued, setQueued] = useState(0);
-  const [today, setToday] = useState<number | null>(null);
+  const [today, setToday] = useState<TodaySummary | null>(null);
 
   const load = useCallback(async (reconnect = false) => {
     // Outbox depth matters most when the daemon is unreachable, so
@@ -106,7 +107,7 @@ export function App() {
     markConnected();
     setEverConnected(true);
     // Capture self-check — engine-side ground truth, never a guess.
-    void getTodayCount().then(setToday);
+    void fetchToday().then(setToday);
     const [rec, inv, mem, dem] = await Promise.all([
       fetchRecovery(),
       fetchInvestigations(),
@@ -215,6 +216,9 @@ export function App() {
             onBack={() => setView("main")}
             connection={connection}
             health={health}
+            today={today}
+            pausedUntil={pausedUntil}
+            onTogglePause={togglePause}
             onRetry={() => load(true)}
           />
         </motion.div>
@@ -296,11 +300,7 @@ export function App() {
               <Investigations investigations={effInvestigations} />
             )}
             <Timeline items={effMemory} />
-            <Activity
-              connection={connection}
-              eventsToday={health?.eventsToday ?? 0}
-              desktopApps={health?.desktopApps ?? 0}
-            />
+            <Activity connection={connection} today={today} />
             {state === "demo" && demo?.payload?.trust && (
               <DemoBannerInline
                 title={demo.payload.trust.bannerTitle}
@@ -312,7 +312,13 @@ export function App() {
         )}
       </main>
 
-      <TrustStrip connection={connection} queued={queued} today={today} />
+      <TrustStrip
+        connection={connection}
+        queued={queued}
+        // Only claim a count while the daemon is answering — a
+        // number from a previous connection would be a guess.
+        today={connection === "connected" && today ? today.count : null}
+      />
 
       <SearchOverlay
         open={searchOpen}

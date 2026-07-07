@@ -1,58 +1,83 @@
 import { motion } from "framer-motion";
-import type { ConnectionState } from "../../lib/types";
+import type { ConnectionState, TodaySummary } from "../../lib/types";
 import { staggered } from "../../lib/motion";
 import { SectionLabel } from "./Investigations";
 
 /**
- * Phase 7A Activity status cards. Two cards side-by-side: Browser
- * (live engine) and Desktop (designed-now, engine-later). Each
- * carries a one-word status pill + a short list of what the layer
- * watches:
+ * Activity status cards — live numbers, never vibes. Two cards
+ * side-by-side, both driven by the `/v1/events/today` per-kind
+ * tally (the same ground truth as the trust-strip pill):
  *
- *    +-------------------+   +-------------------+
- *    | BROWSER  capturing |   | DESKTOP  future   |
- *    | - tabs             |   | - files           |
- *    | - navigation       |   | - editors         |
- *    | - returns          |   | - integrations    |
- *    | - searches         |   |                   |
- *    +-------------------+   +-------------------+
+ *    +--------------------+   +--------------------+
+ *    | BROWSER  capturing |   | DESKTOP     off    |
+ *    | 46  pages          |   | 12  app focus      |
+ *    |  2  searches       |   |  3  file opens     |
+ *    |  3  chats          |   |     opt-in · app   |
+ *    |  9  dwells         |   |                    |
+ *    +--------------------+   +--------------------+
  *
- * The directive is explicit: *Design UI now. Engine later.* The
- * Desktop card surfaces the seam without pretending the layer
- * exists.
+ * A layer that captured nothing today says 0 (or "off" for the
+ * opt-in desktop watcher) — it never pretends, in either direction.
  */
 
-export type ActivityKind = "capturing" | "idle" | "disconnected" | "future";
+export type ActivityKind = "capturing" | "idle" | "disconnected" | "off";
 
 const KIND_PALETTE: Record<ActivityKind, { fg: string; bg: string; label: string }> = {
   capturing: { fg: "var(--ok)", bg: "var(--ok-soft)", label: "capturing" },
   idle: { fg: "var(--ink-3)", bg: "var(--surface-2)", label: "idle" },
   disconnected: { fg: "var(--warn)", bg: "var(--warn-soft)", label: "offline" },
-  future: { fg: "var(--accent)", bg: "var(--accent-soft)", label: "soon" },
+  off: { fg: "var(--ink-3)", bg: "var(--surface-2)", label: "off" },
 };
+
+interface CountItem {
+  n: number | null; // null = a label row, no number column
+  label: string;
+}
 
 export function Activity({
   connection,
-  eventsToday,
-  desktopApps,
+  today,
 }: {
   connection: ConnectionState;
-  eventsToday: number;
-  desktopApps: number;
+  today: TodaySummary | null;
 }) {
-  const browserKind: ActivityKind =
-    connection !== "connected"
-      ? "disconnected"
-      : eventsToday > 0
-        ? "capturing"
-        : "idle";
+  const kinds = today?.kinds ?? {};
+  const pages = kinds.browser_visit ?? 0;
+  const searches = kinds.browser_search ?? 0;
+  const chats = kinds.chat_session ?? 0;
+  const dwells = kinds.browser_focus ?? 0;
+  const appFocus = kinds.desktop_window ?? 0;
+  const fileOpens = (kinds.open ?? 0) + (kinds.reveal ?? 0);
 
-  const desktopKind: ActivityKind =
-    connection !== "connected"
-      ? "disconnected"
-      : desktopApps > 0
-        ? "capturing"
-        : "future";
+  const off = connection !== "connected";
+  const browserKind: ActivityKind = off
+    ? "disconnected"
+    : pages + searches + chats + dwells > 0
+      ? "capturing"
+      : "idle";
+  const desktopKind: ActivityKind = off
+    ? "disconnected"
+    : appFocus + fileOpens > 0
+      ? "capturing"
+      : "off";
+
+  const browserItems: CountItem[] = [
+    { n: pages, label: pages === 1 ? "page" : "pages" },
+    { n: searches, label: searches === 1 ? "search" : "searches" },
+    { n: chats, label: chats === 1 ? "chat" : "chats" },
+    { n: dwells, label: dwells === 1 ? "dwell" : "dwells" },
+  ];
+  const desktopItems: CountItem[] =
+    desktopKind === "capturing"
+      ? [
+          { n: appFocus, label: "app focus" },
+          { n: fileOpens, label: fileOpens === 1 ? "file open" : "file opens" },
+        ]
+      : [
+          { n: null, label: "app focus · opt-in" },
+          { n: null, label: "VS Code companion" },
+          { n: null, label: "enable in the Recall app" },
+        ];
 
   return (
     <section style={{ margin: "0 var(--pad-edge)" }}>
@@ -67,13 +92,13 @@ export function Activity({
         <ActivityCard
           title="Browser"
           kind={browserKind}
-          items={["tabs", "navigation", "returns", "searches"]}
+          items={browserItems}
           index={0}
         />
         <ActivityCard
           title="Desktop"
           kind={desktopKind}
-          items={["files", "editors", "integrations"]}
+          items={desktopItems}
           index={1}
         />
       </div>
@@ -89,9 +114,10 @@ function ActivityCard({
 }: {
   title: string;
   kind: ActivityKind;
-  items: string[];
+  items: CountItem[];
   index: number;
 }) {
+  const dim = kind === "off" || kind === "disconnected";
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
@@ -138,28 +164,46 @@ function ActivityCard({
       >
         {items.map((it) => (
           <li
-            key={it}
+            key={it.label}
             style={{
               display: "flex",
-              alignItems: "center",
-              gap: 8,
+              alignItems: "baseline",
+              gap: 7,
               fontSize: 11.5,
-              color: kind === "future" ? "var(--ink-3)" : "var(--ink-2)",
+              color: dim ? "var(--ink-3)" : "var(--ink-2)",
             }}
           >
-            <span
-              aria-hidden
-              style={{
-                width: 4,
-                height: 4,
-                borderRadius: 2,
-                background:
-                  kind === "future" ? "var(--ink-4)" : "var(--accent)",
-                opacity: kind === "future" ? 0.55 : 0.8,
-                flexShrink: 0,
-              }}
-            />
-            {it}
+            {it.n === null ? (
+              <span
+                aria-hidden
+                style={{
+                  width: 4,
+                  height: 4,
+                  borderRadius: 2,
+                  background: "var(--ink-4)",
+                  opacity: 0.55,
+                  flexShrink: 0,
+                  alignSelf: "center",
+                }}
+              />
+            ) : (
+              <span
+                style={{
+                  minWidth: 22,
+                  textAlign: "right",
+                  fontFamily:
+                    "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color:
+                    it.n > 0 && !dim ? "var(--ink)" : "var(--ink-4)",
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {it.n}
+              </span>
+            )}
+            {it.label}
           </li>
         ))}
       </ul>

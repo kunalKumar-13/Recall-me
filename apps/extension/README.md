@@ -50,6 +50,14 @@ hand-written; `popup/` is a build artifact produced from `ui/`. The
 capture core has node tests: `node capture/normalize.test.js` and
 `node capture/dwell.test.js`.
 
+Every control in the popup is real: the three capture toggles map to
+per-kind gates the worker checks before enqueuing (`KIND_GATE` in
+`background.js`), Pause is the shared `pauseUntil` epoch, and the
+Private-sites editor writes the `excludedDomains` list the worker
+filters on live. The Activity cards and the "N events today" pill
+read `/v1/events/today` — engine-side ground truth, never a
+client-side guess.
+
 ## Build the popup
 
 ```bash

@@ -49,13 +49,20 @@ export type PopupState =
 
 export interface Health {
   ok: boolean;
+  /** Since daemon start — /v1/health's counter resets on restart.
+   *  Day-scoped truth comes from TodaySummary instead. */
   ingestedTotal: number;
-  eventsToday: number;
-  /* Phase 6M — count of unique desktop_window apps observed in
-     the daemon's daily window. 0 when the watcher hasn't run /
-     no events captured / on a non-Windows host. Surfaced as the
-     popup header's ⊞-N badge. */
-  desktopApps?: number;
+}
+
+/**
+ * The capture self-check (`/v1/events/today`): events the engine
+ * received today (UTC), by kind. This is the only day-scoped number
+ * the popup shows — read from the day file, so it survives daemon
+ * restarts and never guesses.
+ */
+export interface TodaySummary {
+  count: number;
+  kinds: Record<string, number>;
 }
 
 /** One restorable investigation — the ContinueCard's subject. */
@@ -93,18 +100,23 @@ export interface MemoryItem {
   ts?: number;
 }
 
+/**
+ * The per-kind capture switches. Each one maps to a real gate in
+ * background.js (`KIND_GATE`) — flipping a toggle changes what the
+ * worker enqueues, live. Pause is not a setting: it is the
+ * `pauseUntil` epoch in chrome.storage, one mechanism shared by the
+ * header glyph and the Settings row.
+ */
 export interface Settings {
   captureBrowsing: boolean;
   captureSearches: boolean;
   captureChats: boolean;
-  paused: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   captureBrowsing: true,
   captureSearches: true,
   captureChats: true,
-  paused: false,
 };
 
 // ── Phase 6D — demo overlay ────────────────────────────────────────────
