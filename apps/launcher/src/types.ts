@@ -87,6 +87,45 @@ export interface SearchResponse {
   elapsed_ms: number;
 }
 
+// ---- file search (mirrors api/schemas.py FileSearchResponse) ----
+
+export interface FileHit {
+  path: string;
+  name: string;
+  snippet: string;
+  score: number;
+  ext: string;
+}
+
+export interface FileSearchResponse {
+  query: string;
+  results: FileHit[];
+  enabled: boolean;
+  elapsed_ms: number;
+}
+
+// ---- resurfacing (mirrors api/schemas.py ResurfacedContextOut) ----
+
+export interface ResurfacedContext {
+  topic: string;
+  label: string;
+  time_label: string;
+  score: number;
+  confidence: number;
+  event_count: number;
+  kinds: string[];
+  preview_events: EventOut[];
+  openable_targets: OpenableTarget[];
+  why: string[];
+  signals: Record<string, unknown>;
+}
+
+export interface ResurfaceIdleResponse {
+  contexts: ResurfacedContext[];
+  enabled: boolean;
+  elapsed_ms: number;
+}
+
 // ---- threads & evolution (mirrors api/schemas.py) ----
 
 export interface Thread {

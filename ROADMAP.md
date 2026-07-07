@@ -29,6 +29,12 @@ phases land so any session resumes from the right place.
       evolution phases on the spine (`/v1/threads/{id}/evolution`); `←`/`esc`
       returns. Enter on a phase opens its representative target.
       *Code-complete + type/compile-checked; visual verification pending.*
+- [x] **Phase 3.5 — Every engine layer has a surface.** The resting state
+      gains **"On your radar"** (`/v1/resurface/idle` — topics set aside past
+      the idle threshold, deduped against active threads); search gains a
+      **file results** group (`/v1/search/files`, also in the extension
+      popup); and macOS **desktop-focus capture** (`darwin.py` probe,
+      opt-in `desktop_capture_enabled`) feeds the engine a third source.
 - [ ] **Phase 4 — Restore choreography.** Enter on a candidate reopens the
       work in order (files → chats → tabs by domain → searches).
 - [ ] **Phase 5 — Settings & polish.** Configurable hotkey, folder picker,

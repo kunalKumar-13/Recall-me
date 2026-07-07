@@ -237,6 +237,9 @@ body {
 .node.context {
   background: var(--violet);
 }
+.node.file {
+  background: rgba(190, 184, 176, 0.75); /* provenance grey — files are artifacts, not moments */
+}
 
 /* detail (thread evolution) header — the thread title with a back chevron.
    Overrides .header's dim color so the title reads as the surface title. */
