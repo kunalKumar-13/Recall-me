@@ -35,12 +35,28 @@ phases land so any session resumes from the right place.
       **file results** group (`/v1/search/files`, also in the extension
       popup); and macOS **desktop-focus capture** (`darwin.py` probe,
       opt-in `desktop_capture_enabled`) feeds the engine a third source.
-- [ ] **Phase 4 — Restore choreography.** Enter on a candidate reopens the
-      work in order (files → chats → tabs by domain → searches).
-- [ ] **Phase 5 — Settings & polish.** Configurable hotkey, folder picker,
-      tray, onboarding, launch-on-login UX.
-- [ ] **Phase 6 — Ship.** Signed + notarized `.dmg`, clean install, demo
-      script on real sessions.
+- [x] **Phase 4 — Restore choreography.** Enter on a candidate reopens the
+      work in order (files → chats → tabs by domain → searches). The engine
+      orders the plan (`plan_for`, with per-step reasons); the Rust command
+      executes it with a 140 ms stagger so the OS layers windows in plan
+      order, tallies `opened`/`requested` onto the returned plan, and the
+      row reads "reopening your work…" while it runs.
+- [x] **Phase 5 — Settings & polish.** ⌘, opens a settings view inside the
+      panel: **summon hotkey** re-recorded live (persisted to
+      `~/.recall/launcher.json`, parser unit-tested, falls back to ⌃Space on
+      any bad spec — the panel can never end up unsummonable), **start at
+      login** (tauri-plugin-autostart LaunchAgent), **indexed folders** row
+      opening `~/.recall/config.json`. Resting data now re-reads the engine
+      on every summon (stale panels and "engine offline" self-heal), and the
+      empty/offline states carry honest copy.
+- [x] **Phase 6 — Ship (build path).** `pnpm tauri build` produces a 2.4 MB
+      `Recall.app` + `Recall_0.1.0_aarch64.dmg` (release profile, fat LTO;
+      window-vibrancy pinned to tauri's minor to fix a duplicate-ObjC-class
+      LTO link failure). Ad-hoc signed today; the Developer-ID signing +
+      notarization path is documented in
+      [RELEASE.md](docs/release/RELEASE.md) and needs only the certificate —
+      no code changes. *Still open before a public cut: notarized artifact +
+      demo script on real sessions.*
 
 ---
 
@@ -57,11 +73,15 @@ telemetry. See the capture audit for the full diagnosis.
       extension was not loaded (reserved-underscore filename blocked Chrome,
       now removed), capture used a fire-and-forget sender with no queue, and
       only 2 stale test events were on disk.
-- [ ] **Capture C1 — Make capture real & verifiable** *(in progress)*. Load
-      the extension; confirm organic `browser`/`search`/`chat` events reach
-      the engine; surface an honest "events captured today" self-check. Fix
-      the build/doc drift the audit found (stale committed popup bundle,
-      README/architecture component-name mismatch).
+- [x] **Capture C1 — Make capture real & verifiable.** Extension loaded and
+      capturing organically (a live day shows `browser_visit` + `chat` +
+      `search` + `desktop_window` kinds side by side). The honest
+      self-check shipped as **`GET /v1/events/today`** (count + per-kind
+      tally read straight from the day file, <10 ms median, smoke §36) and
+      surfaces as an "N events today" pill in the extension's trust strip.
+      Doc drift fixed: README ingest/retrieval tables now carry
+      `/v1/events/batch`, `/v1/search/files`, `/v1/events/today`; popup
+      bundle rebuilt from source.
 - [x] **Capture C2 — Refactor core (modular + tested).** `background.js`
       split into `capture/sources.js` (listeners + title-settle),
       `capture/normalize.js` (pure `(url,title)→{kind,payload}`, node-tested
@@ -75,6 +95,14 @@ telemetry. See the capture audit for the full diagnosis.
       `POST /v1/events/batch` shipped (smoke §34). *Code-complete; the
       remaining open item is C1 — load the extension and confirm organic
       events flow end-to-end (only reproducible in a real browser).*
-- [ ] **Capture C4 — Work-session signal (the moat).** Capture focus/dwell/
-      active-tab context and a client work-session hint, so the engine can
-      group *work-blocks* behaviourally, not just by 30-minute clock windows.
+- [x] **Capture C4 — Work-session signal (the moat).** `capture/dwell.js`
+      tracks attention (tabs.onActivated, windows.onFocusChanged, same-tab
+      navs, SPA routes) and emits one **`browser_focus`** event when focus
+      leaves a page — dwell ≥8 s, capped at 30 min, deduped by construction
+      (one event per interval) — carrying `dwell_ms` and a deterministic
+      work-block hint (`block: wb-<epoch>`; a new block after 5 min of
+      browser silence). Pure tracker core node-tested (7 checks); engine
+      opted in via `ALLOWED_KINDS` + payload allowlist + smoke §34, with the
+      kind **deliberately absent from `RETRIEVABLE_KINDS`** — it is a
+      grouping signal for behavioural work-blocks, never a search result.
+      *The consumer (sessions grouping on dwell/blocks) is the follow-on.*

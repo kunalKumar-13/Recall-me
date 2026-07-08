@@ -116,6 +116,7 @@ class BatchEventIn(BaseModel):
         "browser_visit",
         "browser_search",
         "chat_session",
+        "browser_focus",
         "desktop_window",
         "open",
         "reveal",
@@ -236,6 +237,17 @@ class FileSearchResponse(BaseModel):
 
 class RecentEventsResponse(BaseModel):
     events: List[EventOut]
+
+
+class TodayEventsResponse(BaseModel):
+    """The capture self-check: how many events landed today (UTC),
+    by kind. Read straight from the day file — no cache to go
+    stale, honest by construction."""
+
+    date: str
+    count: int
+    kinds: dict[str, int]
+    elapsed_ms: float
 
 
 class RecentQueriesResponse(BaseModel):

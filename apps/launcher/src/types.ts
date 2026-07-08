@@ -104,6 +104,36 @@ export interface FileSearchResponse {
   elapsed_ms: number;
 }
 
+// ---- restoration (mirrors api/schemas.py restore plan) ----
+
+export interface RestorationStep {
+  kind: "url" | "path";
+  target: string;
+  group: "files" | "chats" | "tabs" | "searches";
+  reason: string;
+}
+
+export interface RestorationPlan {
+  id: string;
+  thread_id: string;
+  title: string;
+  preview_caption: string;
+  steps: RestorationStep[];
+  // Annotated by the Rust command after execution — the tally of
+  // what actually opened vs what the plan asked for.
+  requested?: number;
+  opened?: number;
+}
+
+// ---- launcher settings (mirrors lib.rs settings_get) ----
+
+export interface LauncherSettings {
+  hotkey: string;
+  autostart: boolean;
+  folders: number;
+  config_path: string;
+}
+
 // ---- resurfacing (mirrors api/schemas.py ResurfacedContextOut) ----
 
 export interface ResurfacedContext {

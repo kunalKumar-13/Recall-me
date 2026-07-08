@@ -28,7 +28,8 @@ apps/extension/
 │   ├── normalize.js     pure URL → event classifier (node-tested)
 │   ├── outbox.js        durable, batched, retrying sender
 │   ├── sources.js       tab + SPA listeners with title-settle
-│   └── normalize.test.js
+│   ├── dwell.js         attention tracker → browser_focus dwell events
+│   └── *.test.js        node tests (normalize, dwell)
 ├── popup/            ← BUILT popup — what Chrome loads (generated)
 │   ├── index.html
 │   └── assets/
@@ -46,7 +47,16 @@ apps/extension/
 Chrome loads `apps/extension/` as the unpacked extension.
 `manifest.json`, `background.js`, and the `capture/` modules are
 hand-written; `popup/` is a build artifact produced from `ui/`. The
-capture core has a node test: `node capture/normalize.test.js`.
+capture core has node tests: `node capture/normalize.test.js` and
+`node capture/dwell.test.js`.
+
+Every control in the popup is real: the three capture toggles map to
+per-kind gates the worker checks before enqueuing (`KIND_GATE` in
+`background.js`), Pause is the shared `pauseUntil` epoch, and the
+Private-sites editor writes the `excludedDomains` list the worker
+filters on live. The Activity cards and the "N events today" pill
+read `/v1/events/today` — engine-side ground truth, never a
+client-side guess.
 
 ## Build the popup
 

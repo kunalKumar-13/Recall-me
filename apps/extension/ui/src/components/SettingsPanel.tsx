@@ -1,8 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { calm, calmFast } from "../lib/motion";
-import { openRecall, openTab } from "../lib/api";
-import type { ConnectionState, Health, Settings } from "../lib/types";
+import {
+  getActiveTabDomain,
+  getExcludedDomains,
+  openRecall,
+  openTab,
+  setExcludedDomains,
+} from "../lib/api";
+import type {
+  ConnectionState,
+  Health,
+  Settings,
+  TodaySummary,
+} from "../lib/types";
 import { Icon } from "./icons";
 
 const DOCS_URL = "https://github.com/kunalKumar-13/Recall-me#readme";
@@ -14,11 +25,10 @@ const DOCS_URL = "https://github.com/kunalKumar-13/Recall-me#readme";
  * capture toggle names the surface it captures and the loopback
  * address it writes to.
  *
- * Phase 5K adds a *Connection* group at the top of Settings — the
- * "repair drawer" the directive named. Real data from the same
- * `/v1/health` probe the popup body already runs; one button
- * routes through `openRecall()` if the daemon is missing, one
- * re-probes if the user wants to nudge it.
+ * Every control here is real. The capture toggles map to per-kind
+ * gates the worker checks before enqueuing; Pause is the same
+ * `pauseUntil` epoch the header glyph flips; Private sites edits the
+ * `excludedDomains` list the worker filters on live.
  */
 export function SettingsPanel({
   settings,
@@ -26,6 +36,9 @@ export function SettingsPanel({
   onBack,
   connection,
   health,
+  today,
+  pausedUntil,
+  onTogglePause,
   onRetry,
 }: {
   settings: Settings;
@@ -33,6 +46,9 @@ export function SettingsPanel({
   onBack: () => void;
   connection: ConnectionState;
   health: Health | null;
+  today: TodaySummary | null;
+  pausedUntil: number;
+  onTogglePause: () => void;
   onRetry: () => void;
 }) {
   const set = (patch: Partial<Settings>) =>
@@ -70,6 +86,7 @@ export function SettingsPanel({
         <ConnectionDrawer
           connection={connection}
           health={health}
+          today={today}
           onRetry={onRetry}
         />
 
@@ -79,7 +96,7 @@ export function SettingsPanel({
         <div className="card" style={{ overflow: "hidden" }}>
           <ToggleRow
             label="Capture browsing"
-            hint="Pages you visit → 127.0.0.1:4545"
+            hint="Pages you visit + how long you stay → 127.0.0.1:4545"
             checked={settings.captureBrowsing}
             onChange={(v) => set({ captureBrowsing: v })}
           />
@@ -100,16 +117,13 @@ export function SettingsPanel({
 
         <div style={{ height: 18 }} />
 
-        <GroupLabel>Browser memory</GroupLabel>
-        <div className="card" style={{ overflow: "hidden" }}>
-          <ToggleRow
-            label="Pause browser memory"
-            hint="Stop all capture until you turn this off"
-            checked={settings.paused}
-            onChange={(v) => set({ paused: v })}
-            last
-          />
-        </div>
+        <GroupLabel>Pause</GroupLabel>
+        <PauseCard pausedUntil={pausedUntil} onToggle={onTogglePause} />
+
+        <div style={{ height: 18 }} />
+
+        <GroupLabel>Private sites</GroupLabel>
+        <PrivateSites />
 
         <div style={{ height: 18 }} />
 
@@ -119,11 +133,6 @@ export function SettingsPanel({
             label="Open Recall"
             hint="The desktop launcher"
             onClick={() => {
-              // Fire-and-forget; openRecall handles the three-rung
-              // ladder internally. The settings panel does not have
-              // room for a feedback transition; if the protocol
-              // isn't registered the user can fall back to their
-              // desktop shortcut. Never throws.
               void openRecall();
             }}
           />
@@ -148,6 +157,245 @@ export function SettingsPanel({
         </p>
       </div>
     </div>
+  );
+}
+
+/**
+ * One pause mechanism for the whole extension: the `pauseUntil`
+ * epoch. The row says what is true right now and what one click
+ * does — resumes at a named time, not a vague "later".
+ */
+function PauseCard({
+  pausedUntil,
+  onToggle,
+}: {
+  pausedUntil: number;
+  onToggle: () => void;
+}) {
+  const paused = pausedUntil > Date.now();
+  const resumeAt = new Date(pausedUntil).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return (
+    <div
+      className="card"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "12px 14px",
+      }}
+    >
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontSize: 13, color: "var(--ink)" }}>
+          {paused ? `Paused — resumes at ${resumeAt}` : "Capture is on"}
+        </span>
+        <span
+          style={{ display: "block", fontSize: 10.5, color: "var(--ink-4)" }}
+        >
+          {paused
+            ? "Nothing is being recorded right now"
+            : "Pause everything for one hour, no restart needed"}
+        </span>
+      </span>
+      <motion.button
+        whileHover={{ y: -1 }}
+        transition={calmFast}
+        onClick={onToggle}
+        style={{
+          flexShrink: 0,
+          height: 28,
+          padding: "0 12px",
+          borderRadius: 7,
+          background: paused ? "var(--accent)" : "var(--surface-2)",
+          color: paused ? "#fff" : "var(--ink-2)",
+          fontSize: 12,
+          fontWeight: paused ? 600 : 500,
+        }}
+      >
+        {paused ? "Resume now" : "Pause 1 hour"}
+      </motion.button>
+    </div>
+  );
+}
+
+/**
+ * The excluded-domains editor, plus a one-click "never capture the
+ * site I was just on". Exclusion is forward-only: it stops new
+ * capture on the domain, it does not rewrite what is already in
+ * ~/.recall (clear history from the Recall app).
+ */
+function PrivateSites() {
+  const [domains, setDomains] = useState<string[]>([]);
+  const [activeDomain, setActiveDomain] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    void Promise.all([getExcludedDomains(), getActiveTabDomain()]).then(
+      ([list, active]) => {
+        setDomains(list);
+        setActiveDomain(active);
+        setLoaded(true);
+      },
+    );
+  }, []);
+
+  const save = (next: string[]) => {
+    setDomains(next);
+    void setExcludedDomains(next);
+  };
+  const exclude = (d: string) => {
+    if (!domains.includes(d)) save([...domains, d].sort());
+  };
+  const remove = (d: string) => save(domains.filter((x) => x !== d));
+
+  const canExcludeActive =
+    activeDomain !== null && !domains.includes(activeDomain);
+
+  return (
+    <>
+      <div className="card" style={{ overflow: "hidden" }}>
+        {canExcludeActive && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "12px 14px",
+              borderBottom:
+                domains.length > 0 ? "1px solid var(--line)" : "none",
+            }}
+          >
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span
+                style={{
+                  display: "block",
+                  fontSize: 13,
+                  color: "var(--ink)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {activeDomain}
+              </span>
+              <span
+                style={{
+                  display: "block",
+                  fontSize: 10.5,
+                  color: "var(--ink-4)",
+                }}
+              >
+                The site you were just on
+              </span>
+            </span>
+            <motion.button
+              whileHover={{ y: -1 }}
+              transition={calmFast}
+              onClick={() => exclude(activeDomain)}
+              style={{
+                flexShrink: 0,
+                height: 28,
+                padding: "0 12px",
+                borderRadius: 7,
+                background: "var(--surface-2)",
+                color: "var(--ink-2)",
+                fontSize: 12,
+                fontWeight: 500,
+              }}
+            >
+              Never capture
+            </motion.button>
+          </div>
+        )}
+
+        <AnimatePresence initial={false}>
+          {domains.map((d, i) => (
+            <motion.div
+              key={d}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={calm}
+              style={{ overflow: "hidden" }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 14px",
+                  borderBottom:
+                    i === domains.length - 1 ? "none" : "1px solid var(--line)",
+                }}
+              >
+                <span
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    fontSize: 12.5,
+                    color: "var(--ink-2)",
+                    fontFamily:
+                      "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {d}
+                </span>
+                <motion.button
+                  whileHover={{ scale: 1.08 }}
+                  transition={calmFast}
+                  onClick={() => remove(d)}
+                  aria-label={`Capture ${d} again`}
+                  title="Capture this site again"
+                  style={{
+                    flexShrink: 0,
+                    width: 22,
+                    height: 22,
+                    borderRadius: 6,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "var(--surface-2)",
+                    color: "var(--ink-3)",
+                    fontSize: 12,
+                    lineHeight: 1,
+                  }}
+                >
+                  ×
+                </motion.button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        {loaded && domains.length === 0 && !canExcludeActive && (
+          <div
+            style={{
+              padding: "12px 14px",
+              fontSize: 11.5,
+              color: "var(--ink-4)",
+            }}
+          >
+            No excluded sites yet.
+          </div>
+        )}
+      </div>
+      <p
+        style={{
+          marginTop: 8,
+          fontSize: 10.5,
+          lineHeight: 1.55,
+          color: "var(--ink-4)",
+        }}
+      >
+        Excluded sites are never captured from now on. Anything saved
+        earlier stays in ~/.recall — clear history from the Recall app.
+      </p>
+    </>
   );
 }
 
@@ -290,25 +538,26 @@ function LinkRow({
 
 
 /**
- * Phase 5K repair drawer. A real-data card that sits at the top of
- * Settings and answers the *is the daemon alive?* question without
- * making the user navigate back to the popup body. Real data only -
- * counts from `health`, connection state from the same machine the
- * popup body reads. No hardcoded values; the row collapses calmly
- * when health is null (the daemon never answered this session).
+ * Repair drawer. A real-data card that sits at the top of Settings
+ * and answers *is the daemon alive?* without navigating back to the
+ * popup body. Two numbers, both labelled for what they are: today's
+ * count from the day file (survives restarts) and the since-start
+ * counter from /v1/health.
  */
 function ConnectionDrawer({
   connection,
   health,
+  today,
   onRetry,
 }: {
   connection: ConnectionState;
   health: Health | null;
+  today: TodaySummary | null;
   onRetry: () => void;
 }) {
-  // Phase 6A — collapsible. Default expanded when something is
-  // *off* (drawer is informational then), collapsed when the
-  // daemon is healthy (one calm row, click to expand).
+  // Collapsible. Default expanded when something is *off* (the
+  // drawer is informational then), collapsed when the daemon is
+  // healthy (one calm row, click to expand).
   const isUp = connection === "connected" && health !== null;
   const [expanded, setExpanded] = useState(!isUp);
 
@@ -363,7 +612,7 @@ function ConnectionDrawer({
           <span style={{ display: "block", fontSize: 13, color: "var(--ink)" }}>
             {statusLine}
           </span>
-          {isUp && health && (
+          {isUp && (
             <span
               style={{
                 display: "block",
@@ -373,9 +622,12 @@ function ConnectionDrawer({
                   "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
               }}
             >
-              {health.ingestedTotal.toLocaleString()} captured
-              {" · "}
-              {health.eventsToday.toLocaleString()} today
+              {today
+                ? `${today.count.toLocaleString()} events today`
+                : "today's count unavailable"}
+              {health
+                ? ` · ${health.ingestedTotal.toLocaleString()} since start`
+                : ""}
             </span>
           )}
         </span>
@@ -453,4 +705,3 @@ function ConnectionDrawer({
     </div>
   );
 }
-

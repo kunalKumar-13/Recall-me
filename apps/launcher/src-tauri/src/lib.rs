@@ -4,11 +4,14 @@
 // 127.0.0.1:4545. Every engine call goes through Rust (reqwest) so the
 // webview never touches the network and there is no CORS surface.
 
-use serde_json::Value;
+use std::{path::PathBuf, str::FromStr};
+
+use serde_json::{json, Value};
 use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Manager, PhysicalPosition, WebviewWindow, WindowEvent,
 };
+use tauri_plugin_autostart::{MacosLauncher, ManagerExt as _};
 use tauri_plugin_global_shortcut::{
     Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState,
 };
@@ -16,6 +19,151 @@ use tauri_plugin_opener::OpenerExt;
 
 const ENGINE: &str = "http://127.0.0.1:4545";
 const PANEL_WIDTH: f64 = 720.0;
+
+// Gap between restoration opens. Racing `open` calls land in random
+// z-order; a short stagger lets the OS layer windows in the plan's
+// order (files → chats → tabs → searches), matching the extension's
+// resume cadence.
+const RESTORE_STAGGER_MS: u64 = 140;
+
+const DEFAULT_HOTKEY: &str = "ctrl+space";
+
+// ------------------------------------------------------- launcher config
+//
+// Launcher-only preferences live in ~/.recall/launcher.json — plain
+// JSON like everything else in ~/.recall, hand-editable, safe to
+// delete (deleting resets to defaults). The engine's config.json is
+// read-only from here; the launcher never writes engine state.
+
+fn recall_path(name: &str) -> Option<PathBuf> {
+    std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".recall").join(name))
+}
+
+fn read_json_file(path: Option<PathBuf>) -> Value {
+    path.and_then(|p| std::fs::read_to_string(p).ok())
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .unwrap_or_else(|| json!({}))
+}
+
+fn load_hotkey_spec() -> String {
+    read_json_file(recall_path("launcher.json"))
+        .get("hotkey")
+        .and_then(|v| v.as_str())
+        .map(str::to_string)
+        .unwrap_or_else(|| DEFAULT_HOTKEY.to_string())
+}
+
+fn save_hotkey_spec(spec: &str) {
+    let Some(path) = recall_path("launcher.json") else { return };
+    let mut cfg = read_json_file(Some(path.clone()));
+    if let Some(obj) = cfg.as_object_mut() {
+        obj.insert("hotkey".into(), spec.into());
+    }
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    if let Ok(body) = serde_json::to_string_pretty(&cfg) {
+        let _ = std::fs::write(path, body);
+    }
+}
+
+// "ctrl+shift+k" → (CONTROL|SHIFT, Code::KeyK). Requires at least one
+// modifier so a stored spec can never hijack plain typing. Returns
+// None on anything unrecognized — callers fall back to the default.
+fn parse_hotkey(spec: &str) -> Option<Shortcut> {
+    let mut mods = Modifiers::empty();
+    let mut key: Option<Code> = None;
+    for part in spec.split('+') {
+        match part.trim().to_lowercase().as_str() {
+            "" => return None,
+            "ctrl" | "control" => mods |= Modifiers::CONTROL,
+            "alt" | "option" | "opt" => mods |= Modifiers::ALT,
+            "shift" => mods |= Modifiers::SHIFT,
+            "cmd" | "command" | "super" | "meta" => mods |= Modifiers::SUPER,
+            other => {
+                if key.is_some() {
+                    return None;
+                }
+                key = code_for(other);
+                key?;
+            }
+        }
+    }
+    if mods.is_empty() {
+        return None;
+    }
+    Some(Shortcut::new(Some(mods), key?))
+}
+
+// "k" → Code::KeyA-style names, "3" → Digit3, "space"/"f5" →
+// capitalized variant names.
+fn code_for(name: &str) -> Option<Code> {
+    let n = name.trim();
+    let canonical = if n.len() == 1 && n.chars().all(|c| c.is_ascii_alphabetic()) {
+        format!("Key{}", n.to_uppercase())
+    } else if n.len() == 1 && n.chars().all(|c| c.is_ascii_digit()) {
+        format!("Digit{n}")
+    } else {
+        let mut chars = n.chars();
+        let first = chars.next()?;
+        first.to_uppercase().collect::<String>() + chars.as_str()
+    };
+    Code::from_str(&canonical).ok()
+}
+
+// Render a parsed spec back in canonical order so the stored value
+// and the settings row always read the same way.
+fn normalize_spec(spec: &str) -> Option<String> {
+    let shortcut = parse_hotkey(spec)?;
+    let mods = shortcut.mods;
+    let mut parts: Vec<&str> = Vec::new();
+    if mods.contains(Modifiers::CONTROL) {
+        parts.push("ctrl");
+    }
+    if mods.contains(Modifiers::ALT) {
+        parts.push("alt");
+    }
+    if mods.contains(Modifiers::SHIFT) {
+        parts.push("shift");
+    }
+    if mods.contains(Modifiers::SUPER) {
+        parts.push("cmd");
+    }
+    let key = format!("{:?}", shortcut.key)
+        .trim_start_matches("Key")
+        .trim_start_matches("Digit")
+        .to_lowercase();
+    Some(format!("{}+{}", parts.join("+"), key))
+}
+
+fn default_shortcut() -> Shortcut {
+    Shortcut::new(Some(Modifiers::CONTROL), Code::Space)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_and_normalizes_hotkey_specs() {
+        assert_eq!(normalize_spec("ctrl+space").as_deref(), Some("ctrl+space"));
+        assert_eq!(normalize_spec("CMD+Shift+K").as_deref(), Some("shift+cmd+k"));
+        assert_eq!(normalize_spec("option+3").as_deref(), Some("alt+3"));
+        assert_eq!(normalize_spec("ctrl+f5").as_deref(), Some("ctrl+f5"));
+        assert_eq!(normalize_spec("meta+comma").as_deref(), Some("cmd+comma"));
+    }
+
+    #[test]
+    fn rejects_unsafe_or_malformed_specs() {
+        // A bare key would hijack plain typing.
+        assert!(normalize_spec("space").is_none());
+        assert!(normalize_spec("k").is_none());
+        assert!(normalize_spec("ctrl+").is_none());
+        assert!(normalize_spec("ctrl+notakey").is_none());
+        assert!(normalize_spec("ctrl+k+j").is_none());
+        assert!(normalize_spec("").is_none());
+    }
+}
 
 // ----------------------------------------------------------------- engine I/O
 
@@ -82,23 +230,40 @@ async fn resurface_idle(n: Option<u32>) -> Result<Value, String> {
 
 // Resolve the candidate's restoration plan, then open every step in the
 // engine's choreographed order (files → chats → tabs → searches). The
-// endpoint orders the steps; we just execute them and return the plan.
+// endpoint orders the steps; we execute them with a stagger so the OS
+// presents the windows in that order, tally what actually opened, and
+// return the plan annotated with `requested`/`opened` — the plan is
+// advisory, the tally is what happened.
 #[tauri::command]
 async fn recovery_restore(app: AppHandle, id: String) -> Result<Value, String> {
-    let plan = engine_post(&format!("/v1/recovery/{id}/restore")).await?;
-    if let Some(steps) = plan.get("steps").and_then(|s| s.as_array()) {
-        for step in steps {
+    let mut plan = engine_post(&format!("/v1/recovery/{id}/restore")).await?;
+    let mut requested: u64 = 0;
+    let mut opened: u64 = 0;
+    if let Some(steps) = plan.get("steps").and_then(|s| s.as_array()).cloned() {
+        for step in &steps {
             let kind = step.get("kind").and_then(|v| v.as_str()).unwrap_or("");
             let target = step.get("target").and_then(|v| v.as_str()).unwrap_or("");
             if target.is_empty() {
                 continue;
             }
+            requested += 1;
+            if requested > 1 {
+                tokio::time::sleep(std::time::Duration::from_millis(RESTORE_STAGGER_MS))
+                    .await;
+            }
             let opener = app.opener();
-            let _ = match kind {
-                "url" => opener.open_url(target, None::<&str>),
-                _ => opener.open_path(target, None::<&str>),
+            let ok = match kind {
+                "url" => opener.open_url(target, None::<&str>).is_ok(),
+                _ => opener.open_path(target, None::<&str>).is_ok(),
             };
+            if ok {
+                opened += 1;
+            }
         }
+    }
+    if let Some(obj) = plan.as_object_mut() {
+        obj.insert("requested".into(), requested.into());
+        obj.insert("opened".into(), opened.into());
     }
     Ok(plan)
 }
@@ -116,6 +281,57 @@ async fn open_target(app: AppHandle, kind: String, target: String) -> Result<(),
         _ => opener.open_path(&target, None::<&str>),
     };
     Ok(())
+}
+
+// ------------------------------------------------------- settings
+
+#[tauri::command]
+fn settings_get(app: AppHandle) -> Value {
+    let autostart = app.autolaunch().is_enabled().unwrap_or(false);
+    let engine_cfg = read_json_file(recall_path("config.json"));
+    let folders = engine_cfg
+        .get("indexed_folders")
+        .and_then(|v| v.as_array())
+        .map(|a| a.len())
+        .unwrap_or(0);
+    let config_path = recall_path("config.json")
+        .map(|p| p.display().to_string())
+        .unwrap_or_default();
+    json!({
+        "hotkey": load_hotkey_spec(),
+        "autostart": autostart,
+        "folders": folders,
+        "config_path": config_path,
+    })
+}
+
+// Re-register the summon hotkey live. On any failure the previous
+// working hotkey is restored — the panel must never end up
+// unsummonable.
+#[tauri::command]
+fn settings_set_hotkey(app: AppHandle, spec: String) -> Result<String, String> {
+    let normalized =
+        normalize_spec(&spec).ok_or_else(|| "unrecognized combination".to_string())?;
+    let shortcut =
+        parse_hotkey(&normalized).ok_or_else(|| "unrecognized combination".to_string())?;
+    let gs = app.global_shortcut();
+    let previous = load_hotkey_spec();
+    let _ = gs.unregister_all();
+    if gs.register(shortcut).is_err() {
+        let prev = parse_hotkey(&previous).unwrap_or_else(default_shortcut);
+        let _ = gs.register(prev);
+        return Err("that combination is unavailable".to_string());
+    }
+    save_hotkey_spec(&normalized);
+    Ok(normalized)
+}
+
+#[tauri::command]
+fn settings_set_autostart(app: AppHandle, on: bool) -> Result<bool, String> {
+    let manager = app.autolaunch();
+    let result = if on { manager.enable() } else { manager.disable() };
+    result.map_err(|e| format!("couldn't change login item: {e}"))?;
+    Ok(manager.is_enabled().unwrap_or(on))
 }
 
 #[tauri::command]
@@ -167,14 +383,18 @@ fn toggle_panel(win: &WebviewWindow) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let toggle = Shortcut::new(Some(Modifiers::CONTROL), Code::Space);
-
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            None,
+        ))
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
-                .with_handler(move |app, scut, event| {
-                    if scut == &toggle && event.state() == ShortcutState::Pressed {
+                // Only one shortcut is ever registered (the summon
+                // hotkey), so any firing means "toggle the panel".
+                .with_handler(move |app, _scut, event| {
+                    if event.state() == ShortcutState::Pressed {
                         if let Some(win) = app.get_webview_window("main") {
                             toggle_panel(&win);
                         }
@@ -193,6 +413,9 @@ pub fn run() {
             recovery_restore,
             open_target,
             resize_height,
+            settings_get,
+            settings_set_hotkey,
+            settings_set_autostart,
         ])
         .setup(move |app| {
             let win = app
@@ -212,8 +435,12 @@ pub fn run() {
                 );
             }
 
-            // Global summon hotkey.
-            app.global_shortcut().register(toggle)?;
+            // Global summon hotkey — from ~/.recall/launcher.json,
+            // quietly falling back to ⌃Space on a missing or
+            // unparseable spec.
+            let shortcut =
+                parse_hotkey(&load_hotkey_spec()).unwrap_or_else(default_shortcut);
+            app.global_shortcut().register(shortcut)?;
 
             // Tray — the only mouse affordance. Left-click toggles.
             let _tray = TrayIconBuilder::new()

@@ -7,6 +7,7 @@ import {
   type MemoryItem,
   type Recovery,
   type Settings,
+  type TodaySummary,
 } from "./types";
 
 /**
@@ -55,6 +56,25 @@ export async function getQueuedCount(): Promise<number> {
   }
 }
 
+/**
+ * The capture self-check: what the engine actually received today
+ * (UTC), by kind. Read from the daemon's day file, so it is ground
+ * truth, not a client-side guess — null when the daemon is
+ * unreachable (surfaces then say nothing rather than guessing).
+ */
+export async function fetchToday(): Promise<TodaySummary | null> {
+  const data = await getJSON<Record<string, unknown>>("/v1/events/today");
+  if (!data || typeof data.count !== "number") return null;
+  const kinds: Record<string, number> = {};
+  const raw = data.kinds;
+  if (raw && typeof raw === "object") {
+    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+      if (typeof v === "number") kinds[k] = v;
+    }
+  }
+  return { count: data.count, kinds };
+}
+
 export async function fetchHealth(): Promise<Health | null> {
   const data = await getJSON<Record<string, unknown>>(
     "/v1/health",
@@ -64,11 +84,6 @@ export async function fetchHealth(): Promise<Health | null> {
   return {
     ok: true,
     ingestedTotal: numberOf(data.ingested_total),
-    eventsToday: numberOf(data.events_today ?? data.ingested_today),
-    /* Phase 6M — desktop_apps_today is optional on the wire. The
-       daemon adds the field after the desktop watcher emits its
-       first event; older daemons (pre-6M) omit it. */
-    desktopApps: numberOf(data.desktop_apps_today),
   };
 }
 
@@ -129,12 +144,16 @@ export async function fetchMemory(): Promise<MemoryItem[]> {
     const e = raw as Record<string, unknown>;
     const kind = stringOf(e.kind);
     const payload = (e.payload ?? {}) as Record<string, unknown>;
-    // Phase 6A — read the event timestamp so the popup can paint a
-    // small "ago" label on each memory row. The API returns `ts`
-    // as an epoch float; absent => skipped (rendered as no label).
-    const ts = typeof e.ts === "number" && Number.isFinite(e.ts)
-      ? (e.ts as number)
-      : undefined;
+    // Event timestamp for the rail's time column. The API returns
+    // `ts` as an ISO-8601 string (the JSONL log's canonical form);
+    // tolerate an epoch number too. Unparseable → no label.
+    let ts: number | undefined;
+    if (typeof e.ts === "number" && Number.isFinite(e.ts)) {
+      ts = e.ts;
+    } else if (typeof e.ts === "string") {
+      const ms = Date.parse(e.ts);
+      if (Number.isFinite(ms)) ts = ms / 1000;
+    }
     if (kind === "browser_search") {
       out.push({
         kind: "search",
@@ -183,6 +202,60 @@ export async function setPauseUntil(ts: number): Promise<void> {
   if (!hasChromeStorage()) return;
   return new Promise((resolve) => {
     chrome.storage.local.set({ pauseUntil: ts }, () => resolve());
+  });
+}
+
+// ── private sites ────────────────────────────────────────────────────
+//
+// The worker already honours `excludedDomains` live (background.js
+// watches storage changes); these helpers give the popup a real
+// editor for it. Exclusion is forward-only: it stops new capture on
+// a domain, it never rewrites what is already in ~/.recall.
+
+export async function getExcludedDomains(): Promise<string[]> {
+  if (!hasChromeStorage()) return [];
+  return new Promise((resolve) => {
+    chrome.storage.local.get(["excludedDomains"], (r) => {
+      const v = r?.excludedDomains;
+      resolve(Array.isArray(v) ? v.filter((d) => typeof d === "string") : []);
+    });
+  });
+}
+
+export async function setExcludedDomains(domains: string[]): Promise<void> {
+  if (!hasChromeStorage()) return;
+  const clean = Array.from(
+    new Set(domains.map((d) => d.trim().toLowerCase()).filter(Boolean)),
+  ).sort();
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ excludedDomains: clean }, () => resolve());
+  });
+}
+
+/**
+ * Domain of the tab the user was just looking at — the subject of
+ * the "never capture this site" affordance. Null when there is no
+ * capturable tab (internal pages, the options tab itself, dev
+ * preview outside an extension context).
+ */
+export async function getActiveTabDomain(): Promise<string | null> {
+  const c = (globalThis as { chrome?: any }).chrome;
+  if (!c?.tabs?.query) return null;
+  return new Promise((resolve) => {
+    c.tabs.query({ active: true, currentWindow: true }, (tabs: any[]) => {
+      if (c.runtime?.lastError) return resolve(null);
+      const url = tabs?.[0]?.url;
+      if (typeof url !== "string") return resolve(null);
+      try {
+        const u = new URL(url);
+        if (u.protocol !== "http:" && u.protocol !== "https:") {
+          return resolve(null);
+        }
+        resolve((u.hostname || "").toLowerCase() || null);
+      } catch {
+        resolve(null);
+      }
+    });
   });
 }
 

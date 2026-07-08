@@ -88,6 +88,45 @@ A user with auto-update disabled in Settings stays on their
 current version forever. The product never updates without
 explicit consent.
 
+## Installer pipeline (macOS launcher)
+
+The v2 Tauri launcher ships as a `.dmg`:
+
+1. `cd apps/launcher && pnpm tauri build` — compiles the release
+   binary (fat-LTO, `opt-level = "s"`) and bundles both artifacts:
+
+   ```
+   src-tauri/target/release/bundle/macos/Recall.app
+   src-tauri/target/release/bundle/dmg/Recall_<version>_aarch64.dmg
+   ```
+
+   The whole app is ~2.4 MB — the launcher is a thin shell; the
+   engine ships separately with the Python daemon.
+
+2. **Today's signing state: ad-hoc** (linker-signed). Gatekeeper
+   will warn on first open; right-click → Open works for the
+   pre-1.0.0 audience. Same funding-not-engineering posture as the
+   Windows section below.
+
+3. **Real signing + notarization** (deferred, needs a $99/yr Apple
+   Developer ID). When the certificate exists, no code changes are
+   required — export before the same build command:
+
+   ```bash
+   export APPLE_SIGNING_IDENTITY="Developer ID Application: <name> (<team>)"
+   export APPLE_ID=… APPLE_PASSWORD=… APPLE_TEAM_ID=…   # notarytool
+   pnpm tauri build
+   ```
+
+   Tauri signs the bundle, submits it to notarytool, and staples
+   the ticket into the `.dmg`.
+
+Known build constraint: `window-vibrancy` must stay on the same
+minor version tauri's `macos-private-api` feature pulls — two
+versions of the crate define the same Objective-C class and the
+duplicate symbol fails the fat-LTO release link (dev builds don't
+catch it).
+
 ## Installer pipeline (Windows)
 
 The packaging path today:

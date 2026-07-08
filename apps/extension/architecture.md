@@ -28,18 +28,21 @@ and the popup must render even when capture is paused.
 ## Capture module model
 
 ```
-background.js          thin entry: load config, register sources + retry alarm
+background.js          thin entry: load config, register sources + dwell + retry alarm
 └── capture/
     ├── sources.js      tab.onUpdated + webNavigation (SPA) + onRemoved,
     │                   with the title-settle timer
+    ├── dwell.js        attention state machine → one browser_focus event
+    │                   when focus leaves a page (≥8 s dwell, ≤30 min cap,
+    │                   work-block hint after 5 min of silence; node-tested)
     ├── normalize.js    pure (url, title) → {kind, payload} | null  (node-tested)
     └── outbox.js       durable queue in chrome.storage.local →
                         batched POST /v1/events/batch → retry via chrome.alarms
 ```
 
-The split is deliberate: `normalize.js` is pure and unit-tested
-without a browser; `sources.js` owns the stateful listeners; and
-`outbox.js` owns delivery. Coalescing (title-settle) is best-effort,
+The split is deliberate: `normalize.js` and the dwell tracker core
+are pure and unit-tested without a browser; `sources.js`/`dwell.js`
+own the stateful listeners; and `outbox.js` owns delivery. Coalescing (title-settle) is best-effort,
 but *delivery* is durable — an event captured while the daemon is down
 is queued and flushed when it returns, surviving service-worker
 eviction because the queue lives in `chrome.storage.local`, not memory.

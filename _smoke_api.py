@@ -275,7 +275,7 @@ expected = {
     "/v1/events/chat", "/v1/events/open",
     "/v1/events/batch",
     "/v1/search", "/v1/search/files",
-    "/v1/events/recent", "/v1/queries/recent",
+    "/v1/events/recent", "/v1/events/today", "/v1/queries/recent",
     "/v1/resurface/idle", "/v1/resurface/history/clear",
     # Phase 2C
     "/v1/threads/recent", "/v1/threads/{thread_id}",
@@ -1550,18 +1550,37 @@ batch = {
 batch["events"].append({"kind": "browser_visit", "payload": {
     "url": "chrome://settings", "title": "settings", "browser": "chrome",
 }})
+# And one dwell signal (Capture C4) — kind accepted, numeric dwell_ms
+# and the work-block hint both survive the payload allowlist.
+batch["events"].append({"kind": "browser_focus", "payload": {
+    "url": "https://example.com/batch-3",
+    "title": "Batch page 3",
+    "domain": "example.com",
+    "dwell_ms": 12400,
+    "block": "wb-1751882400",
+}})
 
 before = client.get("/v1/health").json()["ingested_total"]
 r = client.post("/v1/events/batch", json=batch)
 assert r.status_code == 200, r.text
 body = r.json()
-assert body["received"] == 51, body
-assert body["ingested"] == 50, body          # the chrome:// one is filtered out
+assert body["received"] == 52, body
+assert body["ingested"] == 51, body          # the chrome:// one is filtered out
 assert body["reason"] is not None, body      # partial drop is reported
 after = client.get("/v1/health").json()["ingested_total"]
-assert after == before + 50, f"counter moved {before}->{after}, expected +50"
-print(f"  batch of 51 → ingested {body['ingested']}, "
+assert after == before + 51, f"counter moved {before}->{after}, expected +51"
+print(f"  batch of 52 → ingested {body['ingested']}, "
       f"dropped {body['received'] - body['ingested']}; counter {before}->{after}")
+
+# The dwell event landed intact: kind on disk, payload allowlisted.
+focus_events = [
+    e for e in deps.storage.iter_events(days=1)
+    if e.kind == "browser_focus"
+]
+assert focus_events, "browser_focus event missing from the day file"
+fe = focus_events[0]
+assert fe.payload.get("dwell_ms") == 12400, fe.payload
+assert fe.payload.get("block") == "wb-1751882400", fe.payload
 
 # Empty / oversized batches are rejected by the schema (422), never written.
 assert client.post("/v1/events/batch", json={"events": []}).status_code == 422
@@ -1579,8 +1598,8 @@ for _ in range(3):
     rr = client.post("/v1/events/batch", json=batch)
     samples_ms.append((time.perf_counter() - t0) * 1000)
     assert rr.status_code == 200
-per_event_ms = min(samples_ms) / 51.0
-print(f"  batch latency {min(samples_ms):.1f} ms / 51 events = "
+per_event_ms = min(samples_ms) / 52.0
+print(f"  batch latency {min(samples_ms):.1f} ms / 52 events = "
       f"{per_event_ms:.3f} ms/event (best of 3)")
 assert per_event_ms < 2.0, f"per-event budget blown: {per_event_ms:.3f} ms > 2 ms"
 print("[OK] batch ingest writes, filters per-event, rejects bad sizes, stays in budget")
@@ -1630,6 +1649,37 @@ assert hit["score"] == 0.8123  # rounded to 4 places on the wire
 assert hit["snippet"].startswith("…reward")
 print(f"  wired engine → 1 hit, score {hit['score']}, snippet ok")
 print("[OK] /v1/search/files serves the honest-absent and wired shapes")
+
+
+# ----------------------------------------------------------------------
+section("36. GET /v1/events/today — the capture self-check")
+# ----------------------------------------------------------------------
+# Earlier sections ingested events stamped at receipt time, so
+# today's UTC day file must tally them. The shape is the contract:
+# date, count, per-kind tally that sums to the count. Budget is the
+# server-side median, same convention as the charter table — the
+# first read after a write pays the shared day-file parse.
+samples = []
+body = None
+for _ in range(5):
+    r = client.get("/v1/events/today")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    samples.append(body["elapsed_ms"])
+assert body is not None
+assert body["date"] == datetime.now(timezone.utc).strftime("%Y-%m-%d"), body
+assert body["count"] >= 1, body
+assert isinstance(body["kinds"], dict) and body["kinds"], body
+assert sum(body["kinds"].values()) == body["count"], body
+median_ms = sorted(samples)[len(samples) // 2]
+assert median_ms < 10, (
+    f"today self-check median {median_ms}ms, budget is 10ms ({samples})"
+)
+print(
+    f"  {body['count']} events today across {len(body['kinds'])} kinds — "
+    f"median {median_ms}ms server (cold {samples[0]}ms)"
+)
+print("[OK] /v1/events/today tallies the day file within budget")
 
 
 # Cleanup

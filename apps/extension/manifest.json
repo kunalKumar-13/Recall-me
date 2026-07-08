@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Recall — Continuity Companion",
   "short_name": "Recall",
-  "version": "2.2.0",
+  "version": "2.4.0",
   "description": "A small memory surface for your browser. See the work you can step back into — locally, on your machine. Activity goes only to the local Recall daemon. Nothing leaves the device.",
   "permissions": [
     "tabs",
