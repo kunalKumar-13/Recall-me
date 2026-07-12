@@ -1,11 +1,34 @@
 import type { Metadata, Viewport } from "next";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
+import localFont from "next/font/local";
 import "./globals.css";
 
 /**
- * System type on purpose: SF Pro / New York / SF Mono are the same
- * faces the product itself renders in, load in zero milliseconds,
- * and keep the page feeling native rather than "web font'd".
+ * Type is the product's voice. Geist Sans carries display + body,
+ * Geist Mono carries provenance (timestamps, paths, budgets), and
+ * Instrument Serif italic carries the one editorial gesture in each
+ * headline. All three are bundled woff2 served from this origin —
+ * the site makes zero runtime font requests, same rule as the
+ * product: nothing leaves the machine that doesn't have to.
  */
+const instrument = localFont({
+  src: [
+    {
+      path: "./fonts/instrument-serif-regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "./fonts/instrument-serif-italic.woff2",
+      weight: "400",
+      style: "italic",
+    },
+  ],
+  variable: "--font-serif",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Recall — never lose the thread",
   description:
@@ -34,8 +57,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html
+      lang="en"
+      className={`${GeistSans.variable} ${GeistMono.variable} ${instrument.variable}`}
+    >
+      <body>
+        {/* The drafting frame: two hairline rails at the content
+            edges, running the full height of the page. Sections rule
+            across them; the + marks live on the rules. */}
+        <div className="rails" aria-hidden="true" />
+        {children}
+      </body>
     </html>
   );
 }

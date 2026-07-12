@@ -74,11 +74,13 @@ export function Words({ children }: { children: ReactNode }) {
   return <>{arr.map((c, i) => wrap(c, i))}</>;
 }
 
-/** Editorial section header: red-tick eyebrow left, `NN / TT` meta
- *  right (the Obys slot), then the display heading. */
+/** Editorial section header: a numbered bracket eyebrow in the
+ *  drafting-table voice — `[ 03 ] CAPTURE` — then the display
+ *  heading. `total` is kept for API compatibility; the bracket
+ *  carries the number now. */
 export function SectionHead({
   index,
-  total = "08",
+  total: _total = "08",
   eyebrow,
   children,
 }: {
@@ -89,11 +91,24 @@ export function SectionHead({
 }) {
   return (
     <>
-      <span className="smeta">
-        <b>{index}</b> / {total}
+      <span className="eyebrow rise">
+        <span className="bk">[</span>
+        <span className="no">{index}</span>
+        <span className="bk">]</span>
+        {eyebrow}
       </span>
-      <span className="eyebrow rise">{eyebrow}</span>
       {children}
     </>
+  );
+}
+
+/** Full-bleed hairline between chapters. Where it crosses the page
+ *  rails, a small + sits on the intersection. */
+export function Rule() {
+  return (
+    <div className="rule" aria-hidden="true">
+      <span className="rx l" />
+      <span className="rx r" />
+    </div>
   );
 }

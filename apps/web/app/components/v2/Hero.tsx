@@ -27,24 +27,19 @@ const THREADS = [
     cap: "research → implementation · 3 days",
     key: "rust async runtime research tokio",
   },
-  {
-    title: "Hiring — staff designer",
-    cap: "spanning 2 weeks · 11 events",
-    key: "hiring staff designer portfolio",
-  },
 ];
 
-const DEMO_QUERIES = ["websocket", "seed deck", "rust async", "hiring"];
+const DEMO_QUERIES = ["websocket", "seed deck", "rust async"];
 
 /** Gentle magnetism for the primary CTAs — precision, not gimmick. */
 function useMagnetic() {
   const onMove = useCallback((e: MouseEvent<HTMLElement>) => {
     const el = e.currentTarget;
     const r = el.getBoundingClientRect();
-    el.style.transform = `translate(${((e.clientX - (r.left + r.width / 2)) * 0.16).toFixed(1)}px, ${((e.clientY - (r.top + r.height / 2)) * 0.16).toFixed(1)}px)`;
+    el.style.translate = `${((e.clientX - (r.left + r.width / 2)) * 0.14).toFixed(1)}px ${((e.clientY - (r.top + r.height / 2)) * 0.14).toFixed(1)}px`;
   }, []);
   const onLeave = useCallback((e: MouseEvent<HTMLElement>) => {
-    e.currentTarget.style.transform = "";
+    e.currentTarget.style.translate = "";
   }, []);
   return { onMouseMove: onMove, onMouseLeave: onLeave };
 }
@@ -121,7 +116,7 @@ export function Hero() {
     const r = el.getBoundingClientRect();
     const px = (e.clientX - r.left) / r.width - 0.5;
     const py = (e.clientY - r.top) / r.height - 0.5;
-    el.style.transform = `perspective(1100px) rotateY(${(px * 4).toFixed(2)}deg) rotateX(${(-py * 4).toFixed(2)}deg)`;
+    el.style.transform = `perspective(1100px) rotateY(${(px * 3).toFixed(2)}deg) rotateX(${(-py * 3).toFixed(2)}deg)`;
   };
   const offTilt = () => {
     if (launcherRef.current) launcherRef.current.style.transform = "";
@@ -129,101 +124,93 @@ export function Hero() {
 
   return (
     <Section id="top" className="sec hero">
-      <div className="wrap">
-        <div className="hgrid">
-          <span className="tick tl" aria-hidden />
-          <span className="tick br" aria-hidden />
-          <div>
-            <span className="eyebrow rise">01 — Local-first continuity</span>
-            <h1>
-              <Words>Never lose the </Words>
-              <em className="thread-mark">
-                <Words>thread</Words>
-              </em>
-              <Words>.</Words>
-            </h1>
-            <p className="lead rise">
-              Recall quietly reconstructs what you were working on — the tabs,
-              the files, the half-finished chat — and hands it back the moment
-              you return.
-            </p>
-            <div className="btns rise">
-              <a className="btn solid" href={LINKS.release} {...magnetic}>
-                Download for macOS
-              </a>
-              <a className="btn line" href="#film" {...magnetic}>
-                Watch the demo <span className="k">22s</span>
-              </a>
-            </div>
-            <p className="quiet rise">
-              100% local · no cloud · no telemetry
-              <br />
-              plain files you can read and delete
-              <br />
-              <span className="live" />
-              127.0.0.1:4545 · &lt;2ms writes · 0 uploads
-            </p>
-          </div>
+      <div className="glow" aria-hidden="true" />
+      <div className="wrap hwrap">
+        <h1>
+          <Words>Never lose</Words>
+          <br />
+          <em>
+            <Words>the thread.</Words>
+          </em>
+        </h1>
+        <p className="lead rise">
+          Recall quietly reconstructs what you were working on — the tabs, the
+          files, the half-finished chat — and hands it back the moment you
+          return. 100% on your machine.
+        </p>
 
-          <div className="lcol">
-            <span className="th-v" aria-hidden />
-            <span className="th-node" aria-hidden />
-            <span className="th-lead" aria-hidden />
-            <div className="kbd-row rise">
-              <span className="kbd">⌃</span>
-              <span className="kbd">space</span>
-              <span>summons it anywhere</span>
+        <div className="hpanel rise">
+          <div className="kbd-row">
+            <span className="kbd">⌃</span>
+            <span className="kbd">space</span>
+            <span>summons it anywhere — try it</span>
+          </div>
+          <div
+            className="launcher"
+            ref={launcherRef}
+            onMouseMove={onTilt}
+            onMouseLeave={offTilt}
+            aria-label="The Recall launcher"
+          >
+            <div className="lc-search">
+              <span aria-hidden>⌕</span>
+              <input
+                ref={inputRef}
+                className="lc-input"
+                value={query}
+                placeholder="Search your memory…"
+                aria-label="Search your memory"
+                spellCheck={false}
+                autoComplete="off"
+                onFocus={takeOver}
+                onPointerDown={takeOver}
+                onChange={(e) => {
+                  takeOver();
+                  setQuery(e.target.value);
+                }}
+              />
+              <span className="lc-live" aria-hidden>
+                <i /> local
+              </span>
             </div>
-            <div
-              className="launcher rise"
-              ref={launcherRef}
-              onMouseMove={onTilt}
-              onMouseLeave={offTilt}
-              aria-label="The Recall launcher"
-            >
-              <div className="lc-search">
-                <span aria-hidden>⌕</span>
-                <input
-                  ref={inputRef}
-                  className="lc-input"
-                  value={query}
-                  placeholder="Search your memory…"
-                  aria-label="Search your memory"
-                  spellCheck={false}
-                  autoComplete="off"
-                  onFocus={takeOver}
-                  onPointerDown={takeOver}
-                  onChange={(e) => {
-                    takeOver();
-                    setQuery(e.target.value);
-                  }}
-                />
-              </div>
-              <div className="lc-head">
-                {q
-                  ? `${visible.length} result${visible.length === 1 ? "" : "s"}`
-                  : "Continue where you left off"}
-              </div>
-              {visible.length === 0 && (
-                <div className="lc-empty">No matches — try another word</div>
-              )}
-              {visible.map((t, i) => (
-                <div key={t.key} className={`lc-row${i === 0 ? " sel" : ""}`}>
-                  <div>
-                    <div className="lc-title">{t.title}</div>
-                    <div className="lc-cap">{t.cap}</div>
-                  </div>
-                  {i === 0 && <span className="lc-hint">↵</span>}
+            <div className="lc-head">
+              {q
+                ? `${visible.length} result${visible.length === 1 ? "" : "s"}`
+                : "Continue where you left off"}
+            </div>
+            {visible.length === 0 && (
+              <div className="lc-empty">No matches — try another word</div>
+            )}
+            {visible.map((t, i) => (
+              <div key={t.key} className={`lc-row${i === 0 ? " sel" : ""}`}>
+                <div>
+                  <div className="lc-title">{t.title}</div>
+                  <div className="lc-cap">{t.cap}</div>
                 </div>
-              ))}
-              <div className="lc-foot">
-                <span>↑↓ move</span>
-                <span>↵ open</span>
-                <span>esc close</span>
+                {i === 0 && <span className="lc-hint">↵ resume</span>}
               </div>
+            ))}
+            <div className="lc-foot">
+              <span>↑↓ move</span>
+              <span>↵ open</span>
+              <span>esc close</span>
             </div>
           </div>
         </div>
+
+        <div className="btns hbtns rise">
+          <a className="btn solid" href={LINKS.release} {...magnetic}>
+            Download for macOS <span className="ar">→</span>
+          </a>
+          <a className="btn line" href={LINKS.github} {...magnetic}>
+            View on GitHub
+          </a>
+        </div>
+        <p className="quiet rise">
+          <span className="live" />
+          100% local · no cloud · no telemetry · plain files you can read and
+          delete
+        </p>
       </div>
     </Section>
   );
