@@ -95,7 +95,7 @@ export function Story() {
   return (
     <Section id="film" className="sec story">
       <div className="wrap sechead" style={{ paddingBottom: 0 }}>
-        <SectionHead index="02" eyebrow="A day, in twenty-two seconds">
+        <SectionHead index="01" eyebrow="A day, in twenty-two seconds">
           <h2>
             <Words>Watch the thread break, </Words>
             <em>

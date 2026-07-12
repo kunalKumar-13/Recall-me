@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import localFont from "next/font/local";
+import { SnapBoot } from "./lib/SnapBoot";
 import "./globals.css";
 
 /**
@@ -66,6 +67,7 @@ export default function RootLayout({
             edges, running the full height of the page. Sections rule
             across them; the + marks live on the rules. */}
         <div className="rails" aria-hidden="true" />
+        <SnapBoot />
         {children}
       </body>
     </html>
