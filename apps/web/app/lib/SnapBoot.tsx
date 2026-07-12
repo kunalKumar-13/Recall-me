@@ -26,6 +26,21 @@ export function SnapBoot() {
       if (hash) {
         document.querySelector(hash)?.scrollIntoView({ behavior: "instant" as ScrollBehavior });
       }
+      // ?probe=1 — report layout overflow through the title so a
+      // dump-dom run can read it (headless can't eval JS directly).
+      if (params.has("probe")) {
+        const vw = document.documentElement.clientWidth;
+        const wide: string[] = [];
+        document.querySelectorAll("body *").forEach((el) => {
+          const r = el.getBoundingClientRect();
+          if (r.width > vw + 1 && wide.length < 8) {
+            wide.push(
+              `${el.tagName}.${String((el as HTMLElement).className).slice(0, 30)}=${Math.round(r.width)}`,
+            );
+          }
+        });
+        document.title = `PROBE vw=${vw} sw=${document.scrollingElement?.scrollWidth} :: ${wide.join(" | ") || "clean"}`;
+      }
     }, 300);
     return () => clearTimeout(t);
   }, []);

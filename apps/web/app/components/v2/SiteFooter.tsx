@@ -3,8 +3,39 @@
 import { useEffect, useState } from "react";
 import { LINKS } from "../../lib/links";
 
-/** Giant outlined wordmark + a live local clock — the site keeps
- *  time the way the product keeps memory: quietly, on your machine. */
+const COLS = [
+  {
+    label: "Product",
+    links: [
+      { t: "How it works", h: "#how" },
+      { t: "Capabilities", h: "#features" },
+      { t: "Extension", h: "#extension" },
+      { t: "Download", h: "#download" },
+    ],
+  },
+  {
+    label: "Engine",
+    links: [
+      { t: "Architecture", h: "#engine" },
+      { t: "Seven layers", h: "#layers" },
+      { t: "Live event log", h: "#live" },
+      { t: "Docs", h: LINKS.docs, ext: true },
+    ],
+  },
+  {
+    label: "Trust",
+    links: [
+      { t: "Privacy", h: "#trust" },
+      { t: "FAQ", h: "#faq" },
+      { t: "GitHub", h: LINKS.github, ext: true },
+      { t: "Issues", h: LINKS.issues, ext: true },
+    ],
+  },
+] as const;
+
+/** Link columns, a truthful status line, then the giant outlined
+ *  wordmark — the site keeps time the way the product keeps memory:
+ *  quietly, on your machine. */
 export function SiteFooter() {
   const [time, setTime] = useState("");
   useEffect(() => {
@@ -19,24 +50,53 @@ export function SiteFooter() {
   }, []);
   return (
     <footer>
-      <div className="fmark" aria-hidden="true">
-        <div className="word">
-          Recall<i>.</i>
+      <div className="fcols">
+        <div className="fabout">
+          <div className="brand">
+            <span className="dot" />
+            Recall
+          </div>
+          <p>
+            A local-first continuity OS. It reconstructs what you were
+            working on and hands it back — from your machine, never a cloud.
+          </p>
+          <div className="fstatus mono">
+            <i /> engine · 127.0.0.1:4545 · local only
+          </div>
         </div>
+        {COLS.map((c) => (
+          <div className="fcol" key={c.label}>
+            <div className="fhead mono">{c.label}</div>
+            {c.links.map((l) => (
+              <a
+                key={l.t}
+                href={l.h}
+                {...("ext" in l && l.ext
+                  ? { target: "_blank", rel: "noreferrer" }
+                  : {})}
+              >
+                {l.t}
+              </a>
+            ))}
+          </div>
+        ))}
       </div>
       <div className="frow">
         <span>
-          Recall — a continuity OS for unfinished thought
-          {time ? ` · your time ${time}` : ""}
+          © {new Date().getFullYear()} Recall — plain files, one folder,
+          yours{time ? ` · your time ${time}` : ""}
         </span>
         <nav className="fnav">
-          <a href="#how">How</a>
-          <a href="#trust">Privacy</a>
           <a href={LINKS.github} target="_blank" rel="noreferrer">
             GitHub
           </a>
           <a href="#download">Download</a>
         </nav>
+      </div>
+      <div className="fmark" aria-hidden="true">
+        <div className="word">
+          Recall<i>.</i>
+        </div>
       </div>
     </footer>
   );

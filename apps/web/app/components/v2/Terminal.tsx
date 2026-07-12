@@ -62,7 +62,7 @@ export function Terminal() {
   }, []);
   return (
     <Section id="live" className="sec">
-      <div className="wrap sechead tight">
+      <div className="wrap sechead tight c">
         <SectionHead index="06" eyebrow="While you work, it writes">
           <h2>
             <Words>Your memory, </Words>

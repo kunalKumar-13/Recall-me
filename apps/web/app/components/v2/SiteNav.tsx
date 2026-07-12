@@ -140,7 +140,10 @@ export function SiteNav() {
               className={`navbtn${open ? " on" : ""}`}
               aria-expanded={open}
               aria-haspopup="true"
-              onClick={() => setOpen((v) => !v)}
+              // Always-open on click: hover may have opened it already,
+              // so a toggle would close it under the pointer. esc,
+              // outside-click and hover-away are the close paths.
+              onClick={() => setOpen(true)}
             >
               Product <span className="chev" aria-hidden>⌄</span>
             </button>
