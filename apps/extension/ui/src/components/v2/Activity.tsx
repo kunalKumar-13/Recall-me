@@ -192,7 +192,7 @@ function ActivityCard({
                   minWidth: 22,
                   textAlign: "right",
                   fontFamily:
-                    "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+                    '"Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                   fontSize: 11,
                   fontWeight: 600,
                   color:

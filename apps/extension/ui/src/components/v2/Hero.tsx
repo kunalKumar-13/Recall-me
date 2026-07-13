@@ -187,7 +187,7 @@ function ResumeButton({ onClick }: { onClick: () => void }) {
         aria-hidden
         style={{
           fontFamily:
-            "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+            '"Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
           background: "rgba(255, 255, 255, 0.22)",
           color: "white",
           fontSize: 9.5,

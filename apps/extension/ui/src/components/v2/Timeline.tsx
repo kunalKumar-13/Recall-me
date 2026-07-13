@@ -80,7 +80,7 @@ function Row({ item, index }: { item: MemoryItem; index: number }) {
       <span
         style={{
           fontFamily:
-            "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+            '"Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
           fontSize: 11,
           color: "var(--ink-3)",
           letterSpacing: "0.2px",

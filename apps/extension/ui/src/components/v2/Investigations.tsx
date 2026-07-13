@@ -162,14 +162,18 @@ export function SectionLabel({
     >
       <span
         style={{
+          fontFamily:
+            '"Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
           fontSize: 9.5,
-          fontWeight: 700,
-          letterSpacing: "1.4px",
+          fontWeight: 600,
+          letterSpacing: "1.6px",
           textTransform: "uppercase",
           color: "var(--ink-3)",
         }}
       >
+        <span style={{ opacity: 0.55 }}>[ </span>
         {label}
+        <span style={{ opacity: 0.55 }}> ]</span>
       </span>
       {typeof count === "number" && (
         <span
