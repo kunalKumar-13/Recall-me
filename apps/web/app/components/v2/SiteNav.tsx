@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { LINKS } from "../../lib/links";
+import { Mark } from "../../lib/Mark";
+import { ThemeToggle } from "../../lib/theme";
 
 /**
  * Top bar: brand · Product (capabilities dropdown) · anchors ·
@@ -126,7 +128,7 @@ export function SiteNav() {
     <div className="topbar">
       <div className="row">
         <a className="brand" href="#top">
-          <span className="dot" />
+          <Mark />
           Recall
         </a>
         <nav className="topnav">
@@ -205,8 +207,10 @@ export function SiteNav() {
           <a className="hide-sm" href="#faq">
             FAQ
           </a>
+          <a href="/console">Console</a>
         </nav>
         <div className="topright">
+          <ThemeToggle />
           <a
             className="ghchip"
             href={LINKS.github}

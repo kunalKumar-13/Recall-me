@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { LINKS } from "../../lib/links";
+import { Mark } from "../../lib/Mark";
 
 const COLS = [
   {
@@ -53,7 +54,7 @@ export function SiteFooter() {
       <div className="fcols">
         <div className="fabout">
           <div className="brand">
-            <span className="dot" />
+            <Mark />
             Recall
           </div>
           <p>
