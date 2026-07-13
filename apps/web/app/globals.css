@@ -565,6 +565,56 @@ footer .frow { max-width: var(--maxw); margin: 0 auto; padding: 8px var(--pad) 1
 footer .frow .fnav { margin-left: auto; display: flex; gap: 22px; }
 footer a:hover { color: var(--ink); }
 
+/* ---------------- /console — the engine room ---------------- */
+.conroot { min-height: 100vh; display: flex; flex-direction: column; }
+.conbar { display: flex; align-items: center; gap: 16px; padding: 12px clamp(18px, 3vw, 32px); border-bottom: 1px solid var(--hair2); position: sticky; top: 0; background: rgba(var(--paperrgb), 0.85); backdrop-filter: blur(16px); z-index: 20; }
+.conbadge { font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); border: 1px solid rgba(191, 59, 43, 0.35); border-radius: 999px; padding: 3px 9px; margin-left: 4px; }
+.constatus { display: inline-flex; align-items: center; gap: 8px; font-size: 0.68rem; letter-spacing: 0.08em; color: var(--ink3); margin-left: 8px; }
+.constatus .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.constatus .dot.ok { background: var(--red); animation: livePulse 2.4s ease-in-out infinite; }
+.constatus .dot.off { background: var(--ink3); }
+.constatus .dot.probing { background: var(--ink3); animation: livePulse 0.9s ease-in-out infinite; }
+.conright { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.conbtn { font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink2); border: 1px solid var(--hair); background: var(--card); border-radius: 8px; padding: 7px 12px; cursor: pointer; transition: color 0.16s ease, border-color 0.16s ease; }
+.conbtn:hover { color: var(--ink); border-color: rgba(var(--inkrgb), 0.3); }
+.conbtn:disabled { opacity: 0.5; cursor: default; }
+.condemo { margin: 14px clamp(18px, 3vw, 32px) 0; border: 1px dashed rgba(191, 59, 43, 0.4); background: var(--red-soft); color: var(--ink2); border-radius: 10px; padding: 11px 15px; font-size: 0.7rem; letter-spacing: 0.03em; line-height: 1.7; }
+.condemo b { color: var(--ink); }
+.congrid { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: clamp(16px, 2.4vw, 26px) clamp(18px, 3vw, 32px); align-content: start; max-width: 1360px; width: 100%; margin: 0 auto; }
+.conpanel { border: 1px solid var(--hair2); border-radius: 13px; background: var(--card); padding: 18px 20px 20px; min-height: 150px; }
+.conpanel.span2 { grid-column: span 2; }
+@media (max-width: 980px) { .congrid { grid-template-columns: 1fr 1fr; } .conpanel.span2 { grid-column: span 2; } }
+@media (max-width: 640px) { .congrid { grid-template-columns: 1fr; } .conpanel.span2 { grid-column: auto; } }
+.conlabel { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink3); margin-bottom: 14px; }
+.connum { font-family: var(--mono); font-weight: 500; font-size: clamp(2.6rem, 4vw, 3.6rem); letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+.connum .consub { font-size: 0.3em; color: var(--ink3); margin-left: 10px; letter-spacing: 0.04em; }
+.conbars { margin-top: 16px; display: flex; flex-direction: column; gap: 7px; }
+.conbar-row { display: grid; grid-template-columns: 90px 1fr 40px; gap: 12px; align-items: center; }
+.conbar-k { font-size: 0.66rem; letter-spacing: 0.06em; color: var(--ink3); text-align: right; }
+.conbar-track { position: relative; height: 8px; border-radius: 4px; background: rgba(var(--inkrgb), 0.06); overflow: hidden; }
+.conbar-track i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--red); opacity: 0.75; transition: width 0.9s var(--out); }
+.conbar-v { font-size: 0.68rem; color: var(--ink2); font-variant-numeric: tabular-nums; }
+.conkv { display: flex; justify-content: space-between; gap: 14px; padding: 8px 0; border-bottom: 1px solid var(--hair2); font-size: 0.7rem; letter-spacing: 0.03em; }
+.conkv:last-child { border-bottom: 0; }
+.conkv span { color: var(--ink3); }
+.conkv b { color: var(--ink); font-weight: 500; text-align: right; }
+.conkv .conpath { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conperf { display: flex; flex-direction: column; }
+.conperf-row { display: grid; grid-template-columns: 1.4fr auto auto; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--hair2); font-size: 0.68rem; align-items: baseline; }
+.conperf-row:last-child { border-bottom: 0; }
+.conperf-p { color: var(--ink2); }
+.conperf-m { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.conperf-b { color: var(--ink3); }
+.confoot-note { margin-top: 12px; font-size: 0.72rem; color: var(--ink3); line-height: 1.6; }
+.conrow { padding: 9px 0; border-bottom: 1px solid var(--hair2); }
+.conrow:last-child { border-bottom: 0; }
+.conrow-t { font-size: 0.92rem; font-weight: 560; letter-spacing: -0.008em; }
+.conrow-c { margin-top: 2px; font-size: 0.64rem; color: var(--ink3); letter-spacing: 0.04em; }
+.conempty { padding: 14px 0 6px; font-size: 0.7rem; color: var(--ink3); letter-spacing: 0.04em; }
+.confoot { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 14px clamp(18px, 3vw, 32px) 18px; border-top: 1px solid var(--hair2); font-size: 0.64rem; letter-spacing: 0.06em; color: var(--ink3); }
+.confoot a { color: var(--ink2); }
+.confoot a:hover { color: var(--ink); }
+
 :focus-visible { outline: 2px solid var(--red); outline-offset: 3px; border-radius: 4px; }
 
 @media (prefers-reduced-motion: reduce) {

@@ -19,7 +19,7 @@ const COLS = [
     links: [
       { t: "Architecture", h: "#engine" },
       { t: "Seven layers", h: "#layers" },
-      { t: "Live event log", h: "#live" },
+      { t: "Console", h: "/console" },
       { t: "Docs", h: LINKS.docs, ext: true },
     ],
   },
