@@ -53,7 +53,11 @@ export function Hero() {
   const magnetic = useMagnetic();
 
   const q = query.trim().toLowerCase();
-  const visible = THREADS.filter((t) => !q || t.key.includes(q));
+  // Filtering DIMS rows instead of removing them — the panel never
+  // changes height mid-keystroke, so the composition never jumps.
+  const matches = THREADS.map((t) => !q || t.key.includes(q));
+  const matchCount = matches.filter(Boolean).length;
+  const firstMatch = matches.indexOf(true);
 
   /* self-driving demo: types queries until the visitor touches it */
   useEffect(() => {
@@ -215,21 +219,27 @@ export function Hero() {
               </div>
               <div className="lc-head">
                 {q
-                  ? `${visible.length} result${visible.length === 1 ? "" : "s"}`
+                  ? matchCount === 0
+                    ? "no matches — try another word"
+                    : `${matchCount} result${matchCount === 1 ? "" : "s"}`
                   : "Continue where you left off"}
               </div>
-              {visible.length === 0 && (
-                <div className="lc-empty">No matches — try another word</div>
-              )}
-              {visible.map((t, i) => (
-                <div key={t.key} className={`lc-row${i === 0 ? " sel" : ""}`}>
-                  <div>
-                    <div className="lc-title">{t.title}</div>
-                    <div className="lc-cap">{t.cap}</div>
+              {THREADS.map((t, i) => {
+                const hit = matches[i];
+                const sel = hit && i === firstMatch;
+                return (
+                  <div
+                    key={t.key}
+                    className={`lc-row${sel ? " sel" : ""}${q && !hit ? " dim" : ""}`}
+                  >
+                    <div>
+                      <div className="lc-title">{t.title}</div>
+                      <div className="lc-cap">{t.cap}</div>
+                    </div>
+                    {sel && <span className="lc-hint">↵ resume</span>}
                   </div>
-                  {i === 0 && <span className="lc-hint">↵ resume</span>}
-                </div>
-              ))}
+                );
+              })}
               <div className="lc-foot">
                 <span>↑↓ move</span>
                 <span>↵ open</span>
