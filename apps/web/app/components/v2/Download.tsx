@@ -4,7 +4,7 @@ import { Section, SectionHead, Words } from "../../lib/reveal";
 export function Download() {
   return (
     <Section id="download" className="sec">
-      <div className="wrap sechead">
+      <div className="wrap sechead c">
         <SectionHead index="—" eyebrow="Get Recall">
           <h2>
             <Words>Install once, </Words>

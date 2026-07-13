@@ -3,11 +3,16 @@
 import { useEffect, useRef } from "react";
 import { Section } from "../../lib/reveal";
 
+/**
+ * The numbers band — hairline-celled, giant tabular numerals, every
+ * figure honest and enforced by the smoke suite (the budgets are
+ * assertions, not aspirations).
+ */
 const STATS = [
-  { n: 7, suffix: "", label: "engine layers, strictly upward" },
-  { n: 0, suffix: "", label: "bytes sent to any cloud" },
-  { n: 100, prefix: "<", suffix: "ms", label: "to recall your work" },
-  { n: 1, suffix: "", label: "folder — delete it, it's gone" },
+  { n: 100, prefix: "<", suffix: "ms", label: "to recall your work", sub: "smoke-tested budget" },
+  { n: 7, suffix: "", label: "engine layers", sub: "strictly composing upward" },
+  { n: 0, suffix: "", label: "bytes to any cloud", sub: "loopback is the boundary" },
+  { n: 1, suffix: "", label: "folder holds it all", sub: "~/.recall — yours to delete" },
 ];
 
 export function Stats() {
@@ -37,16 +42,17 @@ export function Stats() {
     return () => io.disconnect();
   }, []);
   return (
-    <Section className="stats" as="div">
-      <div className="row rise" ref={root}>
+    <Section className="statsband" as="div">
+      <div className="statscells rise" ref={root}>
         {STATS.map((s) => (
-          <div className="stat" key={s.label}>
-            <div className="n">
+          <div className="scell" key={s.label}>
+            <div className="sl mono">{s.label}</div>
+            <div className="sn">
               {s.prefix}
               <span data-count={s.n}>{s.n}</span>
-              {s.suffix}
+              <span className="ssuf">{s.suffix}</span>
             </div>
-            <div className="l">{s.label}</div>
+            <div className="ss">{s.sub}</div>
           </div>
         ))}
       </div>

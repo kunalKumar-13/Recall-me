@@ -3,7 +3,7 @@ import { Section, SectionHead, Words } from "../../lib/reveal";
 export function Privacy() {
   return (
     <Section id="trust" className="sec">
-      <div className="wrap sechead">
+      <div className="wrap sechead c">
         <SectionHead index="07" eyebrow="Local-first is the point">
           <h2>
             <Words>It stays on </Words>
