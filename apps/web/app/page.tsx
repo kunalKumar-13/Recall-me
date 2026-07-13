@@ -1,8 +1,10 @@
+import { Compare } from "./components/v2/Compare";
 import { Download } from "./components/v2/Download";
 import { Engine } from "./components/v2/Engine";
 import { Extension } from "./components/v2/Extension";
 import { Faq } from "./components/v2/Faq";
 import { Features } from "./components/v2/Features";
+import { OpenBand } from "./components/v2/OpenBand";
 import { Finale } from "./components/v2/Finale";
 import { Pipeline } from "./components/v2/Pipeline";
 import { Stats } from "./components/v2/Stats";
@@ -44,6 +46,8 @@ export default function Page() {
         <Terminal />
         <Privacy />
         <Rule />
+        <Compare />
+        <OpenBand />
         <Faq />
         <Download />
         <Finale />
