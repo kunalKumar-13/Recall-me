@@ -337,7 +337,7 @@ function PrivateSites() {
                     fontSize: 12.5,
                     color: "var(--ink-2)",
                     fontFamily:
-                      "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+                      '"Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
@@ -619,7 +619,7 @@ function ConnectionDrawer({
                 fontSize: 10.5,
                 color: "var(--ink-4)",
                 fontFamily:
-                  "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+                  '"Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
               }}
             >
               {today

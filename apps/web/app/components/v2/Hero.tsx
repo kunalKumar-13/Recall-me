@@ -53,7 +53,11 @@ export function Hero() {
   const magnetic = useMagnetic();
 
   const q = query.trim().toLowerCase();
-  const visible = THREADS.filter((t) => !q || t.key.includes(q));
+  // Filtering DIMS rows instead of removing them — the panel never
+  // changes height mid-keystroke, so the composition never jumps.
+  const matches = THREADS.map((t) => !q || t.key.includes(q));
+  const matchCount = matches.filter(Boolean).length;
+  const firstMatch = matches.indexOf(true);
 
   /* self-driving demo: types queries until the visitor touches it */
   useEffect(() => {
@@ -97,7 +101,7 @@ export function Hero() {
         }),
       );
     };
-    timer = setTimeout(loop, 2200);
+    timer = setTimeout(loop, 2400);
     return () => {
       stop.current = true;
       clearTimeout(timer);
@@ -123,94 +127,127 @@ export function Hero() {
   };
 
   return (
-    <Section id="top" className="sec hero">
+    <Section id="top" className="sec hero hero2">
       <div className="glow" aria-hidden="true" />
-      <div className="wrap hwrap">
-        <h1>
-          <Words>Never lose</Words>
-          <br />
-          <em>
-            <Words>the thread.</Words>
-          </em>
+      {/* the field: drafting dots + one thread finding its way
+          left → right across the spread, breathing once drawn */}
+      <div className="hfield" aria-hidden="true">
+        <svg
+          className="hthread"
+          viewBox="0 0 1440 640"
+          preserveAspectRatio="none"
+        >
+          <path
+            className="ht"
+            pathLength={1}
+            d="M -24 468 C 200 440, 260 250, 470 268 S 800 452, 1000 342 S 1240 170, 1358 186"
+          />
+          <circle className="hnode n1" cx="470" cy="268" r="3.6" />
+          <circle className="hnode n2" cx="836" cy="420" r="3.6" />
+          <circle className="hnode n3" cx="1092" cy="290" r="3.6" />
+          <circle className="hend" cx="1360" cy="186" r="5.5" />
+        </svg>
+      </div>
+
+      <div className="wrap hwrap2">
+        <h1 className="spread">
+          <span className="l1">
+            <Words>Never lose</Words>
+          </span>
+          <span className="l2">
+            <em>
+              <Words>the thread.</Words>
+            </em>
+          </span>
         </h1>
-        <p className="lead rise">
-          Recall quietly reconstructs what you were working on — the tabs, the
-          files, the half-finished chat — and hands it back the moment you
-          return. 100% on your machine.
-        </p>
 
-        <div className="hpanel rise">
-          <div className="kbd-row">
-            <span className="kbd">⌃</span>
-            <span className="kbd">space</span>
-            <span>summons it anywhere — try it</span>
+        <div className="hgrid2">
+          <div className="hleft">
+            <p className="lead rise">
+              Recall quietly reconstructs what you were working on — the tabs,
+              the files, the half-finished chat — and hands it back the moment
+              you return. 100% on your machine.
+            </p>
+            <div className="btns rise">
+              <a className="btn solid" href={LINKS.release} {...magnetic}>
+                Download for macOS <span className="ar">→</span>
+              </a>
+              <a className="btn line" href={LINKS.github} {...magnetic}>
+                View on GitHub
+              </a>
+            </div>
+            <p className="quiet rise">
+              <span className="live" />
+              100% local · no cloud · no telemetry · plain files you can read
+              and delete
+            </p>
           </div>
-          <div
-            className="launcher"
-            ref={launcherRef}
-            onMouseMove={onTilt}
-            onMouseLeave={offTilt}
-            aria-label="The Recall launcher"
-          >
-            <div className="lc-search">
-              <span aria-hidden>⌕</span>
-              <input
-                ref={inputRef}
-                className="lc-input"
-                value={query}
-                placeholder="Search your memory…"
-                aria-label="Search your memory"
-                spellCheck={false}
-                autoComplete="off"
-                onFocus={takeOver}
-                onPointerDown={takeOver}
-                onChange={(e) => {
-                  takeOver();
-                  setQuery(e.target.value);
-                }}
-              />
-              <span className="lc-live" aria-hidden>
-                <i /> local
-              </span>
+
+          <div className="hpanel rise">
+            <div className="kbd-row">
+              <span className="kbd">⌃</span>
+              <span className="kbd">space</span>
+              <span>summons it anywhere — try it</span>
             </div>
-            <div className="lc-head">
-              {q
-                ? `${visible.length} result${visible.length === 1 ? "" : "s"}`
-                : "Continue where you left off"}
-            </div>
-            {visible.length === 0 && (
-              <div className="lc-empty">No matches — try another word</div>
-            )}
-            {visible.map((t, i) => (
-              <div key={t.key} className={`lc-row${i === 0 ? " sel" : ""}`}>
-                <div>
-                  <div className="lc-title">{t.title}</div>
-                  <div className="lc-cap">{t.cap}</div>
-                </div>
-                {i === 0 && <span className="lc-hint">↵ resume</span>}
+            <div
+              className="launcher"
+              ref={launcherRef}
+              onMouseMove={onTilt}
+              onMouseLeave={offTilt}
+              aria-label="The Recall launcher"
+            >
+              <div className="lc-search">
+                <span aria-hidden>⌕</span>
+                <input
+                  ref={inputRef}
+                  className="lc-input"
+                  value={query}
+                  placeholder="Search your memory…"
+                  aria-label="Search your memory"
+                  spellCheck={false}
+                  autoComplete="off"
+                  onFocus={takeOver}
+                  onPointerDown={takeOver}
+                  onChange={(e) => {
+                    takeOver();
+                    setQuery(e.target.value);
+                  }}
+                />
+                <span className="lc-live" aria-hidden>
+                  <i /> local
+                </span>
               </div>
-            ))}
-            <div className="lc-foot">
-              <span>↑↓ move</span>
-              <span>↵ open</span>
-              <span>esc close</span>
+              <div className="lc-head">
+                {q
+                  ? matchCount === 0
+                    ? "no matches — try another word"
+                    : `${matchCount} result${matchCount === 1 ? "" : "s"}`
+                  : "Continue where you left off"}
+              </div>
+              {THREADS.map((t, i) => {
+                const hit = matches[i];
+                const sel = hit && i === firstMatch;
+                return (
+                  <div
+                    key={t.key}
+                    className={`lc-row${sel ? " sel" : ""}${q && !hit ? " dim" : ""}`}
+                  >
+                    <div>
+                      <div className="lc-title">{t.title}</div>
+                      <div className="lc-cap">{t.cap}</div>
+                    </div>
+                    {sel && <span className="lc-hint">↵ resume</span>}
+                  </div>
+                );
+              })}
+              <div className="lc-foot">
+                <span>↑↓ move</span>
+                <span>↵ open</span>
+                <span>esc close</span>
+              </div>
             </div>
           </div>
         </div>
-
-        <div className="btns hbtns rise">
-          <a className="btn solid" href={LINKS.release} {...magnetic}>
-            Download for macOS <span className="ar">→</span>
-          </a>
-          <a className="btn line" href={LINKS.github} {...magnetic}>
-            View on GitHub
-          </a>
-        </div>
-        <p className="quiet rise">
-          <span className="live" />
-          100% local · no cloud · no telemetry · plain files you can read and
-          delete
-        </p>
       </div>
     </Section>
   );

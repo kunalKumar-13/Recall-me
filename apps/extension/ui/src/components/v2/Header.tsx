@@ -55,17 +55,23 @@ export function Header({
         background: "var(--surface-0)",
       }}
     >
-      <span
+      {/* The thread-and-node mark — same gesture as the site + icon. */}
+      <svg
         aria-hidden
-        style={{
-          width: 26,
-          height: 26,
-          borderRadius: 8,
-          background: "linear-gradient(135deg, #d4523f, #bf3b2b)",
-          flexShrink: 0,
-          boxShadow: "0 4px 10px rgba(191, 59, 43, 0.30)",
-        }}
-      />
+        width={26}
+        height={26}
+        viewBox="0 0 28 28"
+        fill="none"
+        style={{ flexShrink: 0, display: "block" }}
+      >
+        <path
+          d="M3 20.5 C 9 4.5, 13.5 25, 19.5 12.5 S 24.5 8.5, 24.6 8.4"
+          stroke="var(--accent)"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+        />
+        <circle cx="24.4" cy="8.2" r="3.2" fill="var(--accent)" />
+      </svg>
       <div
         style={{
           display: "flex",

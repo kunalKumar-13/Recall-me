@@ -61,7 +61,17 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${GeistSans.variable} ${GeistMono.variable} ${instrument.variable}`}
+      suppressHydrationWarning
     >
+      <head>
+        {/* Apply the saved (or OS) theme before first paint — no flash. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var m=location.search.match(/[?&]theme=(dark|light)/);var t=m?m[1]:localStorage.getItem('recall-theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='light';}})();",
+          }}
+        />
+      </head>
       <body>
         {/* The drafting frame: two hairline rails at the content
             edges, running the full height of the page. Sections rule

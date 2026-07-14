@@ -183,6 +183,36 @@ export function Extension() {
           </div>
         </div>
       </div>
+
+      <div className="worksband rise" aria-label="Works where you work">
+        <span className="wb-label mono">works where you work</span>
+        <div className="mq">
+          <div className="mq-track">
+            {[0, 1].map((dup) => (
+              <div className="mq-set" key={dup} aria-hidden={dup === 1}>
+                {[
+                  "Chrome",
+                  "Edge",
+                  "Brave",
+                  "Arc",
+                  "VS Code",
+                  "macOS",
+                  "git hooks",
+                  "curl · API",
+                  "Gmail",
+                  "Claude",
+                  "ChatGPT",
+                  "GitHub",
+                ].map((w) => (
+                  <span className="mq-item mono" key={w}>
+                    <i /> {w}
+                  </span>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </Section>
   );
 }

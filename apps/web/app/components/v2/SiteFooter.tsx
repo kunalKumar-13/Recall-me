@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { LINKS } from "../../lib/links";
+import { Mark } from "../../lib/Mark";
+import { Section } from "../../lib/reveal";
 
 const COLS = [
   {
@@ -18,7 +20,7 @@ const COLS = [
     links: [
       { t: "Architecture", h: "#engine" },
       { t: "Seven layers", h: "#layers" },
-      { t: "Live event log", h: "#live" },
+      { t: "Console", h: "/console" },
       { t: "Docs", h: LINKS.docs, ext: true },
     ],
   },
@@ -53,7 +55,7 @@ export function SiteFooter() {
       <div className="fcols">
         <div className="fabout">
           <div className="brand">
-            <span className="dot" />
+            <Mark />
             Recall
           </div>
           <p>
@@ -93,11 +95,35 @@ export function SiteFooter() {
           <a href="#download">Download</a>
         </nav>
       </div>
-      <div className="fmark" aria-hidden="true">
-        <div className="word">
-          Recall<i>.</i>
+      {/* The wordmark evolves the way memory does: the thread stitches
+          through the outline and the letters fill in behind it. */}
+      <Section as="div" className="fmarkwrap">
+        <div className="fmark" aria-hidden="true">
+          <svg
+            className="fthread"
+            viewBox="0 0 1200 260"
+            preserveAspectRatio="none"
+          >
+            <path
+              className="fth"
+              pathLength={1}
+              d="M -10 208 C 120 246, 180 96, 320 128 S 560 236, 720 160 S 980 60, 1090 118 S 1170 96, 1196 88"
+            />
+          </svg>
+          <div className="word">
+            {"Recall".split("").map((ch, i) => (
+              <span
+                className="ch"
+                key={`${ch}-${i}`}
+                style={{ transitionDelay: `${(0.45 + i * 0.34).toFixed(2)}s` }}
+              >
+                {ch}
+              </span>
+            ))}
+            <i>.</i>
+          </div>
         </div>
-      </div>
+      </Section>
     </footer>
   );
 }
