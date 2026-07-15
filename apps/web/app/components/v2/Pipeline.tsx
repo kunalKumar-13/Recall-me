@@ -124,6 +124,10 @@ export function Pipeline() {
           <span className="dollar">$</span> everything stays in{" "}
           <b>~/.recall/</b> — delete the folder, it never happened
         </div>
+        <div className="pipebudgets mono rise">
+          budgets, enforced by the test suite: writes &lt;2 ms · search
+          &lt;60 ms · resurfacing &lt;25 ms · recovery &lt;80 ms
+        </div>
       </div>
     </Section>
   );

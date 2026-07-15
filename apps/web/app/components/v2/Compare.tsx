@@ -48,7 +48,7 @@ export function Compare() {
   return (
     <Section id="compare" className="sec">
       <div className="wrap sechead c">
-        <SectionHead index="08" eyebrow="The honest table">
+        <SectionHead index="06" eyebrow="The honest table">
           <h2>
             <Words>Total recall, </Words>
             <em>

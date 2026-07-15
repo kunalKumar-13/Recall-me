@@ -112,9 +112,6 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spa
 .sechead.c .lead { margin-left: auto; margin-right: auto; text-align: center; max-width: 50ch; }
 .sechead.c .eyebrow { text-align: center; }
 .sechead h2 { margin-bottom: clamp(16px, 2.2vw, 26px); }
-.smeta { position: absolute; top: clamp(78px, 10vw, 152px); right: var(--pad); font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em; color: var(--ink3); }
-.smeta b { color: var(--ink); font-weight: 600; }
-@media (max-width: 700px) { .smeta { display: none; } }
 
 /* the one gesture of colour: a red thread that draws itself */
 .thread-mark { background-image: linear-gradient(var(--red), var(--red)); background-size: 0% 1.5px; background-position: 0 97%; background-repeat: no-repeat; padding-bottom: 0.04em; transition: background-size 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.45s; }
@@ -347,6 +344,7 @@ html[data-theme="dark"] .lc-row.sel { background: rgba(210, 75, 53, 0.08); }
 .pipecmd { margin-top: 18px; text-align: center; font-size: 0.78rem; color: var(--ink2); letter-spacing: 0.02em; }
 .pipecmd .dollar { color: var(--red); font-weight: 600; margin-right: 6px; }
 .pipecmd b { color: var(--ink); font-weight: 600; }
+.pipebudgets { margin-top: 8px; text-align: center; font-size: 0.66rem; letter-spacing: 0.05em; color: var(--ink3); }
 
 /* ---------------- film player ---------------- */
 .player { margin-top: clamp(28px, 4vw, 48px); background: var(--card); border: 1px solid var(--hair); border-radius: 14px; box-shadow: 0 30px 80px -44px rgba(27, 26, 24, 0.3); overflow: hidden; }
@@ -431,26 +429,6 @@ html[data-theme="dark"] .lc-row.sel { background: rgba(210, 75, 53, 0.08); }
 .rown:hover .i { color: var(--red); }
 .rown h3 { margin: 0; font-size: 1.06rem; font-weight: 620; letter-spacing: -0.01em; }
 .rown p { font-size: 0.98rem; color: var(--ink2); max-width: 52ch; line-height: 1.6; }
-
-/* ---------------- engine table ---------------- */
-.layers { margin-top: clamp(26px, 3.6vw, 44px); border-top: 1px solid var(--hair2); }
-.layer { display: grid; grid-template-columns: 44px 150px 1fr auto; gap: 18px; align-items: baseline; padding: 17px 4px; border-bottom: 1px solid var(--hair2); transition: padding-left 0.2s ease; }
-.layer:hover { padding-left: 12px; }
-@media (max-width: 760px) { .layer { grid-template-columns: 36px 1fr auto; } .layer .d { display: none; } }
-.layer .i { font-family: var(--mono); font-size: 0.72rem; color: var(--ink3); transition: color 0.2s ease; }
-.layer:hover .i { color: var(--red); }
-.layer .n { font-weight: 600; font-size: 1rem; letter-spacing: -0.01em; }
-.layer .d { font-size: 0.95rem; color: var(--ink2); }
-.layer .b { font-family: var(--mono); font-size: 0.7rem; color: var(--ink3); white-space: nowrap; }
-
-/* ---------------- terminal ---------------- */
-.term { margin-top: clamp(26px, 3.6vw, 44px); background: var(--card); border: 1px solid var(--hair); border-radius: 12px; overflow: hidden; }
-.term .tbar { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--hair2); font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.08em; color: var(--ink3); }
-.term .tag { margin-left: auto; border: 1px solid var(--hair); border-radius: 999px; padding: 2px 9px; font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; }
-.tick-view { height: min(260px, 40vh); overflow: hidden; padding: 12px 16px; }
-.tick-view div { font-family: var(--mono); font-size: 0.74rem; line-height: 1.95; white-space: nowrap; color: var(--ink2); }
-.tick-view div b { font-weight: 600; color: var(--ink); }
-.tick-view div:last-child::after { content: "▍"; color: var(--red); animation: livePulse 1s steps(2) infinite; margin-left: 2px; }
 
 /* ---------------- extension chapter ---------------- */
 .ext { margin-top: clamp(28px, 4vw, 48px); display: grid; grid-template-columns: 400px 1fr; gap: clamp(32px, 5vw, 72px); align-items: start; }
@@ -559,9 +537,6 @@ ul.never { padding: 0; margin: 10px 0 0; }
 .dlrow .g { font-size: 0.92rem; font-weight: 560; color: var(--red); white-space: nowrap; }
 
 /* ---------------- finale + footer ---------------- */
-.final { text-align: center; }
-.final h2 { font-size: clamp(2.2rem, 5.5vw, 4rem); }
-.final .btns { margin-top: 34px; justify-content: center; }
 footer { border-top: 1px solid var(--hair2); overflow: hidden; }
 .fcols { max-width: var(--maxw); margin: 0 auto; padding: clamp(44px, 6vw, 76px) var(--pad) clamp(28px, 4vw, 44px); display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: clamp(28px, 4vw, 64px); }
 @media (max-width: 860px) { .fcols { grid-template-columns: 1fr 1fr; row-gap: 34px; } }
