@@ -7,6 +7,7 @@ import { OpenBand } from "./components/v2/OpenBand";
 import { Pipeline } from "./components/v2/Pipeline";
 import { Stats } from "./components/v2/Stats";
 import { Story } from "./components/v2/Story";
+import { Surfaces } from "./components/v2/Surfaces";
 import { Hero } from "./components/v2/Hero";
 import { LabRow } from "./components/v2/LabRow";
 import { Privacy } from "./components/v2/Privacy";
@@ -41,6 +42,8 @@ export default function Page() {
         <Pipeline />
         <Rule />
         <Extension />
+        <Rule />
+        <Surfaces />
         <Rule />
         <Privacy />
         <Rule />

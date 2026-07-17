@@ -6,7 +6,7 @@ export function Download() {
   return (
     <Section id="download" className="sec">
       <div className="wrap sechead c">
-        <SectionHead index="08" eyebrow="Get Recall">
+        <SectionHead index="09" eyebrow="Get Recall">
           <h2>
             <Words>Your mind, </Words>
             <em className="thread-mark">
@@ -26,6 +26,32 @@ export function Download() {
           <a className="btn line" href="#top">
             Summon anywhere <span className="k">⌃Space</span>
           </a>
+        </div>
+        <div className="quick stagger">
+          <div className="qstep">
+            <span className="qn mono">step 01</span>
+            <span className="qt">Open the .dmg</span>
+            <span className="qd">
+              Drag Recall to Applications. It sits in the menu bar and
+              starts the local engine.
+            </span>
+          </div>
+          <div className="qstep">
+            <span className="qn mono">step 02</span>
+            <span className="qt">Add the extension</span>
+            <span className="qd">
+              Chrome, Edge, Brave or Arc — capture starts quietly, with an
+              exclusion list you control.
+            </span>
+          </div>
+          <div className="qstep">
+            <span className="qn mono">step 03</span>
+            <span className="qt">Press ⌃Space</span>
+            <span className="qd">
+              Work normally. Next interruption, one keystroke hands the
+              thread back.
+            </span>
+          </div>
         </div>
         <div className="dlrows stagger">
           <a className="dlrow" href={LINKS.release}>
