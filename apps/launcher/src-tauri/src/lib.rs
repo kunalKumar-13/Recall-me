@@ -4,7 +4,12 @@
 // 127.0.0.1:4545. Every engine call goes through Rust (reqwest) so the
 // webview never touches the network and there is no CORS surface.
 
-use std::{path::PathBuf, str::FromStr};
+use std::{
+    path::PathBuf,
+    str::FromStr,
+    sync::atomic::{AtomicU64, Ordering},
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use serde_json::{json, Value};
 use tauri::{
@@ -189,6 +194,40 @@ async fn engine_post(path: &str) -> Result<Value, String> {
         .map_err(|e| format!("bad engine response: {e}"))
 }
 
+// ------------------------------------------------- daily-loop marks
+//
+// The launcher is the surface that proves the continuity loop is
+// *used* (Phase 6F), so it marks its own moments: summoned today,
+// recoveries shown, one resumed, the resume actually opened work.
+// Counts only, fire-and-forget — a missed mark is a statistics
+// smudge, never an error, and it must not add a millisecond to any
+// hot path.
+
+fn loop_bump(bin: &'static str) {
+    tauri::async_runtime::spawn(async move {
+        let _ = reqwest::Client::new()
+            .post(format!("{ENGINE}/v1/loop/bump"))
+            .json(&serde_json::json!({ "bin": bin }))
+            .send()
+            .await;
+    });
+}
+
+// `day_started` is once per day and idempotency is the caller's job
+// (daily_loop's contract) — dedupe on the epoch-day so repeat
+// summons don't inflate it.
+static DAY_STARTED_EPOCH_DAY: AtomicU64 = AtomicU64::new(0);
+
+fn mark_day_started_once() {
+    let day = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs() / 86_400)
+        .unwrap_or(0);
+    if DAY_STARTED_EPOCH_DAY.swap(day, Ordering::Relaxed) != day {
+        loop_bump("day_started");
+    }
+}
+
 // ----------------------------------------------------------------- commands
 
 #[tauri::command]
@@ -198,7 +237,17 @@ async fn engine_health() -> Result<Value, String> {
 
 #[tauri::command]
 async fn recovery_recent(n: Option<u32>) -> Result<Value, String> {
-    engine_get(&format!("/v1/recovery/recent?n={}", n.unwrap_or(3))).await
+    let out = engine_get(&format!("/v1/recovery/recent?n={}", n.unwrap_or(3))).await?;
+    // Only this command serves the launcher's resting state, so a
+    // non-empty answer here IS "the launcher surfaced recoveries".
+    let shown = out
+        .get("candidates")
+        .and_then(|c| c.as_array())
+        .map_or(false, |a| !a.is_empty());
+    if shown {
+        loop_bump("recoveries_shown");
+    }
+    Ok(out)
 }
 
 #[tauri::command]
@@ -214,6 +263,9 @@ async fn threads_recent(n: Option<u32>) -> Result<Value, String> {
 
 #[tauri::command]
 async fn thread_evolution(id: String) -> Result<Value, String> {
+    // Drilling into a thread's phases is the launcher's
+    // "investigation opened" moment.
+    loop_bump("investigations_opened");
     engine_get(&format!("/v1/threads/{id}/evolution")).await
 }
 
@@ -236,6 +288,9 @@ async fn resurface_idle(n: Option<u32>) -> Result<Value, String> {
 // advisory, the tally is what happened.
 #[tauri::command]
 async fn recovery_restore(app: AppHandle, id: String) -> Result<Value, String> {
+    // The user pressed Resume — that's `recoveries_used` regardless
+    // of how the opens go; `resume_success` waits for the tally.
+    loop_bump("recoveries_used");
     let mut plan = engine_post(&format!("/v1/recovery/{id}/restore")).await?;
     let mut requested: u64 = 0;
     let mut opened: u64 = 0;
@@ -264,6 +319,9 @@ async fn recovery_restore(app: AppHandle, id: String) -> Result<Value, String> {
     if let Some(obj) = plan.as_object_mut() {
         obj.insert("requested".into(), requested.into());
         obj.insert("opened".into(), opened.into());
+    }
+    if opened > 0 {
+        loop_bump("resume_success");
     }
     Ok(plan)
 }
@@ -366,6 +424,7 @@ fn position_upper_third(win: &WebviewWindow) {
 }
 
 fn show_panel(win: &WebviewWindow) {
+    mark_day_started_once();
     position_upper_third(win);
     let _ = win.show();
     let _ = win.set_focus();

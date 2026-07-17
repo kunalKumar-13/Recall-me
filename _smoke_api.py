@@ -40,6 +40,13 @@ import app.core.config as _config  # noqa: E402
 
 _config.EVENTS_DIR = EVENTS_DIR
 
+# The daily-loop counters also live under ~/.recall — redirect them
+# too so §37's bumps never touch the real ledger.
+import app.core.daily_loop as _daily_loop  # noqa: E402
+
+_daily_loop.LOG_FILE = TMP / "daily_loop.jsonl"
+_daily_loop.STATE_FILE = TMP / "daily_loop_state.json"
+
 from app.core.events import EventLogger  # noqa: E402
 
 from api import create_app  # noqa: E402
@@ -277,6 +284,7 @@ expected = {
     "/v1/search", "/v1/search/files",
     "/v1/events/recent", "/v1/events/today", "/v1/queries/recent",
     "/v1/resurface/idle", "/v1/resurface/history/clear",
+    "/v1/loop/summary", "/v1/loop/bump",
     # Phase 2C
     "/v1/threads/recent", "/v1/threads/{thread_id}",
     "/v1/threads/cache/clear",
@@ -1680,6 +1688,39 @@ print(
     f"median {median_ms}ms server (cold {samples[0]}ms)"
 )
 print("[OK] /v1/events/today tallies the day file within budget")
+
+
+# ----------------------------------------------------------------------
+section("37. POST /v1/loop/bump — the launcher's loop marks land")
+# ----------------------------------------------------------------------
+# The Tauri launcher fire-and-forgets these on summon / surface /
+# resume. Every bump must land in the same summary the console
+# renders, and unknown bins must be refused by the schema.
+MARKS = [
+    ("day_started", 1),
+    ("recoveries_shown", 2),
+    ("recoveries_used", 1),
+    ("resume_success", 1),
+    ("investigations_opened", 1),
+]
+loop_base = client.get("/v1/loop/summary", params={"days": 1}).json()["today"]
+bump_ms = []
+for bin_name, times in MARKS:
+    for _ in range(times):
+        t0 = time.perf_counter()
+        r = client.post("/v1/loop/bump", json={"bin": bin_name})
+        bump_ms.append((time.perf_counter() - t0) * 1000)
+        assert r.status_code == 200, r.text
+        assert r.json()["bin"] == bin_name, r.text
+loop_after = client.get("/v1/loop/summary", params={"days": 1}).json()["today"]
+for bin_name, times in MARKS:
+    got = loop_after[bin_name] - loop_base.get(bin_name, 0)
+    assert got == times, f"{bin_name}: expected +{times}, got +{got}"
+assert client.post("/v1/loop/bump", json={"bin": "nope"}).status_code == 422
+bump_med = sorted(bump_ms)[len(bump_ms) // 2]
+assert bump_med < 15, f"loop bump median {bump_med:.1f}ms, budget 15ms wall"
+print(f"  6 bumps landed exactly; unknown bin 422; median {bump_med:.1f}ms")
+print("[OK] /v1/loop/bump feeds the same ledger the console reads")
 
 
 # Cleanup
