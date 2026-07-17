@@ -197,6 +197,43 @@ export function App() {
   const previewMissing = forced === "missing";
   const effEverConnected = previewMissing ? false : everConnected;
 
+  // ?state=demolocal — a fully canned popup with zero daemon and
+  // zero personal data. Exists for docs and marketing screenshots;
+  // every value below is the same fictional day the site's demos use.
+  const demoLocal = forced === "demolocal";
+  const dlRecovery: Recovery | null = demoLocal
+    ? {
+        id: "demo",
+        title: "WebSocket reconnect bug",
+        caption: "2 tabs · 1 file · reopened after a 2-day gap",
+        chips: ["2 tabs", "1 file", "2-day gap"],
+        tabCount: 2,
+        fileCount: 1,
+        urls: [],
+      }
+    : null;
+  const dlThreads: Investigation[] = demoLocal
+    ? [
+        { id: "t1", title: "WebSocket reconnect bug", summary: "started 3d ago · 5 sessions · 24 events", surfaces: [] },
+        { id: "t2", title: "Rust async runtime research", summary: "started 1w ago · 4 sessions · 18 events", surfaces: [] },
+        { id: "t3", title: "Seed deck — narrative pass", summary: "started 2w ago · 3 sessions · 11 events", surfaces: [] },
+      ]
+    : [];
+  const dlTail: MemoryItem[] = demoLocal
+    ? [
+        { kind: "tab", label: "Stripe webhooks — retries", detail: "stripe.com", ts: Math.floor(Date.now() / 1000) - 240 },
+        { kind: "chat", label: "retry logic — claude.ai", detail: "claude", ts: Math.floor(Date.now() / 1000) - 900 },
+        { kind: "search", label: "exponential backoff jitter", detail: "google", ts: Math.floor(Date.now() / 1000) - 1500 },
+        { kind: "tab", label: "docs.rs/tokio — time::interval", detail: "docs.rs", ts: Math.floor(Date.now() / 1000) - 2400 },
+      ]
+    : [];
+  const dlToday: TodaySummary | null = demoLocal
+    ? { count: 88, kinds: { browser_visit: 61, browser_focus: 12, chat_session: 7, browser_search: 5, open: 3 } }
+    : null;
+  const dlHours: number[] | null = demoLocal
+    ? [0, 0, 0, 0, 0, 0, 0, 1, 3, 9, 12, 8, 4, 6, 11, 13, 9, 6, 4, 2, 0, 0, 0, 0]
+    : null;
+
   if (view === "settings") {
     return (
       <AnimatePresence mode="wait">
@@ -227,16 +264,29 @@ export function App() {
 
   const state: PopupState = previewMissing
     ? "disconnected"
-    : (forced as PopupState | null) ??
-      derivePopupState(connection, health, recovery, investigations, memory, demo);
+    : demoLocal
+      ? "recovery"
+      : (forced as PopupState | null) ??
+        derivePopupState(connection, health, recovery, investigations, memory, demo);
+  const effConnection = demoLocal ? "connected" : connection;
 
   // The demo overlay reuses the live render path with the demo's
   // synthesised data — exactly like the launcher's demo branch.
-  const effRecovery =
-    state === "demo" ? demo?.payload?.recovery ?? null : recovery;
-  const effInvestigations =
-    state === "demo" ? demo?.payload?.investigations ?? [] : investigations;
-  const effMemory = state === "demo" ? demo?.payload?.timeline ?? [] : memory;
+  const effRecovery = demoLocal
+    ? dlRecovery
+    : state === "demo"
+      ? demo?.payload?.recovery ?? null
+      : recovery;
+  const effInvestigations = demoLocal
+    ? dlThreads
+    : state === "demo"
+      ? demo?.payload?.investigations ?? []
+      : investigations;
+  const effMemory = demoLocal
+    ? dlTail
+    : state === "demo"
+      ? demo?.payload?.timeline ?? []
+      : memory;
   const effOnResume =
     state === "demo"
       ? () => demo?.payload?.recovery.urls.forEach(openTab)
@@ -252,7 +302,7 @@ export function App() {
       }}
     >
       <Header
-        connection={connection}
+        connection={effConnection}
         paused={pausedUntil > Date.now()}
         onPause={togglePause}
         onSearch={() => setSearchOpen(true)}
@@ -300,13 +350,13 @@ export function App() {
           state === "demo") && (
           <>
             <MainV3
-              connection={connection}
+              connection={effConnection}
               recovery={effRecovery}
               threads={effInvestigations}
               tail={effMemory}
-              today={state === "demo" ? null : today}
-              hours={state === "demo" ? null : hours}
-              queued={queued}
+              today={demoLocal ? dlToday : state === "demo" ? null : today}
+              hours={demoLocal ? dlHours : state === "demo" ? null : hours}
+              queued={demoLocal ? 0 : queued}
               onResume={effOnResume}
             />
             {state === "demo" && demo?.payload?.trust && (
