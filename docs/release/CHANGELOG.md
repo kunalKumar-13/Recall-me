@@ -11,6 +11,15 @@ build cycle.
 
 ## [Unreleased]
 
+## [0.1.0] — 2026-07-17 — first public alpha
+
+The launcher (.dmg), the extension (v3 instrument popup + durable
+capture with dwell/work-blocks), the seven-layer engine with enforced
+budgets, the daily continuity loop wired end-to-end, the browser
+console, and the site. Full notes:
+[notes-v0.1.0.md](notes-v0.1.0.md).
+
+
 ### Added — Phase 8E (Alpha Users + Evidence Loop)
 - **[`alpha/pack/`](../../alpha/pack/WELCOME.md)** —
   7-doc cohort welcome pack matching the

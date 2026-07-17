@@ -81,6 +81,7 @@ hierarchy.
    | `POST /v1/recovery/{id}/restore` | <10 ms |
    | `POST /v1/events/{kind}` | <2 ms |
    | `GET /v1/events/today` | <10 ms server (median) |
+   | `POST /v1/loop/bump` | <15 ms wall (median) |
    | `GET /v1/health` | <1 ms |
 
    A regression past the budget is a bug, not a slowdown. Profile

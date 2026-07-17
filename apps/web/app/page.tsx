@@ -7,8 +7,11 @@ import { OpenBand } from "./components/v2/OpenBand";
 import { Pipeline } from "./components/v2/Pipeline";
 import { Stats } from "./components/v2/Stats";
 import { Story } from "./components/v2/Story";
+import { Surfaces } from "./components/v2/Surfaces";
 import { Hero } from "./components/v2/Hero";
+import { LabRow } from "./components/v2/LabRow";
 import { Privacy } from "./components/v2/Privacy";
+import { TryIt } from "./components/v2/TryIt";
 import { ReadingThread } from "./components/v2/ReadingThread";
 import { Rule } from "./lib/reveal";
 import { SiteNav } from "./components/v2/SiteNav";
@@ -29,6 +32,8 @@ export default function Page() {
       <ReadingThread />
       <main>
         <Hero />
+        <LabRow />
+        <TryIt />
         <Stats />
         <Story />
         <Rule />
@@ -37,6 +42,8 @@ export default function Page() {
         <Pipeline />
         <Rule />
         <Extension />
+        <Rule />
+        <Surfaces />
         <Rule />
         <Privacy />
         <Rule />

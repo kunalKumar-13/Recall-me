@@ -256,6 +256,14 @@ export function ConsoleClient() {
 
   const load = useCallback(async () => {
     setProbing(true);
+    // ?demo=1 pins the canned dataset — for docs, screenshots and
+    // trying the room without a daemon. Says "demo data" honestly.
+    if (new URLSearchParams(window.location.search).has("demo")) {
+      connected.current = false;
+      setSnap(DEMO);
+      setProbing(false);
+      return;
+    }
     const s = await probe();
     if (!alive.current) return;
     connected.current = !!s;

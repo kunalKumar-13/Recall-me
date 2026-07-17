@@ -392,6 +392,8 @@ docs at `http://127.0.0.1:4545/docs-api`. OpenAPI JSON at
 | `POST` | `/v1/threads/cache/clear` | Wipe `~/.recall/threads.json` |
 | `GET` | `/v1/recovery/recent` | Top-N (≤3) resumable work cards for the launcher digest |
 | `POST` | `/v1/recovery/{id}/restore` | Return the full target list for one-click restoration |
+| `GET` | `/v1/loop/summary` | Daily continuity-loop counters + green/yellow/red verdicts (counts only, never content) |
+| `POST` | `/v1/loop/bump` | Launcher-side loop marks — summoned, shown, resumed, resume worked |
 
 The retrieval bundle (`/v1/search`) returns three layers in one
 response: episodic moments, the sessions those moments lived inside,
