@@ -603,6 +603,14 @@ footer a:hover { color: var(--ink); }
 .ck-kv b { color: var(--ink); font-weight: 500; text-align: right; }
 .ck-path { max-width: 118px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ck-railnote { font-size: 0.62rem; line-height: 2; color: var(--ink3); letter-spacing: 0.05em; display: flex; flex-direction: column; justify-content: flex-end; }
+.ck-loopwin { color: var(--ink3); letter-spacing: 0.08em; }
+.ck-verdicts { margin-top: 10px; display: flex; flex-direction: column; gap: 7px; }
+.ck-verdict { display: flex; align-items: center; gap: 9px; font-size: 0.64rem; letter-spacing: 0.06em; color: var(--ink2); }
+.ck-verdict i { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--ink3); }
+.ck-verdict i.green { background: #4fa784; }
+.ck-verdict i.yellow { background: #d09a2e; }
+.ck-verdict i.red { background: var(--red); }
+.ck-loopnote { margin-top: 12px; font-size: 0.58rem; line-height: 1.8; letter-spacing: 0.05em; color: var(--ink3); }
 
 /* stage: command line */
 .ck-cmd { display: flex; align-items: center; gap: 12px; border: 1px solid var(--hair); border-radius: 12px; background: var(--card); padding: 0 16px; box-shadow: inset 0 1px 3px rgba(var(--shadowrgb), 0.04), 0 1px 2px rgba(var(--shadowrgb), 0.04); transition: border-color 0.2s ease; }

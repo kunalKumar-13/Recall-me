@@ -44,6 +44,12 @@ interface Candidate {
   title: string;
   caption: string;
 }
+interface Loop {
+  returns: number;
+  shown: number;
+  used: number;
+  verdicts: Record<string, string>; // GREEN | YELLOW | RED
+}
 interface Snapshot {
   demo: boolean;
   ingestedTotal: number;
@@ -55,6 +61,7 @@ interface Snapshot {
   radar: string[];
   perf: Array<{ label: string; ms: number | null; budget: string }>;
   tail: TailEvent[];
+  loop: Loop | null;
 }
 
 const KIND_LABELS: Record<string, string> = {
@@ -107,6 +114,16 @@ const DEMO: Snapshot = {
     { ts: "", kind: "chat_session", title: "retry logic — claude.ai", domain: "claude.ai" },
     { ts: "", kind: "browser_search", title: "exponential backoff jitter", domain: "google.com" },
   ],
+  loop: {
+    returns: 62,
+    shown: 13,
+    used: 4,
+    verdicts: {
+      return_rate: "GREEN",
+      continuity_restored: "YELLOW",
+      resume_quality: "GREEN",
+    },
+  },
 };
 
 async function j<T>(path: string, init?: RequestInit, timeoutMs = 2200): Promise<T | null> {
@@ -164,12 +181,13 @@ function bucketHours(events: Array<Record<string, unknown>>): number[] {
 async function probe(): Promise<Snapshot | null> {
   const health = await j<Record<string, unknown>>("/v1/health");
   if (!health) return null;
-  const [today, rec, thr, rad, recent] = await Promise.all([
+  const [today, rec, thr, rad, recent, loop] = await Promise.all([
     j<{ count: number; kinds: Kinds }>("/v1/events/today"),
     j<{ candidates: Array<Record<string, unknown>> }>("/v1/recovery/recent?n=2"),
     j<{ threads: Array<Record<string, unknown>> }>("/v1/threads/recent?n=5"),
     j<{ contexts: Array<Record<string, unknown>>; enabled: boolean }>("/v1/resurface/idle?n=3"),
     j<{ events: Array<Record<string, unknown>> }>("/v1/events/recent?n=200&days=1"),
+    j<Record<string, unknown>>("/v1/loop/summary"),
   ]);
   const perf = [
     { label: "health", ms: await med("/v1/health", 5), budget: "<1" },
@@ -197,6 +215,18 @@ async function probe(): Promise<Snapshot | null> {
     ),
     perf,
     tail: mapTail(recentEvents.slice(0, 4)),
+    loop: loop
+      ? {
+          returns: Number((loop.window as Record<string, unknown>)?.returns ?? 0),
+          shown: Number(
+            (loop.window as Record<string, unknown>)?.recoveries_shown ?? 0,
+          ),
+          used: Number(
+            (loop.window as Record<string, unknown>)?.recoveries_used ?? 0,
+          ),
+          verdicts: (loop.green_yellow_red ?? {}) as Record<string, string>,
+        }
+      : null,
   };
 }
 
@@ -432,6 +462,33 @@ export function ConsoleClient() {
               <span>uploads</span>
               <b>0 · ever</b>
             </div>
+          </div>
+          <div className="ck-cell">
+            <div className="ck-label mono">
+              the loop <span className="ck-loopwin">· 7d</span>
+            </div>
+            <div className="ck-kv mono">
+              <span>returns</span>
+              <b>{s?.loop?.returns ?? "—"}</b>
+            </div>
+            <div className="ck-kv mono">
+              <span>surfaced → used</span>
+              <b>
+                {s?.loop ? `${s.loop.shown} → ${s.loop.used}` : "—"}
+              </b>
+            </div>
+            <div className="ck-verdicts">
+              {s?.loop &&
+                Object.entries(s.loop.verdicts).map(([k, v]) => (
+                  <div className="ck-verdict mono" key={k}>
+                    <i className={v.toLowerCase()} />
+                    <span>{k.replace(/_/g, " ")}</span>
+                  </div>
+                ))}
+            </div>
+            <p className="ck-loopnote mono">
+              recall grading itself — counts only, never content
+            </p>
           </div>
           <div className="ck-cell ck-railnote mono">
             read-only · zero proxying
