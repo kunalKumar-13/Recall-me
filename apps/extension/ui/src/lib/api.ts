@@ -75,6 +75,55 @@ export async function fetchToday(): Promise<TodaySummary | null> {
   return { count: data.count, kinds };
 }
 
+/**
+ * Today's rhythm: events bucketed into 24 local hours, straight from
+ * the recent-events stream. Null when the daemon is unreachable.
+ */
+export async function fetchHours(): Promise<number[] | null> {
+  const data = await getJSON<Record<string, unknown>>(
+    "/v1/events/recent?n=200&days=1",
+  );
+  if (!data) return null;
+  const hours = new Array(24).fill(0);
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+  for (const raw of asArray(data.events)) {
+    const e = raw as Record<string, unknown>;
+    const ms = Date.parse(String(e.ts ?? ""));
+    if (!Number.isFinite(ms) || ms < dayStart.getTime()) continue;
+    hours[new Date(ms).getHours()] += 1;
+  }
+  return hours;
+}
+
+/**
+ * The restoration plan, without executing it — the same POST the
+ * Resume path uses (it has no server-side side effects), read for
+ * display: files → chats → tabs → searches, in order.
+ */
+export async function fetchPlan(
+  id: string,
+): Promise<Array<{ kind: string; target: string; group: string }>> {
+  try {
+    const r = await fetch(
+      `${BASE}/v1/recovery/${encodeURIComponent(id)}/restore`,
+      { method: "POST", cache: "no-store" },
+    );
+    if (!r.ok) return [];
+    const data = (await r.json()) as Record<string, unknown>;
+    return asArray(data.steps).map((raw) => {
+      const s = raw as Record<string, unknown>;
+      return {
+        kind: stringOf(s.kind),
+        target: stringOf(s.target),
+        group: stringOf(s.group),
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchHealth(): Promise<Health | null> {
   const data = await getJSON<Record<string, unknown>>(
     "/v1/health",

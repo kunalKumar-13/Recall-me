@@ -266,3 +266,70 @@ body.options-tab #root {
   max-width: 560px;
   margin: 0 auto;
 }
+
+/* ───────────────────────── v3 — the instrument ─────────────────────
+   Hairline regions instead of floating cards. Bracket labels, mono
+   provenance, one accent. The popup is a gauge, not a feed. */
+
+.v3 { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
+.v3-sec { padding: 13px 18px 15px; border-bottom: 1px solid var(--line); }
+
+.v3-label {
+  display: flex; align-items: baseline; gap: 8px;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9.5px; font-weight: 600; letter-spacing: 1.8px;
+  text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px;
+}
+.v3-brk { opacity: 0.5; }
+.v3-labelright { margin-left: auto; letter-spacing: 0.6px; color: var(--ink-3); display: inline-flex; align-items: center; gap: 6px; }
+
+.v3-cand-t { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; color: var(--ink); }
+.v3-cand-c { margin-top: 3px; font-family: "Geist Mono", ui-monospace, monospace; font-size: 10px; color: var(--ink-3); line-height: 1.7; }
+.v3-actions { display: flex; align-items: center; gap: 10px; margin-top: 11px; }
+.v3-resume {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--accent); color: #fff; border-radius: 9px;
+  font-size: 12.5px; font-weight: 600; padding: 8px 16px;
+  transition: background var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
+}
+.v3-resume:hover { background: var(--accent-hover); transform: translateY(-1px); }
+.v3-kbd { font-family: "Geist Mono", ui-monospace, monospace; font-size: 10px; opacity: 0.75; border: 1px solid rgba(255,255,255,0.35); border-radius: 4px; padding: 0 5px; }
+.v3-ghost { font-family: "Geist Mono", ui-monospace, monospace; font-size: 9.5px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--accent); padding: 6px 4px; }
+.v3-plan { margin-top: 10px; border-left: 2px solid var(--accent-line); padding-left: 10px; display: flex; flex-direction: column; gap: 6px; }
+.v3-step { display: grid; grid-template-columns: 15px 46px minmax(0, 1fr); gap: 8px; align-items: baseline; font-family: "Geist Mono", ui-monospace, monospace; font-size: 10px; }
+.v3-step i { font-style: normal; display: grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 8.5px; font-weight: 700; }
+.v3-step .g { color: var(--ink-4); letter-spacing: 1px; text-transform: uppercase; font-size: 8.5px; }
+.v3-step .t { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+.v3-step .t.link { cursor: pointer; }
+.v3-step .t.link:hover { color: var(--accent); }
+
+.v3-count { font-family: "Geist Mono", ui-monospace, monospace; font-size: 15px; font-weight: 600; letter-spacing: -0.4px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.v3-count i { font-style: normal; font-size: 9px; color: var(--ink-3); letter-spacing: 0.8px; }
+.v3-hist { display: grid; grid-template-columns: repeat(24, 1fr); gap: 3px; align-items: end; height: 52px; border-bottom: 1px solid var(--line); padding-bottom: 1px; }
+.v3-hist i { display: block; border-radius: 2px 2px 0 0; background: var(--surface-2); transition: height 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+.v3-hist i.on { background: var(--border-strong); }
+.v3-hist i.now { background: var(--accent); }
+.v3-axis { display: flex; justify-content: space-between; margin-top: 6px; font-family: "Geist Mono", ui-monospace, monospace; font-size: 8px; letter-spacing: 1px; color: var(--ink-4); }
+.v3-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.v3-chip { display: inline-flex; align-items: center; gap: 6px; font-family: "Geist Mono", ui-monospace, monospace; font-size: 9px; letter-spacing: 0.6px; color: var(--ink-2); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; background: var(--surface-1); }
+.v3-chip i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+
+.v3-row { display: flex; flex-direction: column; gap: 1px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.v3-row:last-child { border-bottom: 0; }
+.v3-row .t { font-size: 12.5px; font-weight: 560; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v3-row .d { font-family: "Geist Mono", ui-monospace, monospace; font-size: 9px; color: var(--ink-4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.v3-live { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); display: inline-block; animation: v3pulse 2s ease-in-out infinite; }
+@keyframes v3pulse { 50% { opacity: 0.25; } }
+.v3-tailrow { display: grid; grid-template-columns: 34px 52px minmax(0, 1fr); gap: 8px; align-items: baseline; width: 100%; text-align: left; padding: 5px 0; font-family: "Geist Mono", ui-monospace, monospace; }
+.v3-tailrow:disabled { cursor: default; }
+.v3-tailrow:not(:disabled):hover .t { color: var(--accent); }
+.v3-tailrow .ts { font-size: 9px; color: var(--ink-4); font-variant-numeric: tabular-nums; }
+.v3-tailrow .k { font-size: 8.5px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--accent); opacity: 0.8; }
+.v3-tailrow .t { font-size: 11px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color var(--motion-fast) var(--motion-ease); }
+
+.v3-empty { font-family: "Geist Mono", ui-monospace, monospace; font-size: 9.5px; letter-spacing: 0.6px; color: var(--ink-4); padding: 4px 0; }
+
+.v3-foot { margin-top: auto; display: flex; justify-content: space-between; gap: 10px; padding: 10px 18px 12px; font-family: "Geist Mono", ui-monospace, monospace; font-size: 8.5px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--ink-4); }
+.v3-foot .ok { color: var(--ok); }
+.v3-foot .warn { color: var(--warn); }

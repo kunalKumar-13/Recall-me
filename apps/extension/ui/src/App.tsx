@@ -6,6 +6,7 @@ import {
   fetchHealth,
   fetchInvestigations,
   fetchMemory,
+  fetchHours,
   fetchRecovery,
   fetchToday,
   getQueuedCount,
@@ -39,10 +40,7 @@ import {
   type TodaySummary,
 } from "./lib/types";
 import { SettingsPanel } from "./components/SettingsPanel";
-import { Activity } from "./components/v2/Activity";
 import { Header } from "./components/v2/Header";
-import { Hero } from "./components/v2/Hero";
-import { Investigations } from "./components/v2/Investigations";
 import { SearchOverlay } from "./components/v2/SearchOverlay";
 import {
   DisconnectedPlate,
@@ -51,8 +49,7 @@ import {
   OfflinePlate,
   ReconnectingPlate,
 } from "./components/v2/States";
-import { Timeline } from "./components/v2/Timeline";
-import { TrustStrip } from "./components/v2/TrustStrip";
+import { MainV3 } from "./components/v3/Main";
 
 /**
  * Phase 7A — the premium extension surface. Six fixed-position
@@ -88,6 +85,7 @@ export function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [queued, setQueued] = useState(0);
   const [today, setToday] = useState<TodaySummary | null>(null);
+  const [hours, setHours] = useState<number[] | null>(null);
 
   const load = useCallback(async (reconnect = false) => {
     // Outbox depth matters most when the daemon is unreachable, so
@@ -108,6 +106,7 @@ export function App() {
     setEverConnected(true);
     // Capture self-check — engine-side ground truth, never a guess.
     void fetchToday().then(setToday);
+    void fetchHours().then(setHours);
     const [rec, inv, mem, dem] = await Promise.all([
       fetchRecovery(),
       fetchInvestigations(),
@@ -262,15 +261,22 @@ export function App() {
 
       <main
         className="scroll-area"
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--gap-section)",
-          padding: "16px 0 12px",
-          overflowY: "auto",
-          overflowX: "hidden",
-        }}
+        style={
+          state === "recovery" ||
+          state === "investigations" ||
+          state === "capturing" ||
+          state === "demo"
+            ? { flex: 1, display: "flex", flexDirection: "column", overflowY: "auto", overflowX: "hidden" }
+            : {
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--gap-section)",
+                padding: "16px 0 12px",
+                overflowY: "auto",
+                overflowX: "hidden",
+              }
+        }
       >
         {state === "loading" && <LoadingPlate />}
         {state === "reconnecting" && <ReconnectingPlate />}
@@ -293,14 +299,16 @@ export function App() {
           state === "capturing" ||
           state === "demo") && (
           <>
-            {effRecovery && (
-              <Hero recovery={effRecovery} onResume={effOnResume} />
-            )}
-            {effInvestigations.length > 0 && (
-              <Investigations investigations={effInvestigations} />
-            )}
-            <Timeline items={effMemory} />
-            <Activity connection={connection} today={today} />
+            <MainV3
+              connection={connection}
+              recovery={effRecovery}
+              threads={effInvestigations}
+              tail={effMemory}
+              today={state === "demo" ? null : today}
+              hours={state === "demo" ? null : hours}
+              queued={queued}
+              onResume={effOnResume}
+            />
             {state === "demo" && demo?.payload?.trust && (
               <DemoBannerInline
                 title={demo.payload.trust.bannerTitle}
@@ -311,14 +319,6 @@ export function App() {
           </>
         )}
       </main>
-
-      <TrustStrip
-        connection={connection}
-        queued={queued}
-        // Only claim a count while the daemon is answering — a
-        // number from a previous connection would be a guess.
-        today={connection === "connected" && today ? today.count : null}
-      />
 
       <SearchOverlay
         open={searchOpen}
