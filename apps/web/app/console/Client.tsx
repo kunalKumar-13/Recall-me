@@ -1,53 +1,78 @@
 "use client";
 
 /**
- * The engine room — a power-user console over the LOCAL daemon.
+ * The engine room, rebuilt as one instrument.
  *
- * Every request on this page goes browser → 127.0.0.1:4545. Nothing
- * is proxied through the site; deployed or not, your data never
- * leaves your machine. If no daemon answers, the room renders with
- * deterministic demo data and says so plainly.
+ * A single hairline-gridded cockpit: rail (layer meter + vitals),
+ * stage (command search over your whole memory + today's rhythm as a
+ * 24-hour histogram), side (continue with the real restoration plan,
+ * threads, radar), and a live tail + perf pulse along the footer.
  *
- * Read-only on purpose: the charter forbids dashboards as product
- * surfaces, but *inspectability is a product promise* — this is the
- * trust ledger with the lights on, not a feed to watch.
+ * Every request goes browser → 127.0.0.1:4545. Nothing is proxied
+ * through the site; your data never leaves your machine. No daemon →
+ * deterministic demo data, said plainly. Read-only by design: this
+ * is the trust ledger with the lights on, not a feed.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { LINKS } from "../lib/links";
 import { Mark } from "../lib/Mark";
 import { ThemeToggle } from "../lib/theme";
 
 const DAEMON = "http://127.0.0.1:4545";
-const LAYERS = [
-  "events",
-  "sessions",
-  "contexts",
-  "resurfacing",
-  "threads",
-  "evolution",
-  "recovery",
-];
 
 type Kinds = Record<string, number>;
 interface TailEvent {
   ts: string;
   kind: string;
   title: string;
-  url: string;
   domain: string;
+}
+interface PlanStep {
+  kind: string;
+  target: string;
+  group: string;
+}
+interface Candidate {
+  id: string;
+  title: string;
+  caption: string;
+}
+interface Loop {
+  returns: number;
+  shown: number;
+  used: number;
+  verdicts: Record<string, string>; // GREEN | YELLOW | RED
 }
 interface Snapshot {
   demo: boolean;
   ingestedTotal: number;
   eventsDir: string;
   today: { count: number; kinds: Kinds };
-  recovery: Array<{ title: string; caption: string }>;
+  hours: number[]; // 24 buckets, local time
+  recovery: Candidate[];
   threads: Array<{ title: string; events: number }>;
   radar: string[];
-  perf: Array<{ path: string; budget: string; ms: number | null }>;
+  perf: Array<{ label: string; ms: number | null; budget: string }>;
   tail: TailEvent[];
+  loop: Loop | null;
 }
+
+const KIND_LABELS: Record<string, string> = {
+  browser_visit: "pages",
+  browser_focus: "dwells",
+  browser_search: "searches",
+  chat_session: "chats",
+  desktop_window: "app focus",
+  open: "file opens",
+  reveal: "reveals",
+};
 
 const DEMO: Snapshot = {
   demo: true,
@@ -64,12 +89,13 @@ const DEMO: Snapshot = {
       open: 1,
     },
   },
+  hours: [0, 0, 0, 0, 0, 0, 0, 1, 3, 9, 12, 8, 4, 6, 11, 13, 9, 6, 4, 2, 0, 0, 0, 0],
   recovery: [
     {
+      id: "demo",
       title: "WebSocket reconnect bug",
       caption: "1 file · 1 chat · 2 tabs · returned 3×",
     },
-    { title: "Seed deck — narrative pass", caption: "yesterday · 6 events" },
   ],
   threads: [
     { title: "WebSocket reconnect bug", events: 24 },
@@ -78,25 +104,36 @@ const DEMO: Snapshot = {
   ],
   radar: ["tokio timeouts deep-dive", "billing migration notes"],
   perf: [
-    { path: "/v1/health", budget: "<1 ms server", ms: 0.9 },
-    { path: "/v1/events/today", budget: "<10 ms server", ms: 1.4 },
-    { path: "/v1/threads/recent", budget: "<50 ms server", ms: 9.2 },
-    { path: "/v1/search?q=…", budget: "<60 ms server", ms: 21.7 },
+    { label: "health", ms: 0.9, budget: "<1" },
+    { label: "today", ms: 1.4, budget: "<10" },
+    { label: "search", ms: 21.7, budget: "<60" },
   ],
   tail: [
-    { ts: "", kind: "browser_visit", title: "Stripe webhooks — retries", url: "", domain: "stripe.com" },
-    { ts: "", kind: "browser_focus", title: "dwell 4m 12s · wb-1751", url: "", domain: "stripe.com" },
-    { ts: "", kind: "chat_session", title: "retry logic — claude.ai", url: "", domain: "claude.ai" },
+    { ts: "", kind: "browser_visit", title: "Stripe webhooks — retries", domain: "stripe.com" },
+    { ts: "", kind: "browser_focus", title: "dwell 4m 12s · wb-1751", domain: "stripe.com" },
+    { ts: "", kind: "chat_session", title: "retry logic — claude.ai", domain: "claude.ai" },
+    { ts: "", kind: "browser_search", title: "exponential backoff jitter", domain: "google.com" },
   ],
+  loop: {
+    returns: 62,
+    shown: 13,
+    used: 4,
+    verdicts: {
+      return_rate: "GREEN",
+      continuity_restored: "YELLOW",
+      resume_quality: "GREEN",
+    },
+  },
 };
 
-async function j<T>(path: string, timeoutMs = 1800): Promise<T | null> {
+async function j<T>(path: string, init?: RequestInit, timeoutMs = 2200): Promise<T | null> {
   try {
     const c = new AbortController();
     const t = setTimeout(() => c.abort(), timeoutMs);
     const r = await fetch(`${DAEMON}${path}`, {
       cache: "no-store",
       signal: c.signal,
+      ...init,
     });
     clearTimeout(t);
     if (!r.ok) return null;
@@ -106,11 +143,11 @@ async function j<T>(path: string, timeoutMs = 1800): Promise<T | null> {
   }
 }
 
-async function median(path: string, n = 5): Promise<number> {
+async function med(path: string, n: number): Promise<number> {
   const xs: number[] = [];
   for (let i = 0; i < n; i++) {
     const t0 = performance.now();
-    await j(path, 2500);
+    await j(path);
     xs.push(performance.now() - t0);
   }
   xs.sort((a, b) => a - b);
@@ -125,38 +162,47 @@ function mapTail(events: Array<Record<string, unknown>>): TailEvent[] {
       String(e.title ?? "") ||
       String((e.payload as Record<string, unknown>)?.query ?? "") ||
       String(e.domain ?? ""),
-    url: String(e.url ?? ""),
     domain: String(e.domain ?? ""),
   }));
+}
+
+function bucketHours(events: Array<Record<string, unknown>>): number[] {
+  const hours = new Array(24).fill(0);
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+  for (const e of events) {
+    const ms = Date.parse(String(e.ts ?? ""));
+    if (!Number.isFinite(ms) || ms < dayStart.getTime()) continue;
+    hours[new Date(ms).getHours()] += 1;
+  }
+  return hours;
 }
 
 async function probe(): Promise<Snapshot | null> {
   const health = await j<Record<string, unknown>>("/v1/health");
   if (!health) return null;
-  const [today, rec, thr, rad, tail] = await Promise.all([
+  const [today, rec, thr, rad, recent, loop] = await Promise.all([
     j<{ count: number; kinds: Kinds }>("/v1/events/today"),
-    j<{ candidates: Array<Record<string, unknown>> }>("/v1/recovery/recent?n=3"),
+    j<{ candidates: Array<Record<string, unknown>> }>("/v1/recovery/recent?n=2"),
     j<{ threads: Array<Record<string, unknown>> }>("/v1/threads/recent?n=5"),
-    j<{ contexts: Array<Record<string, unknown>>; enabled: boolean }>(
-      "/v1/resurface/idle?n=3",
-    ),
-    j<{ events: Array<Record<string, unknown>> }>("/v1/events/recent?n=9&days=2"),
+    j<{ contexts: Array<Record<string, unknown>>; enabled: boolean }>("/v1/resurface/idle?n=3"),
+    j<{ events: Array<Record<string, unknown>> }>("/v1/events/recent?n=200&days=1"),
+    j<Record<string, unknown>>("/v1/loop/summary"),
   ]);
-  const [pHealth, pToday, pThreads, pSearch] = [
-    await median("/v1/health"),
-    await median("/v1/events/today", 3),
-    await median("/v1/threads/recent?n=5", 3),
-    await median("/v1/search?q=console", 3),
+  const perf = [
+    { label: "health", ms: await med("/v1/health", 5), budget: "<1" },
+    { label: "today", ms: await med("/v1/events/today", 3), budget: "<10" },
+    { label: "search", ms: await med("/v1/search?q=console", 3), budget: "<60" },
   ];
+  const recentEvents = recent?.events ?? [];
   return {
     demo: false,
     ingestedTotal: Number(health.ingested_total ?? 0),
     eventsDir: String(health.events_dir ?? "~/.recall/events"),
-    today: {
-      count: today?.count ?? 0,
-      kinds: today?.kinds ?? {},
-    },
+    today: { count: today?.count ?? 0, kinds: today?.kinds ?? {} },
+    hours: bucketHours(recentEvents),
     recovery: (rec?.candidates ?? []).map((c) => ({
+      id: String(c.id ?? ""),
       title: String(c.title ?? "Untitled"),
       caption: String(c.preview_caption ?? ""),
     })),
@@ -167,28 +213,24 @@ async function probe(): Promise<Snapshot | null> {
     radar: (rad?.enabled ? rad.contexts ?? [] : []).map((c) =>
       String(c.label || c.topic || ""),
     ),
-    perf: [
-      { path: "/v1/health", budget: "<1 ms server", ms: pHealth },
-      { path: "/v1/events/today", budget: "<10 ms server", ms: pToday },
-      { path: "/v1/threads/recent", budget: "<50 ms server", ms: pThreads },
-      { path: "/v1/search?q=…", budget: "<60 ms server", ms: pSearch },
-    ],
-    tail: mapTail(tail?.events ?? []),
+    perf,
+    tail: mapTail(recentEvents.slice(0, 4)),
+    loop: loop
+      ? {
+          returns: Number((loop.window as Record<string, unknown>)?.returns ?? 0),
+          shown: Number(
+            (loop.window as Record<string, unknown>)?.recoveries_shown ?? 0,
+          ),
+          used: Number(
+            (loop.window as Record<string, unknown>)?.recoveries_used ?? 0,
+          ),
+          verdicts: (loop.green_yellow_red ?? {}) as Record<string, string>,
+        }
+      : null,
   };
 }
 
-const KIND_LABELS: Record<string, string> = {
-  browser_visit: "pages",
-  browser_focus: "dwells",
-  browser_search: "searches",
-  chat_session: "chats",
-  desktop_window: "app focus",
-  open: "file opens",
-  reveal: "reveals",
-};
-
 function tailTime(ts: string): string {
-  if (!ts) return "--:--";
   const ms = Date.parse(ts);
   if (!Number.isFinite(ms)) return "--:--";
   const d = new Date(ms);
@@ -206,8 +248,11 @@ export function ConsoleClient() {
   const [probing, setProbing] = useState(true);
   const [sq, setSq] = useState("");
   const [hits, setHits] = useState<Hit[] | null>(null);
+  const [plan, setPlan] = useState<PlanStep[] | null>(null);
+  const [planFor, setPlanFor] = useState<string | null>(null);
   const alive = useRef(true);
   const connected = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     setProbing(true);
@@ -226,15 +271,13 @@ export function ConsoleClient() {
     };
   }, [load]);
 
-  /* quiet live refresh: today + tail only, light endpoints */
+  /* quiet live refresh — today, histogram, tail */
   useEffect(() => {
     const t = setInterval(async () => {
       if (document.hidden || !connected.current) return;
-      const [today, tail] = await Promise.all([
+      const [today, recent] = await Promise.all([
         j<{ count: number; kinds: Kinds }>("/v1/events/today"),
-        j<{ events: Array<Record<string, unknown>> }>(
-          "/v1/events/recent?n=9&days=2",
-        ),
+        j<{ events: Array<Record<string, unknown>> }>("/v1/events/recent?n=200&days=1"),
       ]);
       if (!alive.current || !today) return;
       setSnap((s) =>
@@ -242,7 +285,8 @@ export function ConsoleClient() {
           ? {
               ...s,
               today: { count: today.count, kinds: today.kinds },
-              tail: tail ? mapTail(tail.events) : s.tail,
+              hours: recent ? bucketHours(recent.events) : s.hours,
+              tail: recent ? mapTail(recent.events.slice(0, 4)) : s.tail,
             }
           : s,
       );
@@ -250,7 +294,22 @@ export function ConsoleClient() {
     return () => clearInterval(t);
   }, []);
 
-  /* search over memory + files, debounced */
+  /* '/' focuses the command line, esc clears */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "/" && document.activeElement !== inputRef.current) {
+        e.preventDefault();
+        inputRef.current?.focus();
+      } else if (e.key === "Escape") {
+        setSq("");
+        inputRef.current?.blur();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  /* search memory + files, debounced */
   useEffect(() => {
     const q = sq.trim();
     if (!q || !connected.current) {
@@ -269,7 +328,7 @@ export function ConsoleClient() {
       ]);
       if (dead) return;
       const out: Hit[] = [];
-      (mem?.episodic ?? []).slice(0, 5).forEach((e) =>
+      (mem?.episodic ?? []).slice(0, 6).forEach((e) =>
         out.push({
           label: String(e.title || e.subtitle || "Moment"),
           detail: String(e.subtitle || e.kind || ""),
@@ -283,258 +342,360 @@ export function ConsoleClient() {
         }),
       );
       setHits(out);
-    }, 220);
+    }, 200);
     return () => {
       dead = true;
       clearTimeout(t);
     };
   }, [sq]);
 
+  /* the restoration plan for the top candidate — the real order */
+  const revealPlan = useCallback(
+    async (c: Candidate) => {
+      if (planFor === c.id) {
+        setPlan(null);
+        setPlanFor(null);
+        return;
+      }
+      if (snap?.demo) {
+        setPlan([
+          { kind: "path", target: "~/dev/api/webhooks.py", group: "files" },
+          { kind: "url", target: "https://claude.ai/chat/…", group: "chats" },
+          { kind: "url", target: "https://stripe.com/docs/webhooks", group: "tabs" },
+        ]);
+        setPlanFor(c.id);
+        return;
+      }
+      const p = await j<{ steps: PlanStep[] }>(
+        `/v1/recovery/${encodeURIComponent(c.id)}/restore`,
+        { method: "POST" },
+      );
+      setPlan(p?.steps ?? []);
+      setPlanFor(c.id);
+    },
+    [planFor, snap?.demo],
+  );
+
   const s = snap;
-  const kindMax = s ? Math.max(1, ...Object.values(s.today.kinds)) : 1;
+  const hourMax = useMemo(() => Math.max(1, ...(s?.hours ?? [1])), [s?.hours]);
+  const nowHour = new Date().getHours();
+  const kindMax = s ? Math.max(1, ...Object.values(s.today.kinds), 1) : 1;
+
+  /* honest layer signals: a dot means "has material right now" */
+  const layerOn: Record<string, boolean> = {
+    events: (s?.today.count ?? 0) > 0,
+    sessions: (s?.today.count ?? 0) > 0,
+    contexts: (s?.today.count ?? 0) > 0,
+    resurfacing: (s?.radar.length ?? 0) > 0,
+    threads: (s?.threads.length ?? 0) > 0,
+    evolution: (s?.threads[0]?.events ?? 0) > 3,
+    recovery: (s?.recovery.length ?? 0) > 0,
+  };
 
   return (
-    <div className="conroot">
-      <header className="conbar">
+    <div className="ck">
+      {/* ── bar ─────────────────────────────────────────────── */}
+      <header className="ck-bar">
         <a className="brand" href="/">
           <Mark />
           Recall
-          <span className="conbadge mono">console</span>
+          <span className="ck-badge mono">console</span>
         </a>
-        <div className="constatus mono">
+        <div className="ck-status mono">
           {probing ? (
             <>
-              <i className="dot probing" /> probing 127.0.0.1:4545…
+              <i className="d probing" /> probing 127.0.0.1:4545…
             </>
           ) : s && !s.demo ? (
             <>
-              <i className="dot ok" /> daemon connected · local only
+              <i className="d ok" /> daemon connected · local only
             </>
           ) : (
             <>
-              <i className="dot off" /> no daemon found · demo data
+              <i className="d off" /> no daemon · demo data
             </>
           )}
         </div>
-        <div className="conright">
-          <button className="conbtn mono" onClick={load} disabled={probing}>
+        <div className="ck-actions">
+          <button className="ck-btn mono" onClick={load} disabled={probing}>
             re-probe
           </button>
           <ThemeToggle />
-          <a className="conbtn mono" href="/">
+          <a className="ck-btn mono" href="/">
             ← site
           </a>
         </div>
       </header>
 
-      <div className="constrip mono" aria-hidden="true">
-        {LAYERS.map((l, i) => (
-          <span key={l}>
-            <b>{l}</b>
-            {i < LAYERS.length - 1 && <i> → </i>}
-          </span>
-        ))}
-        <span className="constrip-note">seven layers · strictly upward · deterministic</span>
-      </div>
+      {/* ── instrument ──────────────────────────────────────── */}
+      <div className="ck-grid">
+        {/* rail */}
+        <aside className="ck-rail">
+          <div className="ck-cell">
+            <div className="ck-label mono">engine layers</div>
+            <div className="ck-meter">
+              {Object.entries(layerOn).map(([name, on]) => (
+                <div className="ck-layer mono" key={name}>
+                  <i className={on ? "on" : ""} />
+                  <span>{name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="ck-cell">
+            <div className="ck-label mono">vitals</div>
+            <div className="ck-kv mono">
+              <span>address</span>
+              <b>127.0.0.1:4545</b>
+            </div>
+            <div className="ck-kv mono">
+              <span>since start</span>
+              <b>{s ? s.ingestedTotal.toLocaleString() : "—"}</b>
+            </div>
+            <div className="ck-kv mono">
+              <span>store</span>
+              <b className="ck-path" title={s?.eventsDir}>
+                {s?.eventsDir.replace(/^\/Users\/[^/]+/, "~") ?? "—"}
+              </b>
+            </div>
+            <div className="ck-kv mono">
+              <span>uploads</span>
+              <b>0 · ever</b>
+            </div>
+          </div>
+          <div className="ck-cell">
+            <div className="ck-label mono">
+              the loop <span className="ck-loopwin">· 7d</span>
+            </div>
+            <div className="ck-kv mono">
+              <span>returns</span>
+              <b>{s?.loop?.returns ?? "—"}</b>
+            </div>
+            <div className="ck-kv mono">
+              <span>surfaced → used</span>
+              <b>
+                {s?.loop ? `${s.loop.shown} → ${s.loop.used}` : "—"}
+              </b>
+            </div>
+            <div className="ck-verdicts">
+              {s?.loop &&
+                Object.entries(s.loop.verdicts).map(([k, v]) => (
+                  <div className="ck-verdict mono" key={k}>
+                    <i className={v.toLowerCase()} />
+                    <span>{k.replace(/_/g, " ")}</span>
+                  </div>
+                ))}
+            </div>
+            <p className="ck-loopnote mono">
+              recall grading itself — counts only, never content
+            </p>
+          </div>
+          <div className="ck-cell ck-railnote mono">
+            read-only · zero proxying
+            <br />
+            this page ↔ your daemon
+          </div>
+        </aside>
 
-      {s?.demo && !probing && (
-        <div className="condemo mono">
-          showing demo data — start Recall locally and re-probe. this page
-          only ever talks to <b>127.0.0.1:4545</b> from your own browser; the
-          site never sees your data.
-        </div>
-      )}
+        {/* stage */}
+        <section className="ck-stage">
+          <div className="ck-cmd">
+            <span className="ck-glyph" aria-hidden>
+              ⌕
+            </span>
+            <input
+              ref={inputRef}
+              className="ck-input"
+              value={sq}
+              onChange={(e) => setSq(e.target.value)}
+              placeholder={
+                s?.demo
+                  ? "search needs the daemon — start Recall and re-probe"
+                  : "ask your memory — pages, chats, files…"
+              }
+              disabled={!!s?.demo}
+              spellCheck={false}
+            />
+            <span className="ck-keys mono">
+              <b>/</b> focus · <b>esc</b> clear
+            </span>
+          </div>
 
-      <main className="congrid">
-        {/* search — the whole memory from here */}
-        <section className="conpanel span3 consearch">
-          <div className="conlabel mono">[ 00 ] search your memory</div>
-          <input
-            className="coninput mono"
-            value={sq}
-            onChange={(e) => setSq(e.target.value)}
-            placeholder={
-              s?.demo
-                ? "search works when the daemon is connected…"
-                : "type — memory and files, under 100 ms…"
-            }
-            spellCheck={false}
-            disabled={!!s?.demo}
-          />
-          {hits && (
-            <div className="conhits">
+          {hits ? (
+            <div className="ck-results">
               {hits.length === 0 && (
-                <div className="conempty mono">nothing matched</div>
+                <div className="ck-empty mono">nothing matched “{sq}”</div>
               )}
               {hits.map((h, i) =>
                 h.url ? (
                   <a
-                    className="conhit"
                     key={`${h.label}-${i}`}
+                    className="ck-hit"
                     href={h.url}
                     target="_blank"
                     rel="noreferrer"
                   >
-                    <span className="conhit-t">{h.label}</span>
-                    <span className="conhit-d mono">{h.detail}</span>
+                    <span className="t">{h.label}</span>
+                    <span className="d mono">{h.detail}</span>
+                    <span className="g mono">open ↗</span>
                   </a>
                 ) : (
-                  <div className="conhit" key={`${h.label}-${i}`}>
-                    <span className="conhit-t">{h.label}</span>
-                    <span className="conhit-d mono">{h.detail}</span>
+                  <div key={`${h.label}-${i}`} className="ck-hit">
+                    <span className="t">{h.label}</span>
+                    <span className="d mono">{h.detail}</span>
+                    <span className="g mono">file</span>
                   </div>
                 ),
               )}
             </div>
-          )}
-        </section>
-
-        {/* today */}
-        <section className="conpanel span2">
-          <div className="conlabel mono">[ 01 ] captured today</div>
-          <div className="connum">
-            {s ? s.today.count.toLocaleString() : "—"}
-            <span className="consub">events</span>
-          </div>
-          <div className="conbars">
-            {s &&
-              Object.entries(s.today.kinds)
-                .sort((a, b) => b[1] - a[1])
-                .map(([k, v]) => (
-                  <div className="conbar-row" key={k}>
-                    <span className="conbar-k mono">
-                      {KIND_LABELS[k] ?? k}
-                    </span>
-                    <span className="conbar-track">
-                      <i
-                        style={{
-                          width: `${Math.max(2, (v / kindMax) * 100)}%`,
-                        }}
-                      />
-                    </span>
-                    <span className="conbar-v mono">{v}</span>
+          ) : (
+            <div className="ck-today">
+              <div className="ck-today-head">
+                <span className="ck-label mono">today</span>
+                <span className="ck-count mono">
+                  {s ? s.today.count.toLocaleString() : "—"}
+                  <i>events</i>
+                </span>
+              </div>
+              <div className="ck-hist" role="img" aria-label="Events per hour today">
+                {(s?.hours ?? new Array(24).fill(0)).map((v, h) => (
+                  <div className="ck-hcol" key={h}>
+                    <i
+                      className={h === nowHour ? "now" : v > 0 ? "on" : ""}
+                      style={{ height: `${Math.max(3, (v / hourMax) * 100)}%` }}
+                      title={`${String(h).padStart(2, "0")}:00 — ${v} events`}
+                    />
                   </div>
                 ))}
-            {s && Object.keys(s.today.kinds).length === 0 && (
-              <div className="conempty mono">
-                nothing yet today — work normally
               </div>
-            )}
-          </div>
+              <div className="ck-hxaxis mono">
+                <span>00</span>
+                <span>06</span>
+                <span>12</span>
+                <span>18</span>
+                <span>23</span>
+              </div>
+              <div className="ck-chips">
+                {s &&
+                  Object.entries(s.today.kinds)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([k, v]) => (
+                      <span className="ck-chip mono" key={k}>
+                        <i style={{ opacity: 0.3 + 0.7 * (v / kindMax) }} />
+                        {v} {KIND_LABELS[k] ?? k}
+                      </span>
+                    ))}
+                {s && s.today.count === 0 && (
+                  <span className="ck-empty mono">
+                    quiet so far — work normally
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </section>
 
-        {/* daemon */}
-        <section className="conpanel">
-          <div className="conlabel mono">[ 02 ] daemon</div>
-          <div className="conkv mono">
-            <span>address</span>
-            <b>127.0.0.1:4545</b>
-          </div>
-          <div className="conkv mono">
-            <span>since start</span>
-            <b>{s ? s.ingestedTotal.toLocaleString() : "—"} ingested</b>
-          </div>
-          <div className="conkv mono">
-            <span>store</span>
-            <b className="conpath">{s?.eventsDir ?? "—"}</b>
-          </div>
-          <div className="conkv mono">
-            <span>uploads</span>
-            <b>0 — loopback is the boundary</b>
-          </div>
-        </section>
-
-        {/* perf */}
-        <section className="conpanel">
-          <div className="conlabel mono">[ 03 ] perf pulse</div>
-          <div className="conperf mono">
-            {(s?.perf ?? []).map((p) => (
-              <div className="conperf-row" key={p.path}>
-                <span className="conperf-p">{p.path}</span>
-                <span className="conperf-m">
-                  {p.ms === null ? "—" : `${p.ms} ms`}
-                </span>
-                <span className="conperf-b">{p.budget}</span>
+        {/* side */}
+        <aside className="ck-side">
+          <div className="ck-cell">
+            <div className="ck-label mono">continue</div>
+            {(s?.recovery ?? []).map((c) => (
+              <div key={c.id}>
+                <button className="ck-cand" onClick={() => void revealPlan(c)}>
+                  <span className="t">{c.title}</span>
+                  <span className="d mono">{c.caption}</span>
+                  <span className="g mono">
+                    {planFor === c.id ? "hide plan" : "show plan"}
+                  </span>
+                </button>
+                {planFor === c.id && plan && (
+                  <div className="ck-plan">
+                    {plan.map((st, i) =>
+                      st.kind === "url" ? (
+                        <a
+                          key={i}
+                          className="ck-step mono"
+                          href={st.target}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <i>{i + 1}</i>
+                          <span>{st.group}</span>
+                          <b>{st.target.replace(/^https?:\/\//, "").slice(0, 34)}…</b>
+                        </a>
+                      ) : (
+                        <div key={i} className="ck-step mono">
+                          <i>{i + 1}</i>
+                          <span>{st.group}</span>
+                          <b title="files open via the launcher">
+                            {st.target.replace(/^\/Users\/[^/]+/, "~")}
+                          </b>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                )}
               </div>
             ))}
+            {s && s.recovery.length === 0 && (
+              <div className="ck-empty mono">nothing to resume</div>
+            )}
           </div>
-          <p className="confoot-note">
-            wall-clock from this browser, median of repeated calls — budgets
-            are the charter&apos;s server-side ceilings.
-          </p>
-        </section>
-
-        {/* recovery */}
-        <section className="conpanel">
-          <div className="conlabel mono">[ 04 ] continue</div>
-          {(s?.recovery ?? []).map((r) => (
-            <div className="conrow" key={r.title}>
-              <div className="conrow-t">{r.title}</div>
-              <div className="conrow-c mono">{r.caption}</div>
-            </div>
-          ))}
-          {s && s.recovery.length === 0 && (
-            <div className="conempty mono">nothing to resume right now</div>
-          )}
-        </section>
-
-        {/* threads */}
-        <section className="conpanel">
-          <div className="conlabel mono">[ 05 ] active threads</div>
-          {(s?.threads ?? []).map((t) => (
-            <div className="conrow" key={t.title}>
-              <div className="conrow-t">{t.title}</div>
-              <div className="conrow-c mono">{t.events} events</div>
-            </div>
-          ))}
-          {s && s.threads.length === 0 && (
-            <div className="conempty mono">no threads yet</div>
-          )}
-        </section>
-
-        {/* live tail */}
-        <section className="conpanel span2">
-          <div className="conlabel mono">
-            [ 06 ] live tail <i className="contick" />
+          <div className="ck-cell">
+            <div className="ck-label mono">active threads</div>
+            {(s?.threads ?? []).map((t) => (
+              <div className="ck-row" key={t.title}>
+                <span className="t">{t.title}</span>
+                <span className="d mono">{t.events}</span>
+              </div>
+            ))}
+            {s && s.threads.length === 0 && (
+              <div className="ck-empty mono">none yet</div>
+            )}
           </div>
-          <div className="contail">
+          <div className="ck-cell">
+            <div className="ck-label mono">on your radar</div>
+            {(s?.radar ?? []).map((r) => (
+              <div className="ck-row" key={r}>
+                <span className="t">{r}</span>
+                <span className="d mono">cooled</span>
+              </div>
+            ))}
+            {s && s.radar.length === 0 && (
+              <div className="ck-empty mono">clear</div>
+            )}
+          </div>
+        </aside>
+      </div>
+
+      {/* ── foot: tail + pulse ──────────────────────────────── */}
+      <footer className="ck-foot">
+        <div className="ck-tail">
+          <span className="ck-label mono">
+            tail <i className="ck-tick" />
+          </span>
+          <div className="ck-tailrows">
             {(s?.tail ?? []).map((e, i) => (
-              <div className="contail-row" key={`${e.ts}-${i}`}>
-                <span className="contail-ts mono">{tailTime(e.ts)}</span>
-                <span className="contail-k mono">{e.kind}</span>
-                <span className="contail-t">{e.title}</span>
-                <span className="contail-d mono">{e.domain}</span>
+              <div className="ck-tailrow mono" key={`${e.ts}-${i}`}>
+                <span className="ts">{tailTime(e.ts)}</span>
+                <span className="k">{e.kind.replace("browser_", "")}</span>
+                <span className="t">{e.title}</span>
+                <span className="d">{e.domain}</span>
               </div>
             ))}
-            {s && s.tail.length === 0 && (
-              <div className="conempty mono">no recent events</div>
-            )}
           </div>
-        </section>
-
-        {/* radar */}
-        <section className="conpanel">
-          <div className="conlabel mono">[ 07 ] on your radar</div>
-          {(s?.radar ?? []).map((r) => (
-            <div className="conrow" key={r}>
-              <div className="conrow-t">{r}</div>
-              <div className="conrow-c mono">set aside · cooled</div>
-            </div>
+        </div>
+        <div className="ck-pulse mono">
+          {(s?.perf ?? []).map((p) => (
+            <span className="ck-pchip" key={p.label}>
+              {p.label} <b>{p.ms === null ? "—" : `${p.ms}ms`}</b>
+              <i>{p.budget}</i>
+            </span>
           ))}
-          {s && s.radar.length === 0 && (
-            <div className="conempty mono">radar is clear</div>
-          )}
-        </section>
-      </main>
-
-      <footer className="confoot mono">
-        <span>
-          read-only · this page ↔ your daemon · zero proxying, zero analytics
-          · refreshes quietly every 8s
-        </span>
-        <a href={LINKS.github} target="_blank" rel="noreferrer">
-          source ↗
-        </a>
+          <a href={LINKS.github} target="_blank" rel="noreferrer">
+            source ↗
+          </a>
+        </div>
       </footer>
     </div>
   );

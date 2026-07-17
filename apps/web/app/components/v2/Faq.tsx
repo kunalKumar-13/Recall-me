@@ -31,7 +31,7 @@ export function Faq() {
   return (
     <Section id="faq" className="sec">
       <div className="wrap sechead">
-        <SectionHead index="09" eyebrow="Questions, answered plainly">
+        <SectionHead index="07" eyebrow="Questions, answered plainly">
           <h2>
             <Words>Everything you&apos;d want to ask.</Words>
           </h2>

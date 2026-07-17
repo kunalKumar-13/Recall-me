@@ -19,8 +19,8 @@ const COLS = [
     label: "Engine",
     links: [
       { t: "Architecture", h: "#engine" },
-      { t: "Seven layers", h: "#layers" },
       { t: "Console", h: "/console" },
+      { t: "The honest table", h: "#compare" },
       { t: "Docs", h: LINKS.docs, ext: true },
     ],
   },
