@@ -90,7 +90,23 @@ explicit consent.
 
 ## Installer pipeline (macOS launcher)
 
-The v2 Tauri launcher ships as a `.dmg`:
+The v2 Tauri launcher ships as a `.dmg` **with the engine bundled
+as a sidecar**:
+
+0. `pyinstaller --noconfirm recall-daemon.spec` (repo root) — builds
+   the ~21 MB headless engine (no Qt, no embedding stack; file
+   search degrades to `enabled:false`), then place it for Tauri:
+
+   ```bash
+   cp dist/recall-daemon \
+     apps/launcher/src-tauri/binaries/recall-daemon-aarch64-apple-darwin
+   ```
+
+   `src-tauri/binaries/` is gitignored — the sidecar is a build
+   artifact, rebuilt per release. At app boot the launcher probes
+   127.0.0.1:4545 and only spawns the bundled engine if nothing
+   answers; it kills its own child on exit and never touches an
+   externally-run daemon.
 
 1. `cd apps/launcher && pnpm tauri build` — compiles the release
    binary (fat-LTO, `opt-level = "s"`) and bundles both artifacts:

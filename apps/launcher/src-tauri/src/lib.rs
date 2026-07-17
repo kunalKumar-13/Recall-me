@@ -21,6 +21,7 @@ use tauri_plugin_global_shortcut::{
     Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState,
 };
 use tauri_plugin_opener::OpenerExt;
+use tauri_plugin_shell::{process::CommandChild, ShellExt};
 
 const ENGINE: &str = "http://127.0.0.1:4545";
 const PANEL_WIDTH: f64 = 720.0;
@@ -143,6 +144,45 @@ fn normalize_spec(spec: &str) -> Option<String> {
 
 fn default_shortcut() -> Shortcut {
     Shortcut::new(Some(Modifiers::CONTROL), Code::Space)
+}
+
+// ------------------------------------------------- bundled engine
+//
+// The .dmg carries the engine as a sidecar binary. On boot the
+// launcher probes 127.0.0.1:4545: if a daemon already answers (a
+// dev checkout, a launchd service), it does nothing — the running
+// engine always wins. Otherwise it spawns the bundled one and kills
+// it again on exit. The engine's own instance lock makes a race
+// harmless.
+
+struct EngineChild(std::sync::Mutex<Option<CommandChild>>);
+
+fn ensure_engine(app: &AppHandle) {
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if engine_get("/v1/health").await.is_ok() {
+            return; // an engine is already serving — never double-start
+        }
+        match app.shell().sidecar("recall-daemon") {
+            Ok(cmd) => match cmd.args(["--service"]).spawn() {
+                Ok((_rx, child)) => {
+                    if let Some(state) = app.try_state::<EngineChild>() {
+                        *state.0.lock().unwrap() = Some(child);
+                    }
+                }
+                Err(e) => eprintln!("recall: bundled engine failed to spawn: {e}"),
+            },
+            Err(e) => eprintln!("recall: no bundled engine sidecar: {e}"),
+        }
+    });
+}
+
+fn stop_engine(app: &AppHandle) {
+    if let Some(state) = app.try_state::<EngineChild>() {
+        if let Some(child) = state.0.lock().unwrap().take() {
+            let _ = child.kill();
+        }
+    }
 }
 
 #[cfg(test)]
@@ -444,6 +484,8 @@ fn toggle_panel(win: &WebviewWindow) {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_shell::init())
+        .manage(EngineChild(std::sync::Mutex::new(None)))
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
             None,
@@ -477,6 +519,10 @@ pub fn run() {
             settings_set_autostart,
         ])
         .setup(move |app| {
+            // Bring the bundled engine up first — the panel is only
+            // as good as the daemon behind it.
+            ensure_engine(app.handle());
+
             let win = app
                 .get_webview_window("main")
                 .expect("main window must exist");
@@ -529,6 +575,13 @@ pub fn run() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running Recall launcher");
+        .build(tauri::generate_context!())
+        .expect("error while building Recall launcher")
+        .run(|app, event| {
+            if let tauri::RunEvent::Exit = event {
+                // Take the bundled engine down with us; an external
+                // daemon (dev checkout / launchd) is never ours to kill.
+                stop_engine(app);
+            }
+        });
 }

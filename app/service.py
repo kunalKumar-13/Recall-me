@@ -26,13 +26,14 @@ from pathlib import Path
 from typing import Optional
 
 from .core.config import CHROMA_DIR, CONFIG_DIR, Config
-from .core.embeddings import EmbeddingModel
 from .core.events import EventLogger
-from .core.indexer import Indexer
-from .core.search import SearchEngine
-from .core.watcher import IndexWatcher
-from .db.store import VectorStore
 from api import APIService  # type: ignore[import-not-found]
+
+# The file-search stack (chromadb + sentence-transformers + torch) is
+# optional at runtime: the bundled daemon ships without it to stay
+# small, and /v1/search/files answers `enabled: false` — a calm
+# state, not an error. Importing lazily inside run() keeps the
+# frozen binary from even trying to load torch at boot.
 
 log = logging.getLogger("recall.service")
 
@@ -108,26 +109,40 @@ def run_service() -> int:
 
     # File index + watcher: keep ~/.recall/chroma in step with the
     # configured folders so file search stays fresh across reboots.
-    store = VectorStore(CHROMA_DIR)
-    model = EmbeddingModel.get(config.embedding_model)
-    indexer = Indexer(config, store, model)
+    # The whole stack is optional — a bundled daemon without the
+    # embedding packages runs everything else at full fidelity.
+    watcher = None
+    search_engine = None
+    try:
+        from .core.embeddings import EmbeddingModel
+        from .core.indexer import Indexer
+        from .core.search import SearchEngine
+        from .core.watcher import IndexWatcher
+        from .db.store import VectorStore
 
-    watcher: Optional[IndexWatcher] = None
-    if config.indexed_folders:
-        # Watcher-forward indexing: the watcher embeds files as they are
-        # created or modified, so real work from today onward is captured
-        # into file search. We deliberately do NOT run a full historical
-        # index pass here — Documents/Desktop are large, file search is
-        # secondary to event capture, and any prior pass is already on
-        # disk in ~/.recall/chroma.
-        watcher = IndexWatcher(indexer, list(config.indexed_folders))
-        started = watcher.start()
-        log.info("watcher running: %s (%d folder(s))",
-                 started, len(config.indexed_folders))
-        if not started:
-            watcher = None
-    else:
-        log.info("no indexed folders configured — watcher idle.")
+        store = VectorStore(CHROMA_DIR)
+        model = EmbeddingModel.get(config.embedding_model)
+        indexer = Indexer(config, store, model)
+        search_engine = SearchEngine(store, model)
+
+        if config.indexed_folders:
+            # Watcher-forward indexing: the watcher embeds files as
+            # they are created or modified, so real work from today
+            # onward is captured into file search. We deliberately do
+            # NOT run a full historical index pass here — folders are
+            # large, file search is secondary to event capture, and
+            # any prior pass is already on disk in ~/.recall/chroma.
+            watcher = IndexWatcher(indexer, list(config.indexed_folders))
+            started = watcher.start()
+            log.info("watcher running: %s (%d folder(s))",
+                     started, len(config.indexed_folders))
+            if not started:
+                watcher = None
+        else:
+            log.info("no indexed folders configured — watcher idle.")
+    except Exception:
+        log.info("file-search stack unavailable — "
+                 "/v1/search/files will answer enabled:false")
 
     # Local memory API — ingestion (capture) + retrieval. Same wiring as
     # the GUI path in app.main, minus everything Qt.
@@ -143,7 +158,7 @@ def run_service() -> int:
         # Same store + model the watcher indexes into — the daemon now
         # answers /v1/search/files for every client (launcher,
         # extension, editors) instead of keeping file search in-process.
-        file_search_engine=SearchEngine(store, model),
+        file_search_engine=search_engine,
     )
     api_started = api.start()
     log.info("api service: %s on 127.0.0.1:%d",

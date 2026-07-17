@@ -42,3 +42,8 @@ demo/*.gif
 # that ARE tracked - see docs/trust/INSTALL_PROOF_WINDOWS.md)
 *.log.tmp
 *.runtime.log
+
+# bundled engine sidecar — built by pyinstaller, never committed
+apps/launcher/src-tauri/binaries/
+dist/
+build/
