@@ -253,7 +253,8 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spa
 .ax-x { left: 26px; right: 8px; bottom: -2px; justify-content: space-between; }
 .plotderiv { margin-top: 14px; font-size: 0.64rem; letter-spacing: 0.05em; color: var(--ink3); }
 
-.cnx { width: 100%; height: auto; display: block; animation: cnxFloat 12s ease-in-out infinite alternate; }
+.cnxwrap { position: relative; }
+.cnx { width: 100%; height: auto; display: block; cursor: crosshair; animation: cnxFloat 12s ease-in-out infinite alternate; }
 @keyframes cnxFloat { from { transform: translateY(-4px); } to { transform: translateY(5px); } }
 .cnx-edge { stroke: rgba(var(--inkrgb), 0.26); stroke-width: 1; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 0.9s var(--out-soft); }
 .in .cnx-edge { stroke-dashoffset: 0; }
@@ -264,6 +265,30 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spa
 .cnx-hub { fill: var(--red); opacity: 0; transition: opacity 0.5s ease 3.9s; }
 .in .cnx-hub { opacity: 1; animation: livePulse 3s ease-in-out 4.4s infinite; }
 html[data-theme="dark"] .cnx-edge { stroke: rgba(var(--inkrgb), 0.3); }
+/* hover: the touched node and its fibres light up */
+.cnx-edge.hot { stroke: rgba(191, 59, 43, 0.55); stroke-width: 1.4; }
+html[data-theme="dark"] .cnx-edge.hot { stroke: rgba(210, 75, 53, 0.65); }
+.cnx-node.hot { fill: var(--red); r: 5; }
+/* signals travelling the fibres after the draw settles */
+.cnx-pulse { fill: none; stroke: rgba(var(--inkrgb), 0.5); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 0.12 0.88; stroke-dashoffset: 1; opacity: 0; animation: cnxFire linear infinite; }
+.cnx-pulse.red { stroke: rgba(191, 59, 43, 0.6); }
+html[data-theme="dark"] .cnx-pulse.red { stroke: rgba(210, 75, 53, 0.7); }
+@keyframes cnxFire {
+  0% { stroke-dashoffset: 1; opacity: 0; }
+  12% { opacity: 1; }
+  70% { stroke-dashoffset: 0; opacity: 1; }
+  82%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+/* lab callouts: leader elbows, node pins, mono captions */
+.cnx-callout { opacity: 0; transition: opacity 0.7s ease; }
+.in .cnx-callout { opacity: 1; }
+.cnx-callout .lead { stroke: rgba(var(--inkrgb), 0.32); stroke-width: 1; }
+.cnx-callout .pin { fill: none; stroke: var(--red); stroke-width: 1.2; }
+.cnx-callout .cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; fill: rgba(var(--inkrgb), 0.62); }
+/* the explorer tip */
+.cnx-tip { position: absolute; transform: translate(-50%, -160%); display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; font-size: 0.62rem; letter-spacing: 0.06em; color: var(--ink); background: var(--card); border: 1px solid var(--hair); border-radius: 7px; padding: 6px 10px; box-shadow: 0 6px 18px -8px rgba(var(--shadowrgb), 0.35); opacity: 0; transition: opacity 0.18s ease; pointer-events: none; z-index: 3; }
+.cnx-tip.on { opacity: 1; }
+.cnx-tip i { width: 5px; height: 5px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
 
 /* ---------------- the try-it band ---------------- */
 .trybar { border-top: 1px solid var(--hair2); background: rgba(var(--inkrgb), 0.014); }
@@ -747,6 +772,8 @@ a.ck-step:hover b { color: var(--red); }
   .cnx-edge, .cnx-thread { stroke-dashoffset: 0; }
   .cnx-node, .cnx-hub { opacity: 1; }
   .cnx { animation: none; }
+  .cnx-pulse { display: none; }
+  .cnx-callout { opacity: 1; }
   .thread-mark { background-size: 100% 1.5px; }
   .progress, #prognode { display: none; }
   .pbar, .pscenes { display: none; }
