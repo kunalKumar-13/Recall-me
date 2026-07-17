@@ -31,6 +31,7 @@ export function Hero() {
     <Section id="top" className="sec hero hero3">
       <div className="glow" aria-hidden="true" />
       <div className="wrap h3wrap">
+        <div className="h3grid" aria-hidden="true" />
         <div className="h3left">
           <span className="h3over mono rise">
             An instrument for unfinished thought
@@ -67,6 +68,10 @@ export function Hero() {
             <span className="dim">~/.recall · deterministic</span>
           </figcaption>
           <div className="plotbox">
+            <i className="pc tl" aria-hidden />
+            <i className="pc tr" aria-hidden />
+            <i className="pc bl" aria-hidden />
+            <i className="pc br" aria-hidden />
             <Connectome />
             {/* axis furniture */}
             <span className="ax ax-y mono" aria-hidden>
