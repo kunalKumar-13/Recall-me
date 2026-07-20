@@ -230,7 +230,10 @@ export default function App() {
         key: `s${i}`,
         layer: "session",
         title: s.label || s.topic,
-        caption: `${s.time_label} · ${s.event_count} events`,
+        // Attention shape wins the caption when the dwell signal has
+        // something to say ("2 attention blocks"); otherwise fall back
+        // to the plain event count.
+        caption: `${s.time_label} · ${s.behavioural_label || `${s.event_count} events`}`,
         action: s.openable_targets[0] ? "open" : "none",
         hint: "↵ open",
         target: s.openable_targets[0],

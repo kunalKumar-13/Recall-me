@@ -164,6 +164,8 @@ def _session_to_out(s: Session) -> SessionOut:
         time_label=s.time_label,
         score=s.score,
         event_count=s.event_count,
+        work_blocks=s.work_blocks,
+        behavioural_label=s.behavioural_label,
         kinds=s.kinds,
         preview_events=[_event_to_out(ev) for ev in s.preview_events()],
         openable_targets=[

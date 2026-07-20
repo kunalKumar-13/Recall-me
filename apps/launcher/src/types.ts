@@ -63,6 +63,10 @@ export interface SessionResult {
   time_label: string;
   score: number;
   event_count: number;
+  // Capture C5 — behavioural attention shape from the dwell signal.
+  // `behavioural_label` is "" when there's no signal worth adding.
+  work_blocks: number;
+  behavioural_label: string;
   kinds: string[];
   preview_events: EventOut[];
   openable_targets: OpenableTarget[];

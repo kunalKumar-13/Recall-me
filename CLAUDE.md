@@ -230,6 +230,7 @@ verification is performed — see
 │   │   ├── events.py          EventLogger + EventStore (JSONL)
 │   │   ├── episodic.py        Keyword + recency + kind-hint scorer
 │   │   ├── sessions.py        Session reconstructor
+│   │   ├── workblocks.py      Behavioural work-blocks (dwell-aware, C5)
 │   │   ├── microcontexts.py   Micro-context reconstructor
 │   │   ├── resurfacing.py     Idle-launcher continuity surface
 │   │   ├── threads.py         Persistent topic identity
