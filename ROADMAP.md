@@ -105,4 +105,17 @@ telemetry. See the capture audit for the full diagnosis.
       opted in via `ALLOWED_KINDS` + payload allowlist + smoke §34, with the
       kind **deliberately absent from `RETRIEVABLE_KINDS`** — it is a
       grouping signal for behavioural work-blocks, never a search result.
-      *The consumer (sessions grouping on dwell/blocks) is the follow-on.*
+- [x] **Capture C5 — Behavioural sessions (use the signal).**
+      [`app/core/workblocks.py`](app/core/workblocks.py) — a pure,
+      deterministic derivation that regroups a session's events into
+      *work-blocks* of continuous attention. The 30-min clock over-merges
+      two scattered bursts into one session and can't tell focus from a
+      tab left open; work-blocks read the `dwell_ms`/`block` signal back
+      and **split** what the clock lumped (10-min behavioural idle) while
+      **bridging** gaps a dwell span or shared `wb-` id proves were
+      continuous. Additive — the `session_id` spine is untouched; `Session`
+      gains derived `work_blocks` + `behavioural_label` ("one 47-minute
+      focus block" / "3 attention blocks"), surfaced through `SessionOut`
+      and the launcher caption. 9 pure unit checks
+      ([`_test_workblocks.py`](_test_workblocks.py)) + smoke §38; ~1 µs per
+      derivation, safe on the search hot path.

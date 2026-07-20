@@ -107,6 +107,25 @@ class Session:
         return len(self.events)
 
     @property
+    def work_blocks(self) -> int:
+        """How many behavioural work-blocks this clock session actually
+        contains (Capture C5). 1 means one continuous run of attention;
+        more means the 30-minute window lumped together separate
+        bursts. Derived, never stored — see `workblocks.py`."""
+        from .workblocks import group_work_blocks
+
+        return len(group_work_blocks(self.events))
+
+    @property
+    def behavioural_label(self) -> str:
+        """One quiet clause naming the session's attention shape, e.g.
+        "one 47-minute focus block" or "3 attention blocks". Empty when
+        there's no signal worth adding to the clock label."""
+        from .workblocks import describe_blocks, group_work_blocks
+
+        return describe_blocks(group_work_blocks(self.events))
+
+    @property
     def kinds(self) -> List[str]:
         seen: set[str] = set()
         out: List[str] = []

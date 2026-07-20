@@ -45,27 +45,29 @@ from `apps/extension/`)
 read-only engine room that talks to your daemon from your own
 browser. Zero proxying; your data never touches a server.
 
-## Install (the honest version)
+## Install
 
-1. **The engine first** (the .dmg is the launcher shell; the engine
-   ships from source in this alpha):
-   ```bash
-   git clone https://github.com/kunalKumar-13/Recall-me && cd Recall-me
-   pip install -r requirements.txt
-   python recall.py
-   ```
-2. **The launcher**: open the `.dmg`, drag Recall to Applications.
-   It's ad-hoc signed — right-click → Open the first time.
-3. **The extension**: `chrome://extensions` → Developer mode →
-   Load unpacked → select `apps/extension/`.
-4. Work normally. Next interruption, press **⌃Space**.
+1. **The launcher**: open the `.dmg`, drag Recall to Applications,
+   launch it. **The engine is bundled** — the app starts it on
+   127.0.0.1:4545 automatically (and never double-starts if you
+   already run one from source). Ad-hoc signed — right-click →
+   Open the first time.
+2. **The extension**: `chrome://extensions` → Developer mode →
+   Load unpacked → select `apps/extension/` from the repo.
+3. Work normally. Next interruption, press **⌃Space**.
+
+Running from source still works and always wins: if a daemon is
+already on 4545, the app uses it and starts nothing.
 
 ## Known edges
 
 - macOS Apple Silicon only; Windows/Linux are on the roadmap
 - Unsigned build (Gatekeeper warning is expected; notarization
   lands with a paid certificate)
-- The engine requires Python 3.12+ until the bundled build ships
+- **Semantic file search is not in the bundled engine** (it needs
+  the ~2 GB embedding stack) — `/v1/search/files` stays quietly
+  disabled unless you run the engine from source with
+  `pip install -r requirements.txt`
 - Desktop app-focus capture is opt-in (`desktop_capture_enabled`)
 
 Delete `~/.recall/` at any time — that is the full reset, and the

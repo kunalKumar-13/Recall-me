@@ -200,6 +200,12 @@ class SessionOut(BaseModel):
     time_label: str
     score: float
     event_count: int
+    # Capture C5 — behavioural attention shape, derived from the
+    # dwell/work-block signal. `work_blocks` counts continuous runs of
+    # attention inside the clock session; `behavioural_label` is the
+    # one-clause description ("" when there's no signal to add).
+    work_blocks: int = 1
+    behavioural_label: str = ""
     kinds: List[str]
     preview_events: List[EventOut]
     openable_targets: List[OpenableTarget]

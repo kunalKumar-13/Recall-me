@@ -1723,6 +1723,58 @@ print(f"  6 bumps landed exactly; unknown bin 422; median {bump_med:.1f}ms")
 print("[OK] /v1/loop/bump feeds the same ledger the console reads")
 
 
+# ----------------------------------------------------------------------
+section("38. Behavioural work-blocks reach the session wire (Capture C5)")
+# ----------------------------------------------------------------------
+# The 30-minute clock lumps two scattered bursts into one session; the
+# dwell/work-block signal splits them. This verifies the derivation is
+# wired all the way to SessionOut — the field the launcher and console
+# describe attention with.
+from app.core.events import Event as _Ev  # noqa: E402
+from app.core.sessions import Session as _Session  # noqa: E402
+from api.main import _session_to_out as _sess_out  # noqa: E402
+
+_wb_base = datetime(2026, 7, 20, 9, 0, 0, tzinfo=timezone.utc)
+
+
+def _wb_ev(offset_s, kind="browser_visit", **payload):
+    ts = (_wb_base + timedelta(seconds=offset_s)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return _Ev(ts=ts, session_id="s_wb", kind=kind, payload=payload)
+
+
+# one clock session, two attention islands 15 minutes apart
+_scattered = _Session(
+    session_id="s_wb",
+    events=[
+        _wb_ev(0, kind="browser_focus", dwell_ms=20 * 60 * 1000, block="wb-a"),
+        _wb_ev(120),
+        _wb_ev(240 + 15 * 60, kind="browser_focus", dwell_ms=12 * 60 * 1000, block="wb-b"),
+        _wb_ev(240 + 15 * 60 + 120),
+    ],
+    topic="websocket",
+    label="Working on websocket",
+    time_label="today",
+    score=1.0,
+)
+assert _scattered.work_blocks == 2, _scattered.work_blocks
+assert "attention blocks" in _scattered.behavioural_label, _scattered.behavioural_label
+_out = _sess_out(_scattered)
+assert _out.work_blocks == 2
+assert _out.behavioural_label == _scattered.behavioural_label
+# a tight single burst stays one block and adds no clause
+_tight = _Session(session_id="s2", events=[_wb_ev(0), _wb_ev(30), _wb_ev(90)])
+assert _tight.work_blocks == 1 and _sess_out(_tight).behavioural_label == ""
+# derivation is cheap — it runs on the search hot path
+t0 = time.perf_counter()
+for _ in range(200):
+    _ = _scattered.work_blocks
+wb_us = (time.perf_counter() - t0) / 200 * 1e6
+assert wb_us < 500, f"work-block derivation {wb_us:.0f}us, budget 500us"
+print(f"  scattered → {_out.work_blocks} blocks · \"{_out.behavioural_label}\"; "
+      f"{wb_us:.0f}us/derivation")
+print("[OK] work-blocks flow to SessionOut, cheap enough for the hot path")
+
+
 # Cleanup
 shutil.rmtree(TMP, ignore_errors=True)
 
