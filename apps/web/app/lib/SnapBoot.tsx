@@ -15,7 +15,9 @@ export function SnapBoot() {
     if (!params.has("snap")) return;
     const settle = () => {
       document
-        .querySelectorAll("section, .sec, .statsband, footer")
+        .querySelectorAll(
+          "section, .sec, .statsband, .trybar, .labrow, .openband, footer",
+        )
         .forEach((el) => el.classList.add("in"));
     };
     settle();

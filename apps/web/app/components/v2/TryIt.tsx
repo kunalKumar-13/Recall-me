@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { Section } from "../../lib/reveal";
+import { Section, Words } from "../../lib/reveal";
 
 const THREADS = [
   {
@@ -107,19 +107,45 @@ export function TryIt() {
 
   return (
     <Section className="trybar" as="div">
-      <div className="try-inner">
-        <div className="kbd-row rise">
-          <span className="kbd">⌃</span>
-          <span className="kbd">space</span>
-          <span>summons it anywhere — try it</span>
+      <div className="try-grid">
+        <div className="h3grid" aria-hidden="true" />
+        <div className="try-left">
+          <span className="eyebrow rise">
+            <span className="bk">[ </span>
+            <span className="no">live</span>
+            <span className="bk"> ]</span>
+            Try the launcher
+          </span>
+          <h2 className="try-h rise">
+            <Words>Type a word. </Words>
+            <em>
+              <Words>Watch it find the work.</Words>
+            </em>
+          </h2>
+          <p className="try-p rise">
+            This is the real launcher, driving itself over a demo memory —
+            the same panel ⌃Space summons over any app. Click in and search;
+            every keystroke filters your reconstructed sessions in under
+            100 ms.
+          </p>
+          <div className="kbd-row rise">
+            <span className="kbd">⌃</span>
+            <span className="kbd">space</span>
+            <span>summons it anywhere</span>
+          </div>
         </div>
-        <div
-          className="launcher rise"
-          ref={launcherRef}
-          onMouseMove={onTilt}
-          onMouseLeave={offTilt}
-          aria-label="The Recall launcher"
-        >
+        <div className="try-right rise">
+          <i className="pc tl" aria-hidden />
+          <i className="pc tr" aria-hidden />
+          <i className="pc bl" aria-hidden />
+          <i className="pc br" aria-hidden />
+          <div
+            className="launcher"
+            ref={launcherRef}
+            onMouseMove={onTilt}
+            onMouseLeave={offTilt}
+            aria-label="The Recall launcher"
+          >
           <div className="lc-search">
             <span aria-hidden>⌕</span>
             <input
@@ -168,6 +194,7 @@ export function TryIt() {
             <span>↑↓ move</span>
             <span>↵ open</span>
             <span>esc close</span>
+          </div>
           </div>
         </div>
       </div>
