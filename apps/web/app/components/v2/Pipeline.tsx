@@ -91,7 +91,7 @@ export function Pipeline() {
               <path
                 key={`wi${i}`}
                 id={`win${i}`}
-                d={wire(232, s.y, CORE_IN.x, CORE_IN.y)}
+                d={wire(248, s.y, CORE_IN.x, CORE_IN.y)}
                 fill="none"
               />
             ))}
@@ -173,7 +173,7 @@ export function Pipeline() {
           {/* source nodes: icon + label */}
           {SRC.map((s, i) => (
             <g key={`n${i}`} className="pnode-g">
-              <rect x="40" y={s.y - 19} width="192" height="38" rx="9" className="pnode" />
+              <rect x="40" y={s.y - 19} width="208" height="38" rx="9" className="pnode" />
               <g transform={`translate(66 ${s.y})`} className="picon">
                 {ICONS[s.icon]}
               </g>
@@ -239,7 +239,7 @@ export function Pipeline() {
           {/* output nodes */}
           {OUT.map((o, i) => (
             <g key={`o${i}`} className="pnode-g">
-              <rect x="728" y={o.y - 19} width="192" height="38" rx="9" className="pnode" />
+              <rect x="728" y={o.y - 19} width="208" height="38" rx="9" className="pnode" />
               <text x="748" y={o.y + 4} className="plabel out">
                 {o.label}
               </text>

@@ -58,14 +58,27 @@ export function Surfaces() {
           </figcaption>
         </figure>
 
-        {/* the popup, dropping from the browser toolbar */}
+        {/* the popup, dropping from the extension mark inside a real
+            browser window — floating over the page you were reading */}
         <figure className="surf-side rise">
-          <div className="extctx">
-            <div className="ext-toolbar" aria-hidden>
+          <div className="bwin">
+            <div className="bwin-tabs" aria-hidden>
               <span className="ext-dot r" />
               <span className="ext-dot y" />
               <span className="ext-dot g" />
-              <span className="ext-omni">recall — never lose the thread</span>
+              <span className="bwin-tab">
+                <span className="bwin-fav" />
+                Stripe · webhooks
+              </span>
+            </div>
+            <div className="bwin-omni" aria-hidden>
+              <span className="bwin-nav">‹</span>
+              <span className="bwin-nav">›</span>
+              <span className="bwin-nav rl">⟳</span>
+              <span className="bwin-url">
+                <span className="bwin-lock" />
+                stripe.com/docs/webhooks
+              </span>
               <span className="ext-ico puzzle">
                 <svg viewBox="0 0 16 16" width="13" height="13">
                   <path
@@ -89,16 +102,25 @@ export function Surfaces() {
                 </svg>
               </span>
             </div>
-            <div className="ext-caret" aria-hidden />
-            <div className="ext-pop">
-              <img
-                src="/shots/popup-dark.png"
-                alt="The Recall extension popup — continue, today's rhythm, threads, live tail"
-              />
+            <div className="bwin-stage">
+              <div className="bwin-page" aria-hidden>
+                <span className="bpg-h" />
+                <span className="bpg-l" />
+                <span className="bpg-l s" />
+                <span className="bpg-l" />
+                <span className="bpg-l s" />
+              </div>
+              <div className="ext-caret" aria-hidden />
+              <div className="ext-pop">
+                <img
+                  src="/shots/popup-dark.png"
+                  alt="The Recall extension popup — continue, today's rhythm, threads, live tail"
+                />
+              </div>
             </div>
           </div>
           <figcaption className="surfcap mono">
-            the popup — glance and act, ⌘K to search
+            the popup — drops from the toolbar, ⌘K to search
           </figcaption>
         </figure>
       </div>
