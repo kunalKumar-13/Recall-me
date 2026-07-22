@@ -290,11 +290,20 @@ html[data-theme="dark"] .cnx-pulse.red { stroke: rgba(210, 75, 53, 0.7); }
 .cnx-tip.on { opacity: 1; }
 .cnx-tip i { width: 5px; height: 5px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
 
-/* ---------------- the try-it band ---------------- */
-.trybar { border-top: 1px solid var(--hair2); background: rgba(var(--inkrgb), 0.014); }
-.try-inner { max-width: 680px; margin: 0 auto; padding: clamp(30px, 4vw, 48px) var(--pad) clamp(36px, 5vw, 56px); }
-.kbd-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink3); }
+/* ---------------- the try-it band: a lab bench, not an island ---------------- */
+.trybar { border-top: 1px solid var(--hair2); border-bottom: 1px solid var(--hair2); background: rgba(var(--inkrgb), 0.016); overflow: hidden; }
+.try-grid { position: relative; max-width: var(--maxw); margin: 0 auto; padding: clamp(40px, 5.5vw, 80px) var(--pad); display: grid; grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr); gap: clamp(32px, 5vw, 76px); align-items: center; }
+.trybar > .try-grid > .h3grid { position: absolute; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(var(--inkrgb), 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--inkrgb), 0.05) 1px, transparent 1px); background-size: 34px 34px; -webkit-mask-image: radial-gradient(85% 90% at 62% 50%, black, transparent 92%); mask-image: radial-gradient(85% 90% at 62% 50%, black, transparent 92%); }
+html[data-theme="dark"] .trybar > .try-grid > .h3grid { background-image: linear-gradient(rgba(var(--inkrgb), 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--inkrgb), 0.07) 1px, transparent 1px); }
+@media (max-width: 900px) { .try-grid { grid-template-columns: 1fr; gap: 28px; } }
+.try-left { position: relative; z-index: 1; }
+.try-left .try-h { font-size: clamp(1.5rem, 3vw, 2.4rem); margin-bottom: 16px; }
+.try-p { font-size: 0.98rem; line-height: 1.6; color: var(--ink2); max-width: 40ch; margin-bottom: 22px; }
+.try-right { position: relative; z-index: 1; padding: clamp(10px, 1.4vw, 16px); border: 1px solid var(--hair); background: var(--card); border-radius: 4px; }
+.kbd-row { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink3); }
 .kbd { display: inline-grid; place-items: center; min-width: 26px; height: 24px; padding: 0 7px; border: 1px solid var(--hair); border-bottom-width: 2px; border-radius: 6px; font-family: var(--mono); font-size: 0.7rem; color: var(--ink2); background: var(--card); }
+/* the launcher inside the bench loses its own heavy shadow — the frame holds it now */
+.try-right .launcher { box-shadow: 0 1px 2px rgba(var(--shadowrgb), 0.05), 0 18px 50px -30px rgba(var(--shadowrgb), 0.35); }
 
 /* ---------------- the lab row ---------------- */
 .labrow { border-top: 1px solid var(--hair2); }
