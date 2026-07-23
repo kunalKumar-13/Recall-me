@@ -1,12 +1,11 @@
 import { Section, SectionHead, Words } from "../../lib/reveal";
 
 /**
- * The surfaces — actual renders of the shipped product (captured
- * from the real builds in demo mode, no mockup fiction), now shown
- * in the hardware they live in: the console on a laptop, the popup
- * dropping from a browser toolbar. The console render swaps
- * light/dark with the site theme; the popup ships dark — that's the
- * HUD.
+ * The surfaces — real renders of the shipped builds (captured in demo
+ * mode, no mockup fiction). No faux hardware: each render sits in a
+ * clean hairline panel with a deep soft shadow, the way premium
+ * product sites show their own UI. The console swaps light/dark with
+ * the site theme; the popup ships dark — that's the HUD.
  */
 export function Surfaces() {
   return (
@@ -20,107 +19,43 @@ export function Surfaces() {
             </em>
           </h2>
           <p className="lead rise">
-            Real renders of the shipped builds — the engine room on your
-            desk, the instrument in your toolbar, the launcher over
-            everything.
+            Real renders of the shipped builds — the console on your desk,
+            the popup in your toolbar, the launcher over everything.
           </p>
         </SectionHead>
       </div>
 
-      <div className="surf">
-        {/* the console, on a laptop */}
-        <figure className="surf-main rise">
-          <div className="laptop">
-            <div className="laptop-lid">
-              <div className="laptop-bezel">
-                <div className="laptop-cam" aria-hidden />
-                <div className="laptop-screen">
-                  <img
-                    className="shot-light"
-                    src="/shots/console-light.png"
-                    alt="The Recall console — layer meter, today's 24-hour rhythm, continue, threads, live tail"
-                  />
-                  <img
-                    className="shot-dark"
-                    src="/shots/console-dark.png"
-                    alt="The Recall console in ink night"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="laptop-base" aria-hidden>
-              <div className="laptop-notch" />
-            </div>
+      <div className="surf rise">
+        <div className="surf-glow" aria-hidden />
+
+        <figure className="surf-fig console">
+          <div className="panel panel-console">
+            <img
+              className="shot-light"
+              src="/shots/console-light.png"
+              alt="The Recall console — engine layers, today's 24-hour rhythm, continue, active threads and the live tail"
+            />
+            <img
+              className="shot-dark"
+              src="/shots/console-dark.png"
+              alt="The Recall console in ink night"
+            />
           </div>
-          <figcaption className="surfcap mono">
-            the console — talks to <b>127.0.0.1:4545</b> from your own
-            browser · zero proxying
+          <figcaption className="panelcap">
+            the console — <b>127.0.0.1:4545</b>, your own browser · zero
+            proxying
           </figcaption>
         </figure>
 
-        {/* the popup, dropping from the extension mark inside a real
-            browser window — floating over the page you were reading */}
-        <figure className="surf-side rise">
-          <div className="bwin">
-            <div className="bwin-tabs" aria-hidden>
-              <span className="ext-dot r" />
-              <span className="ext-dot y" />
-              <span className="ext-dot g" />
-              <span className="bwin-tab">
-                <span className="bwin-fav" />
-                Stripe · webhooks
-              </span>
-            </div>
-            <div className="bwin-omni" aria-hidden>
-              <span className="bwin-nav">‹</span>
-              <span className="bwin-nav">›</span>
-              <span className="bwin-nav rl">⟳</span>
-              <span className="bwin-url">
-                <span className="bwin-lock" />
-                stripe.com/docs/webhooks
-              </span>
-              <span className="ext-ico puzzle">
-                <svg viewBox="0 0 16 16" width="13" height="13">
-                  <path
-                    d="M6 2h4v2a1.5 1.5 0 0 0 3 0V2h1v4h-2a1.5 1.5 0 0 0 0 3h2v4h-4v-2a1.5 1.5 0 0 0-3 0v2H2V9h2a1.5 1.5 0 0 0 0-3H2V2h4Z"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.1"
-                  />
-                </svg>
-              </span>
-              <span className="ext-ico live">
-                <svg viewBox="0 0 28 28" width="15" height="15">
-                  <path
-                    d="M3 20.5 C 9 4.5, 13.5 25, 19.5 12.5 S 24.5 8.5, 24.6 8.4"
-                    stroke="var(--red)"
-                    strokeWidth="2.6"
-                    fill="none"
-                    strokeLinecap="round"
-                  />
-                  <circle cx="24.4" cy="8.2" r="3.4" fill="var(--red)" />
-                </svg>
-              </span>
-            </div>
-            <div className="bwin-stage">
-              <div className="bwin-page" aria-hidden>
-                <span className="bpg-h" />
-                <span className="bpg-l" />
-                <span className="bpg-l s" />
-                <span className="bpg-l" />
-                <span className="bpg-l s" />
-              </div>
-              <div className="ext-caret" aria-hidden />
-              <div className="ext-pop">
-                <img
-                  src="/shots/popup-dark.png"
-                  alt="The Recall extension popup — continue, today's rhythm, threads, live tail"
-                />
-              </div>
-            </div>
+        <figure className="surf-fig popup">
+          <div className="panel panel-popup">
+            <img
+              src="/shots/popup-dark.png"
+              alt="The Recall extension popup — continue, today's rhythm, threads and the live tail"
+            />
           </div>
-          <figcaption className="surfcap mono">
-            the popup — drops from the toolbar, ⌘K to search
+          <figcaption className="panelcap">
+            the popup — glance and act, <b>⌘K</b> to search
           </figcaption>
         </figure>
       </div>

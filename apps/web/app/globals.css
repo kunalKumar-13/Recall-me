@@ -591,57 +591,32 @@ ul.never { padding: 0; margin: 10px 0 0; }
 .refuse .n { color: var(--ink3); font-family: var(--mono); }
 
 
-/* ---------------- surfaces: real renders, in their hardware ---------------- */
-.surf { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--pad) clamp(60px, 8vw, 110px); display: grid; grid-template-columns: minmax(0, 1.85fr) minmax(0, 1.08fr); gap: clamp(28px, 4vw, 58px); align-items: center; }
-@media (max-width: 900px) { .surf { grid-template-columns: 1fr; } .surf-side { max-width: 360px; margin: 0 auto; } }
-.surf-main { margin: 0; }
-.surf-side { margin: 0; }
-.surfcap { margin-top: 18px; font-size: 0.64rem; letter-spacing: 0.06em; color: var(--ink3); text-align: center; }
-.surfcap b { color: var(--ink2); font-weight: 500; }
+/* ---------------- surfaces: the real product, floating clean ---------------- */
+/* no faux hardware — the shipped renders themselves, each in a hairline
+   panel with a deep soft shadow. The screenshots are the visual. */
+.surf { position: relative; max-width: var(--maxw); margin: 0 auto; padding: clamp(8px, 2vw, 24px) var(--pad) clamp(60px, 8vw, 110px); display: grid; grid-template-columns: minmax(0, 1.72fr) minmax(0, 1fr); gap: clamp(26px, 4vw, 66px); align-items: center; }
+@media (max-width: 900px) { .surf { grid-template-columns: 1fr; gap: 42px; } .surf-fig.popup { max-width: 380px; margin: 0 auto; } }
 
-/* the laptop — a space-grey lid (dark in both themes: it's hardware)
-   with the console render on the glass, over a hinged base */
-.laptop { perspective: 1600px; }
-.laptop-lid { background: linear-gradient(#2a2a2d, #202023); border-radius: 16px 16px 6px 6px; padding: 10px 10px 0; box-shadow: 0 1px 1px rgba(255,255,255,0.08) inset, 0 40px 90px -46px rgba(0,0,0,0.6); transition: transform 0.5s var(--out); }
-.laptop:hover .laptop-lid { transform: rotateX(3deg); }
-.laptop-bezel { position: relative; background: #0c0c0d; border-radius: 9px 9px 2px 2px; padding: 13px 7px 7px; }
-.laptop-cam { position: absolute; top: 5px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; border-radius: 50%; background: #1e1e20; box-shadow: 0 0 0 1px rgba(255,255,255,0.05); }
-.laptop-screen { border-radius: 3px; overflow: hidden; background: var(--card); }
-.laptop-screen img { display: block; width: 100%; height: auto; }
-.laptop-base { position: relative; height: 13px; margin: 0 auto; width: 106%; margin-left: -3%; background: linear-gradient(#c6c6ca, #a4a4a9); border-radius: 0 0 12px 12px; box-shadow: 0 20px 30px -18px rgba(0,0,0,0.5); }
-html[data-theme="dark"] .laptop-base { background: linear-gradient(#4a4a4e, #35353a); }
-.laptop-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 96px; height: 6px; background: rgba(0,0,0,0.22); border-radius: 0 0 7px 7px; }
-/* theme-matched console render — scoped to beat `.laptop-screen img` */
-.laptop-screen .shot-dark { display: none; }
-html[data-theme="dark"] .laptop-screen .shot-light { display: none; }
-html[data-theme="dark"] .laptop-screen .shot-dark { display: block; }
+/* one soft ambient wash behind the panels — depth, never decoration */
+.surf-glow { position: absolute; z-index: 0; inset: -3% 5% 7%; background: radial-gradient(56% 66% at 40% 44%, rgba(191, 59, 43, 0.085), transparent 68%); filter: blur(36px); pointer-events: none; }
+html[data-theme="dark"] .surf-glow { background: radial-gradient(56% 66% at 40% 44%, rgba(210, 75, 53, 0.15), transparent 70%); }
 
-/* the popup — dropping from the lit extension mark inside a real
-   browser window (dark chrome in both themes: it's the browser, just
-   as the laptop is hardware), floating over the page you were on */
-.bwin { position: relative; background: #17171a; border: 1px solid rgba(255,255,255,0.09); border-radius: 14px; box-shadow: 0 2px 3px rgba(0,0,0,0.26), 0 50px 100px -52px rgba(0,0,0,0.62); overflow: hidden; transition: transform 0.5s var(--out); }
-.surf-side:hover .bwin { transform: translateY(-3px); }
-.bwin-tabs { display: flex; align-items: center; gap: 7px; padding: 10px 13px 0; }
-.ext-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.ext-dot.r { background: #ec6a5e; } .ext-dot.y { background: #f4bf4f; } .ext-dot.g { background: #61c554; }
-.bwin-tab { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; padding: 6px 13px; background: #26262a; border-radius: 8px 8px 0 0; font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.02em; color: #b7b7bc; white-space: nowrap; max-width: 62%; overflow: hidden; text-overflow: ellipsis; }
-.bwin-fav { width: 7px; height: 7px; border-radius: 2px; background: var(--red); flex-shrink: 0; }
-.bwin-omni { display: flex; align-items: center; gap: 9px; padding: 8px 13px; background: #26262a; }
-.bwin-nav { color: #6f6f76; font-size: 0.82rem; line-height: 1; flex-shrink: 0; }
-.bwin-nav.rl { font-size: 0.66rem; }
-.bwin-url { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; background: #37373c; border-radius: 7px; padding: 5px 11px; font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.02em; color: #a8a8ad; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bwin-lock { width: 6px; height: 5px; border: 1px solid #7a7a80; border-top: none; border-radius: 0 0 1px 1px; position: relative; flex-shrink: 0; }
-.bwin-lock::before { content: ""; position: absolute; left: 0.5px; bottom: 4px; width: 4px; height: 4px; border: 1px solid #7a7a80; border-bottom: none; border-radius: 3px 3px 0 0; box-sizing: border-box; }
-.ext-ico { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; color: #9a9aa0; flex-shrink: 0; }
-.ext-ico.live { background: rgba(191,59,43,0.16); box-shadow: 0 0 0 1.5px rgba(210,75,53,0.55); }
-.bwin-stage { position: relative; background: linear-gradient(#101013, #0b0b0d); }
-.bwin-page { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 12px; padding: 24px 22px; }
-.bpg-h { height: 48px; border-radius: 8px; background: rgba(255,255,255,0.05); }
-.bpg-l { height: 9px; border-radius: 4px; background: rgba(255,255,255,0.045); }
-.bpg-l.s { width: 58%; }
-.ext-caret { position: absolute; right: 25px; top: 3px; width: 12px; height: 12px; background: #131214; border-left: 1px solid rgba(255,255,255,0.07); border-top: 1px solid rgba(255,255,255,0.07); transform: rotate(45deg); border-radius: 2px 0 0 0; z-index: 3; }
-.ext-pop { position: relative; z-index: 2; width: 89%; max-height: 386px; margin: 9px 12px 22px auto; border-radius: 13px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); border-bottom: none; -webkit-mask-image: linear-gradient(to bottom, #000 74%, transparent 99%); mask-image: linear-gradient(to bottom, #000 74%, transparent 99%); filter: drop-shadow(0 3px 6px rgba(0,0,0,0.32)) drop-shadow(0 30px 55px rgba(0,0,0,0.6)); }
-.ext-pop img { display: block; width: 100%; height: auto; }
+.surf-fig { position: relative; z-index: 1; margin: 0; }
+.panel { position: relative; border-radius: 15px; overflow: hidden; background: var(--card); border: 1px solid rgba(var(--inkrgb), 0.12); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 3px 8px -2px rgba(var(--shadowrgb), 0.16), 0 44px 82px -34px rgba(var(--shadowrgb), 0.5); transition: transform 0.55s var(--out), box-shadow 0.55s var(--out); }
+.surf-fig:hover .panel { transform: translateY(-5px); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 4px 10px -2px rgba(var(--shadowrgb), 0.18), 0 62px 112px -36px rgba(var(--shadowrgb), 0.6); }
+.panel img { display: block; width: 100%; height: auto; }
+.panelcap { margin-top: 16px; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.05em; color: var(--ink3); text-align: center; }
+.panelcap b { color: var(--ink2); font-weight: 500; }
+
+/* console render swaps light/dark with the site theme */
+.panel .shot-dark { display: none; }
+html[data-theme="dark"] .panel .shot-light { display: none; }
+html[data-theme="dark"] .panel .shot-dark { display: block; }
+
+/* the popup ships tall — cap it level with the console and fade the
+   base into "there's more below" rather than cropping mid-row */
+.panel-popup { max-height: 452px; }
+.panel-popup::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 108px; background: linear-gradient(rgba(11, 11, 13, 0), rgba(11, 11, 13, 0.97)); pointer-events: none; }
 
 /* quickstart steps in the closer */
 .quick { margin: clamp(26px, 3.4vw, 40px) auto 0; max-width: 760px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: left; }
