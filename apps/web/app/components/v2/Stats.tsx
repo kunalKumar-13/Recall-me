@@ -29,7 +29,7 @@ export function Stats() {
           let t0: number | null = null;
           const fr = (ts: number) => {
             if (t0 === null) t0 = ts;
-            const p = Math.min(1, (ts - t0) / 900);
+            const p = Math.min(1, (ts - t0) / 620);
             s.textContent = String(Math.round(target * (1 - Math.pow(1 - p, 3))));
             if (p < 1) requestAnimationFrame(fr);
           };

@@ -9,10 +9,16 @@
 import {
   createElement,
   useEffect,
+  useLayoutEffect,
   useRef,
   type ElementType,
   type ReactNode,
 } from "react";
+
+// useLayoutEffect warns during SSR; fall back to useEffect on the
+// server so the isomorphic reveal helper stays quiet.
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export function Section({
   id,
@@ -26,9 +32,24 @@ export function Section({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLElement | null>(null);
-  useEffect(() => {
+
+  // Above-the-fold sections must not wait for the async
+  // IntersectionObserver callback — that leaves a blank flash of
+  // opacity:0 content between first paint and hydration. If the
+  // section is already in the viewport at mount, reveal it
+  // synchronously, before the browser paints.
+  useIsomorphicLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
+    const r = el.getBoundingClientRect();
+    if (r.top < window.innerHeight && r.bottom > 0) {
+      el.classList.add("in");
+    }
+  }, []);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || el.classList.contains("in")) return;
     if (typeof IntersectionObserver === "undefined") {
       el.classList.add("in");
       return;

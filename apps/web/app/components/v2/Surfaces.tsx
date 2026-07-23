@@ -1,10 +1,11 @@
 import { Section, SectionHead, Words } from "../../lib/reveal";
 
 /**
- * The surfaces — actual renders of the shipped product (captured
- * from the real builds in demo mode, no mockup fiction): the console
- * cockpit and the extension popup. The console swaps light/dark with
- * the site theme; the popup ships dark because that's the HUD.
+ * The surfaces — real renders of the shipped builds (captured in demo
+ * mode, no mockup fiction). No faux hardware: each render sits in a
+ * clean hairline panel with a deep soft shadow, the way premium
+ * product sites show their own UI. The console swaps light/dark with
+ * the site theme; the popup ships dark — that's the HUD.
  */
 export function Surfaces() {
   return (
@@ -18,52 +19,43 @@ export function Surfaces() {
             </em>
           </h2>
           <p className="lead rise">
-            These are real renders of the shipped builds — the engine room
-            in your browser, the instrument in your toolbar, the launcher
-            over everything.
+            Real renders of the shipped builds — the console on your desk,
+            the popup in your toolbar, the launcher over everything.
           </p>
         </SectionHead>
       </div>
 
-      <div className="surf">
-        <figure className="surf-main rise">
-          <div className="surfframe">
-            <div className="surfbar mono">
-              <span className="d" />
-              <span className="d" />
-              <span className="d" />
-              <span className="surl">recall · /console — your daemon, your browser</span>
-            </div>
-            {/* theme-matched: light render in light, dark render in dark */}
+      <div className="surf rise">
+        <div className="surf-glow" aria-hidden />
+
+        <figure className="surf-fig console">
+          <div className="panel panel-console">
             <img
               className="shot-light"
               src="/shots/console-light.png"
-              alt="The Recall console — layer meter, today's 24-hour rhythm, continue, threads, live tail"
-             
+              alt="The Recall console — engine layers, today's 24-hour rhythm, continue, active threads and the live tail"
             />
             <img
               className="shot-dark"
               src="/shots/console-dark.png"
               alt="The Recall console in ink night"
-             
             />
           </div>
-          <figcaption className="surfcap mono">
-            the console — connects to <b>127.0.0.1:4545</b> from your own
-            browser · zero proxying
+          <figcaption className="panelcap">
+            the console — <b>127.0.0.1:4545</b>, your own browser · zero
+            proxying
           </figcaption>
         </figure>
 
-        <figure className="surf-side rise">
-          <div className="surfframe popup">
+        <figure className="surf-fig popup">
+          <div className="panel panel-popup">
             <img
               src="/shots/popup-dark.png"
-              alt="The Recall extension popup — continue, today's rhythm, threads, live tail"
-             
+              alt="The Recall extension popup — continue, today's rhythm, threads and the live tail"
             />
           </div>
-          <figcaption className="surfcap mono">
-            the popup — glance and act, ⌘K to search
+          <figcaption className="panelcap">
+            the popup — glance and act, <b>⌘K</b> to search
           </figcaption>
         </figure>
       </div>
